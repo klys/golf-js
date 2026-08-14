@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+  <meta name="theme-color" content="#050f1a" />
+  <meta name="color-scheme" content="dark" />
+  <title>Noise Golf 2D · Arcade Online</title>
+  <link rel="stylesheet" href="./css/main.css" />
+  <script>
+    window.NoiseGolf = window.NoiseGolf || {};
+    window.NoiseGolfBootError = function (file) {
+      window.setTimeout(function () {
+        var boot = document.getElementById('bootScreen');
+        var panel = document.getElementById('bootError');
+        var detail = document.getElementById('bootErrorDetail');
+        if (boot) boot.classList.add('hidden');
+        if (panel) panel.classList.remove('hidden');
+        if (detail) detail.textContent = 'No se pudo cargar: ' + file;
+      }, 0);
+    };
+  </script>
+</head>
+<body data-focus="idle" data-runtime="offline">
+
+  <!-- ═══ Biblioteca de iconos vectoriales locales (sin CDN) ═══════════════ -->
+  <svg class="icon-sprite" aria-hidden="true" focusable="false">
+    <defs>
+      <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></symbol>
+      <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.7"/><ellipse cx="12" cy="12" rx="3.7" ry="8.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3.6 9.4h16.8M3.6 14.6h16.8" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.6-5.9" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M20.4 3.6v4.6h-4.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.7" cy="10.7" r="6.3" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="m15.4 15.4 4.2 4.2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+      <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.2" r="3.7" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4.9 20c.6-3.9 3.6-6 7.1-6s6.5 2.1 7.1 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+      <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4.5 7h15M4.5 12h15M4.5 17h15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-flag" viewBox="0 0 24 24"><path d="M6 21V4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M6 4.6h10.8l-2.2 3.6 2.2 3.6H6z"/></symbol>
+      <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M7 4h10v4.2a5 5 0 0 1-10 0z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M7 5.4H4.4v1.4a3 3 0 0 0 3 3M17 5.4h2.6v1.4a3 3 0 0 1-3 3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 13.3V17m-3.4 3h6.8" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5.2" y="10.4" width="13.6" height="9.4" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8.4 10.2V8a3.6 3.6 0 0 1 7.2 0v2.2" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+      <symbol id="i-unlock" viewBox="0 0 24 24"><rect x="5.2" y="10.4" width="13.6" height="9.4" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.6" opacity=".75"/><path d="M8.4 10.2V8a3.6 3.6 0 0 1 6.9-1.3" fill="none" stroke="currentColor" stroke-width="1.6" opacity=".75"/></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="m6.4 6.4 11.2 11.2M17.6 6.4 6.4 17.6" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.6 4.6 4.6L19 7.4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4.4 21 19.6H3z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M12 10v4.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1.15"/></symbol>
+      <symbol id="i-swords" viewBox="0 0 24 24"><path d="M3.5 3.5h3.2l10 10-3.2 3.2-10-10z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M20.5 3.5h-3.2l-10 10 3.2 3.2 10-10z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m4.4 19.6 2.9-2.9m9.4 2.9-2.9-2.9" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+      <symbol id="i-turns" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 6.6V12l3.6 2.3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 17a8 8 0 1 1 16 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="m12 16 4.2-5.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.4" r="1.5"/></symbol>
+      <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9.2" cy="8.6" r="3.3" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M2.9 19.4c.5-3.4 3.1-5.3 6.3-5.3s5.8 1.9 6.3 5.3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M16.4 6.1a3.1 3.1 0 0 1 0 6m1 2.3c2.4.4 4 2.2 4.4 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+      <symbol id="i-dice" viewBox="0 0 24 24"><rect x="4.2" y="4.2" width="15.6" height="15.6" rx="3.6" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="9" r="1.35"/><circle cx="15" cy="15" r="1.35"/><circle cx="15" cy="9" r="1.35"/><circle cx="9" cy="15" r="1.35"/></symbol>
+      <symbol id="i-power" viewBox="0 0 24 24"><path d="M13.3 3 5.6 13.6h5.1L10 21l7.8-10.7h-5.2z"/></symbol>
+      <symbol id="i-exit" viewBox="0 0 24 24"><path d="M14.5 4.5H6.2A1.7 1.7 0 0 0 4.5 6.2v11.6a1.7 1.7 0 0 0 1.7 1.7h8.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M15.6 8.4 19.2 12l-3.6 3.6M18.6 12H9.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-map" viewBox="0 0 24 24"><path d="m3.6 6.4 5.4-2.2 6 2.2 5.4-2.2v13.4l-5.4 2.2-6-2.2-5.4 2.2z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 4.2v13.4m6-11.2v13.4" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+      <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V9.5m5 10.5V4m5 16v-7.5M19 20V7.5" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.2 19.4 6v6c0 4.2-3 7.3-7.4 8.8C7.6 19.3 4.6 16.2 4.6 12V6z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h10m4 0h2M4 17h2m4 0h10M14 4v6M6 14v6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="16" cy="7" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="8" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5.4l3.7 2.1" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    </defs>
+  </svg>
+
+  <main class="app-shell">
+    <canvas id="game" aria-label="Juego de golf 2D procedural"></canvas>
+    <div class="scanline-overlay" aria-hidden="true"></div>
+
+    <!-- ═══ HUD DE PARTIDA ══════════════════════════════════════════════════ -->
+    <div class="hud-layer" aria-label="Interfaz de partida">
+
+      <!-- Dock superior izquierdo: identidad del recorrido y marcadores -->
+      <section class="dock dock-tl" aria-label="Marcadores del hoyo">
+        <div class="hud-brand">
+          <span class="hud-brand-mark" aria-hidden="true"><i></i></span>
+          <span class="hud-brand-text">
+            <strong>NOISE GOLF <b>2D</b></strong>
+            <small id="runtimeModeLabel">EXPEDICIÓN PROCEDURAL · OFFLINE</small>
+          </span>
+        </div>
+        <div class="stat-strip">
+          <div class="stat" data-key="hole">
+            <span class="stat-label">HOYO</span>
+            <strong id="holeLabel">1 / 3</strong>
+            <div class="hole-dots" id="holeDots" aria-hidden="true"></div>
+          </div>
+          <div class="stat" data-key="par"><span class="stat-label">PAR</span><strong id="parLabel">4</strong></div>
+          <div class="stat" data-key="strokes">
+            <span class="stat-label">GOLPES</span>
+            <span class="stat-value-row"><strong id="strokeLabel">0</strong><small id="strokeDelta" class="stat-delta" data-tone="even">E</small></span>
+          </div>
+          <div class="stat" data-key="score"><span class="stat-label">SCORE</span><strong id="scoreLabel">E</strong></div>
+          <div class="stat stat-points" data-key="points"><span class="stat-label">PUNTOS</span><strong id="pointsLabel">0</strong></div>
+        </div>
+      </section>
+
+      <!-- Dock superior central: estado vivo de la partida -->
+      <section id="matchBar" class="dock dock-tc match-bar" data-mode="offline" aria-live="polite">
+        <span id="matchModeBadge" class="mode-badge" data-mode="offline">
+          <svg class="ico" aria-hidden="true"><use href="#i-flag"></use></svg><b>OFFLINE</b>
+        </span>
+        <div class="match-state">
+          <strong id="matchStateLabel">Partida libre</strong>
+          <small id="matchStateHint">Arrastra la bola para golpear</small>
+        </div>
+        <span id="matchTimer" class="match-timer" hidden>00:00</span>
+        <i id="matchTurnPulse" class="turn-pulse" aria-hidden="true"></i>
+      </section>
+
+      <!-- Dock superior derecho: viento, red y controles -->
+      <section class="dock dock-tr" aria-label="Condiciones y controles">
+        <div class="wind-gauge" title="Viento del hoyo">
+          <div class="wind-dial">
+            <svg viewBox="0 0 44 44" class="wind-ring" aria-hidden="true">
+              <circle cx="22" cy="22" r="19" class="wind-ring-bg"/>
+              <circle id="windRingArc" cx="22" cy="22" r="19" class="wind-ring-arc" stroke-dasharray="119.4" stroke-dashoffset="119.4"/>
+            </svg>
+            <i id="windArrow" class="wind-needle" aria-hidden="true"></i>
+          </div>
+          <div class="wind-read">
+            <span id="windTitleLabel" class="stat-label">VIENTO</span>
+            <strong id="windLabel">0.0 m/s</strong>
+          </div>
+        </div>
+
+        <button id="netChip" class="net-chip" type="button" data-quality="offline" title="Métricas de red (F3)">
+          <i id="netChipBars" class="signal-bars" data-bars="0"><b></b><b></b><b></b><b></b></i>
+          <span class="net-chip-read"><strong id="netChipPing">—</strong><small id="netChipRole">OFFLINE</small></span>
+        </button>
+
+        <div class="hud-buttons">
+          <button id="newCourseBtn" class="hud-btn" type="button" title="Generar un campo nuevo con otra seed">
+            <svg class="ico" aria-hidden="true"><use href="#i-dice"></use></svg><span>Nuevo campo</span>
+          </button>
+          <button id="gameMenuBtn" class="hud-btn icon-only" type="button" title="Menú de partida (Esc)" aria-label="Menú de partida">
+            <svg class="ico" aria-hidden="true"><use href="#i-menu"></use></svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- Dock lateral izquierdo: información del mundo -->
+      <section class="dock dock-l world-info" aria-label="Información del mapa">
+        <div class="world-pill"><svg class="ico" aria-hidden="true"><use href="#i-map"></use></svg><span class="stat-label">BIOMA</span><strong id="biomeLabel">Procedural</strong></div>
+        <div class="world-pill"><svg class="ico" aria-hidden="true"><use href="#i-chart"></use></svg><span class="stat-label">MAPA</span><strong id="mapLabel">—</strong></div>
+        <div class="world-pill difficulty-pill"><svg class="ico" aria-hidden="true"><use href="#i-gauge"></use></svg><span class="stat-label">DIFICULTAD</span><strong id="difficultyLabel">—</strong></div>
+        <div class="world-pill bonus-pill"><svg class="ico" aria-hidden="true"><use href="#i-power"></use></svg><span class="stat-label">SECRETO</span><strong id="multiplierLabel">×2 POR ENCONTRAR</strong></div>
+        <div class="world-pill seed-pill"><span class="stat-label">SEED</span><strong id="seedLabel">—</strong></div>
+      </section>
+
+      <!-- Dock inferior central: telemetría del tiro -->
+      <section class="dock dock-bc shot-dock" aria-label="Telemetría del tiro">
+        <div id="shotMeter" class="shot-meter" data-active="false">
+          <div class="shot-track"><i id="shotMeterFill"></i><span class="shot-notch" style="left:70%"></span></div>
+          <div class="shot-read">
+            <span><small>POTENCIA</small><strong id="shotPowerLabel">0%</strong></span>
+            <span><small>ÁNGULO</small><strong id="shotAngleLabel">0°</strong></span>
+            <span><small>AL HOYO</small><strong id="distanceLabel">— m</strong></span>
+          </div>
+        </div>
+        <div id="helpChip" class="help-chip">
+          <b>Arrastra</b> la bola hacia atrás y <b>suelta</b> para golpear
+          <i class="dot"></i> <kbd>R</kbd> vuelve al punto del tiro <small>(+1)</small>
+          <i class="dot"></i> <kbd>Esc</kbd> menú
+          <i class="dot"></i> <kbd>F3</kbd> métricas
+        </div>
+      </section>
+
+      <!-- Dock lateral derecho: marcador multijugador -->
+      <aside id="networkHud" class="dock dock-r network-hud hidden" aria-label="Estado multijugador">
+        <header class="net-head">
+          <div class="net-head-main">
+            <span id="netModeLabel" class="mode-badge sm" data-mode="turn"><svg class="ico" aria-hidden="true"><use href="#i-turns"></use></svg><b>POR TURNOS</b></span>
+            <strong id="netLobbyLabel">Partida online</strong>
+          </div>
+          <div class="net-head-actions">
+            <button id="scoreboardToggle" class="icon-button ghost" type="button" title="Plegar marcador" aria-label="Plegar marcador"><svg class="ico" aria-hidden="true"><use href="#i-chart"></use></svg></button>
+            <button id="leaveOnlineBtn" class="icon-button danger" type="button" title="Salir de la partida" aria-label="Salir de la partida"><svg class="ico" aria-hidden="true"><use href="#i-exit"></use></svg></button>
+          </div>
+        </header>
+
+        <div class="net-meta">
+          <span id="netRoleLabel" class="net-role">HOST</span>
+          <span class="net-meta-sep"></span>
+          <span class="net-meta-item"><svg class="ico" aria-hidden="true"><use href="#i-users"></use></svg><b id="netPlayerCount">1/8</b></span>
+          <span class="net-meta-item"><svg class="ico" aria-hidden="true"><use href="#i-turns"></use></svg><b id="netTimerLabel">00:00</b></span>
+          <span class="signal-wrap"><i id="netSignalBars" class="signal-bars" data-bars="0"><b></b><b></b><b></b><b></b></i><span id="netSignalLabel">midiendo…</span></span>
+        </div>
+
+        <div id="turnIndicator" class="turn-indicator" data-state="idle">Primer tiro inicia la partida</div>
+
+        <div id="netGoalBar" class="goal-bar" hidden>
+          <div class="goal-track"><i id="netGoalFill"></i></div>
+          <div class="goal-read"><span>OBJETIVO</span><strong id="netGoalLabel">5.000 pts</strong></div>
+        </div>
+
+        <div class="scoreboard">
+          <div class="scoreboard-head"><span>#</span><span>JUGADOR</span><span id="scoreboardMetric">GOLPES</span><span>PTS</span></div>
+          <div id="scoreboardRows" class="scoreboard-rows"></div>
+        </div>
+
+        <footer class="net-foot"><span id="netFootHint">El host es la autoridad de física</span></footer>
+      </aside>
+
+      <!-- Panel de métricas técnicas (F3) -->
+      <section id="metricsPanel" class="metrics-panel hidden" aria-label="Métricas técnicas">
+        <header><svg class="ico" aria-hidden="true"><use href="#i-chart"></use></svg><strong>MÉTRICAS</strong><button id="metricsClose" class="icon-button ghost" type="button" aria-label="Cerrar métricas"><svg class="ico" aria-hidden="true"><use href="#i-close"></use></svg></button></header>
+        <div class="metrics-grid">
+          <div class="metric"><span>FPS</span><strong id="mFps">—</strong></div>
+          <div class="metric"><span>FRAME</span><strong id="mFrame">—</strong></div>
+          <div class="metric"><span>PING</span><strong id="mPing">—</strong></div>
+          <div class="metric"><span>JITTER</span><strong id="mJitter">—</strong></div>
+          <div class="metric"><span>SNAPSHOTS</span><strong id="mSnap">—</strong></div>
+          <div class="metric"><span>PÉRDIDA</span><strong id="mLoss">—</strong></div>
+          <div class="metric"><span>RELAY</span><strong id="mRelay">—</strong></div>
+          <div class="metric"><span>ROL</span><strong id="mRole">OFFLINE</strong></div>
+          <div class="metric"><span>PEERS</span><strong id="mPeers">0</strong></div>
+          <div class="metric"><span>PARTÍCULAS</span><strong id="mParticles">0</strong></div>
+          <!-- Capa de suavizado: pasos de simulación, buffer de interpolación,
+               desfase de reloj y corrección visual pendiente. -->
+          <div class="metric"><span>SIM</span><strong id="mSim">—</strong></div>
+          <div class="metric"><span>INTERP</span><strong id="mInterp">—</strong></div>
+          <div class="metric"><span>RELOJ</span><strong id="mClock">—</strong></div>
+          <div class="metric"><span>CORRECCIÓN</span><strong id="mCorrection">—</strong></div>
+        </div>
+        <div class="metrics-graph"><canvas id="metricsGraph" width="252" height="46"></canvas><small>Ping · últimos 60 s</small></div>
+      </section>
+
+      <div id="statusToast" class="status-toast" data-tone="neutral" aria-live="polite">Listo</div>
+    </div>
+
+    <!-- ═══ RESULTADO DE HOYO (offline) ═════════════════════════════════════ -->
+    <section id="messagePanel" class="overlay-panel hidden" aria-live="polite">
+      <div class="result-card">
+        <span id="messageEyebrow" class="kicker">HOYO COMPLETADO</span>
+        <h1 id="messageTitle">Birdie</h1>
+        <p id="messageBody">Buen tiro.</p>
+        <div id="messageStats" class="result-stats"></div>
+        <button id="continueBtn" class="submit-button" type="button">CONTINUAR</button>
+      </div>
+    </section>
+
+    <!-- ═══ FIN DE PARTIDA ONLINE ═══════════════════════════════════════════ -->
+    <section id="matchOverPanel" class="overlay-panel hidden" aria-modal="true">
+      <div class="matchover-card">
+        <div class="matchover-crown"><svg class="ico" aria-hidden="true"><use href="#i-trophy"></use></svg></div>
+        <span class="kicker">PARTIDA TERMINADA</span>
+        <h1 id="matchOverTitle">Victoria</h1>
+        <p id="matchOverSub" class="modal-copy">Marcador final de la sala.</p>
+        <div class="matchover-table">
+          <div class="matchover-head"><span>#</span><span>JUGADOR</span><span>GOLPES</span><span>PUNTOS</span></div>
+          <div id="matchOverRows" class="matchover-rows"></div>
+        </div>
+        <div class="modal-actions center">
+          <button id="matchOverStay" class="secondary-button" type="button">SEGUIR VIENDO</button>
+          <button id="matchOverHome" class="submit-button" type="button">VOLVER AL INICIO</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ MENÚ DE PARTIDA (Esc) ═══════════════════════════════════════════ -->
+    <section id="gameMenuPanel" class="mini-modal hidden" aria-modal="true">
+      <div class="mini-modal-card game-menu-card">
+        <span class="kicker">PARTIDA</span><h2>Menú de juego</h2>
+        <p id="gameMenuContext" class="modal-copy">Partida offline</p>
+        <div class="game-menu-actions">
+          <button id="resumeGameBtn" class="submit-button" type="button"><svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg>CONTINUAR</button>
+          <button id="resetShotBtn" class="secondary-button" type="button" title="Devuelve la bola al punto donde comenzó el tiro actual y suma un golpe">
+            <svg class="ico" aria-hidden="true"><use href="#i-refresh"></use></svg><span>VOLVER AL PUNTO DEL TIRO · +1</span>
+          </button>
+          <button id="requestMapVoteBtn" class="secondary-button hidden" type="button"><svg class="ico" aria-hidden="true"><use href="#i-map"></use></svg><span id="requestMapVoteLabel">VOTAR CAMBIO DE MAPA</span></button>
+          <button id="returnHomeBtn" class="secondary-button danger-outline" type="button"><svg class="ico" aria-hidden="true"><use href="#i-exit"></use></svg><span>VOLVER AL INICIO</span></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ RECONEXIÓN ══════════════════════════════════════════════════════ -->
+    <!-- Se abre sola cuando el cliente pierde el canal con el host. El host
+         guarda la plaza durante la ventana de gracia; aquí se ve cuánto queda. -->
+    <section id="reconnectPanel" class="mini-modal reconnect-modal hidden" role="dialog" aria-modal="true" aria-labelledby="reconnectTitle">
+      <div class="mini-modal-card reconnect-card">
+        <span class="kicker">CONEXIÓN PERDIDA</span>
+        <h2 id="reconnectTitle">Recuperando la partida…</h2>
+        <p id="reconnectCopy" class="modal-copy">Tu plaza, tu puntuación y tu bola siguen reservadas en el host mientras dure la cuenta atrás.</p>
+        <div class="reconnect-meter">
+          <div class="reconnect-meter-head">
+            <strong id="reconnectCountdown">3:00</strong>
+            <span id="reconnectAttempts">Intento 1</span>
+          </div>
+          <div class="reconnect-bar"><i id="reconnectBar"></i></div>
+        </div>
+        <p id="reconnectDetail" class="reconnect-detail" aria-live="polite"></p>
+        <div class="modal-actions center">
+          <button id="reconnectNowBtn" class="submit-button" type="button">REINTENTAR AHORA</button>
+          <button id="reconnectLeaveBtn" class="secondary-button danger-outline" type="button">ABANDONAR</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ VOTACIÓN DE MAPA ════════════════════════════════════════════════ -->
+    <section id="mapVotePanel" class="mini-modal hidden" aria-modal="true">
+      <div class="mini-modal-card vote-card">
+        <span class="kicker">VOTACIÓN UNÁNIME</span><h2>¿Cambiar de mapa?</h2>
+        <p id="mapVoteText" class="modal-copy">Todos los jugadores conectados deben votar Sí.</p>
+        <div class="vote-ring">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle cx="60" cy="60" r="52" class="vote-ring-bg"/>
+            <circle id="mapVoteArc" cx="60" cy="60" r="52" class="vote-ring-arc" stroke-dasharray="326.7" stroke-dashoffset="326.7"/>
+          </svg>
+          <div class="vote-ring-read"><strong id="mapVoteYesCount">0</strong><span>de <b id="mapVoteNeedCount">0</b></span><small>votos sí</small></div>
+        </div>
+        <div class="modal-actions center">
+          <button id="mapVoteNoBtn" class="secondary-button" type="button">NO</button>
+          <button id="mapVoteYesBtn" class="submit-button" type="button">SÍ · CAMBIAR</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ CONFIGURACIÓN DE PARTIDA MULTIJUGADOR ═══════════════════════════ -->
+    <section id="matchConfigPanel" class="mini-modal match-config-modal hidden" role="dialog" aria-modal="true" aria-labelledby="matchConfigTitle">
+      <div class="mini-modal-card config-modal-card">
+        <header class="config-modal-head">
+          <div>
+            <span class="kicker">REGLAS DE LA SALA</span>
+            <h2 id="matchConfigTitle">Configurar partida</h2>
+            <p>Define cómo se gana, cuándo cambia el mundo y qué ambientes pueden aparecer.</p>
+          </div>
+          <button id="closeMatchConfigBtn" class="icon-button" type="button" aria-label="Cerrar configuración"><svg class="ico" aria-hidden="true"><use href="#i-close"></use></svg></button>
+        </header>
+
+        <div class="config-modal-scroll">
+          <section class="config-section" aria-labelledby="gameModeTitle">
+            <div class="config-section-head">
+              <span class="config-section-icon"><svg class="ico" aria-hidden="true"><use href="#i-swords"></use></svg></span>
+              <div><h3 id="gameModeTitle">Modo de juego</h3><p>Elige cómo participan los jugadores durante cada mundo.</p></div>
+            </div>
+            <div class="mode-selector" role="group" aria-label="Modo de juego">
+              <button class="mode-option active" type="button" data-mode="turn" aria-pressed="true">
+                <span class="mode-option-icon"><svg class="ico" aria-hidden="true"><use href="#i-turns"></use></svg></span>
+                <strong>POR TURNOS</strong>
+                <small>Un jugador lanza cada vez. La cámara sigue al jugador activo y el turno avanza cuando su bola se detiene.</small>
+              </button>
+              <button class="mode-option" type="button" data-mode="battle" aria-pressed="false">
+                <span class="mode-option-icon"><svg class="ico" aria-hidden="true"><use href="#i-swords"></use></svg></span>
+                <strong>BATTLE ROYALE</strong>
+                <small>Todos lanzan al mismo tiempo. Las bolas pueden colisionar y llegar antes al hoyo concede bonus de posición.</small>
+              </button>
+            </div>
+          </section>
+
+          <section class="config-section" aria-labelledby="roomCapacityTitle">
+            <div class="config-section-head">
+              <span class="config-section-icon"><svg class="ico" aria-hidden="true"><use href="#i-users"></use></svg></span>
+              <div><h3 id="roomCapacityTitle">Capacidad</h3><p>El host ocupa uno de los espacios disponibles.</p></div>
+            </div>
+            <label class="config-number-row" for="createMaxPlayers">
+              <span><strong>Máximo de jugadores</strong><small>Entre 2 y 16 jugadores.</small></span>
+              <span class="number-control"><input id="createMaxPlayers" type="number" min="2" max="16" step="1" value="8" /><b>jug.</b></span>
+            </label>
+          </section>
+
+          <section class="config-section" aria-labelledby="matchRulesTitle">
+            <div class="config-section-head">
+              <span class="config-section-icon"><svg class="ico" aria-hidden="true"><use href="#i-trophy"></use></svg></span>
+              <div><h3 id="matchRulesTitle">Victoria y ritmo</h3><p>Al apagar una regla, su campo se desactiva; puntos, tiempo global y turnos quedan sin límite.</p></div>
+            </div>
+            <div class="rule-grid">
+              <article class="rule-card" data-rule="points">
+                <div class="rule-card-head">
+                  <div><strong>Puntos máximos para ganar</strong><small id="pointsRuleHint">La partida termina al alcanzar esta meta.</small></div>
+                  <label class="toggle-field compact" aria-label="Activar puntos máximos"><input id="createPointsEnabled" type="checkbox" role="switch" aria-describedby="pointsRuleHint" checked /><i></i></label>
+                </div>
+                <label class="rule-value" for="createMaxPoints"><input id="createMaxPoints" type="number" min="500" max="1000000" step="500" value="5000" /><span>puntos</span></label>
+                <b id="pointsRuleState" class="rule-state">ACTIVO</b>
+              </article>
+
+              <article class="rule-card" data-rule="world-time">
+                <div class="rule-card-head">
+                  <div><strong>Tiempo por mundo</strong><small id="worldTimeRuleHint">Límite para completar cada mundo.</small></div>
+                  <label class="toggle-field compact" aria-label="Activar tiempo por mundo"><input id="createWorldTimeEnabled" type="checkbox" role="switch" aria-describedby="worldTimeRuleHint" /><i></i></label>
+                </div>
+                <label class="rule-value" for="createWorldTimeSeconds"><input id="createWorldTimeSeconds" type="number" min="30" max="1800" step="30" value="180" disabled /><span>segundos</span></label>
+                <b id="worldTimeRuleState" class="rule-state" data-off="true">INFINITO</b>
+              </article>
+
+              <article class="rule-card" data-rule="finish-time">
+                <div class="rule-card-head">
+                  <div><strong>Tiempo restante al embocar</strong><small id="finishTimeRuleHint">Cuando alguien llega, este contador reemplaza el tiempo del mundo para los demás.</small></div>
+                  <label class="toggle-field compact" aria-label="Activar tiempo restante al embocar"><input id="createFinishTimeEnabled" type="checkbox" role="switch" aria-describedby="finishTimeRuleHint" checked /><i></i></label>
+                </div>
+                <label class="rule-value" for="createFinishTimeSeconds"><input id="createFinishTimeSeconds" type="number" min="10" max="300" step="5" value="45" /><span>segundos</span></label>
+                <b id="finishTimeRuleState" class="rule-state">ACTIVO</b>
+              </article>
+
+              <article class="rule-card" data-rule="turn-limit">
+                <div class="rule-card-head">
+                  <div><strong>Turnos por mundo</strong><small id="turnLimitRuleHint">Cada lanzamiento consume un turno; quien agote el límite no puntúa.</small></div>
+                  <label class="toggle-field compact" aria-label="Activar límite de turnos"><input id="createTurnLimitEnabled" type="checkbox" role="switch" aria-describedby="turnLimitRuleHint" /><i></i></label>
+                </div>
+                <label class="rule-value" for="createTurnLimit"><input id="createTurnLimit" type="number" min="1" max="100" step="1" value="12" disabled /><span>turnos</span></label>
+                <b id="turnLimitRuleState" class="rule-state" data-off="true">INFINITO</b>
+              </article>
+            </div>
+          </section>
+
+          <fieldset class="config-section world-picker" aria-describedby="worldPickerHint">
+            <legend class="config-section-head">
+              <span class="config-section-icon"><svg class="ico" aria-hidden="true"><use href="#i-globe"></use></svg></span>
+              <span><strong>Mundos ambientales</strong><small id="worldPickerHint">Debe quedar al menos uno activo. Un ambiente desactivado nunca se generará.</small></span>
+            </legend>
+            <div class="world-options">
+              <label class="world-option" data-world="meadow"><input type="checkbox" name="allowedWorld" value="meadow" checked /><i></i><span><strong>Pradera alta</strong><small>Terreno abierto y equilibrado</small></span></label>
+              <label class="world-option" data-world="sky-islands"><input type="checkbox" name="allowedWorld" value="sky-islands" checked /><i></i><span><strong>Islas flotantes</strong><small>Saltos, vacío y viento</small></span></label>
+              <label class="world-option" data-world="cavern"><input type="checkbox" name="allowedWorld" value="cavern" checked /><i></i><span><strong>Cañón y túneles</strong><small>Techos y rutas cerradas</small></span></label>
+              <label class="world-option" data-world="aqua-cavern"><input type="checkbox" name="allowedWorld" value="aqua-cavern" checked /><i></i><span><strong>Cuevas submarinas</strong><small>Gravedad y ambiente abisal</small></span></label>
+              <label class="world-option" data-world="hybrid"><input type="checkbox" name="allowedWorld" value="hybrid" checked /><i></i><span><strong>Ruta híbrida</strong><small>Superficie, islas y cuevas</small></span></label>
+              <label class="world-option" data-world="glacier"><input type="checkbox" name="allowedWorld" value="glacier" checked /><i></i><span><strong>Glaciar cinético</strong><small>Hielo y obstáculos móviles</small></span></label>
+            </div>
+          </fieldset>
+
+          <section class="config-section" aria-labelledby="extraRulesTitle">
+            <div class="config-section-head">
+              <span class="config-section-icon"><svg class="ico" aria-hidden="true"><use href="#i-settings"></use></svg></span>
+              <div><h3 id="extraRulesTitle">Reglas adicionales</h3><p>Opciones de jugabilidad visibles para todos antes de entrar.</p></div>
+            </div>
+            <div class="extra-rule-grid">
+              <label class="extra-rule" id="collisionRule"><span><strong>Colisiones entre bolas</strong><small>Solo Battle Royale: las bolas pueden golpearse entre sí.</small></span><span class="toggle-field compact"><input id="createCollisionsEnabled" type="checkbox" role="switch" checked /><i></i></span></label>
+            </div>
+          </section>
+        </div>
+
+        <footer class="config-modal-actions">
+          <span id="configLiveStatus" class="config-live" aria-live="polite"></span>
+          <button id="resetMatchConfigBtn" class="secondary-button" type="button"><svg class="ico" aria-hidden="true"><use href="#i-refresh"></use></svg>RESTABLECER</button>
+          <button id="saveMatchConfigBtn" class="submit-button" type="button"><svg class="ico" aria-hidden="true"><use href="#i-check"></use></svg>GUARDAR CONFIGURACIÓN</button>
+        </footer>
+      </div>
+    </section>
+
+    <!-- ═══ FRONTEND / MENÚ PRINCIPAL ═══════════════════════════════════════ -->
+    <section id="frontEnd" class="front-end" aria-label="Menú principal">
+      <div class="menu-backdrop" aria-hidden="true"><i class="orb orb-a"></i><i class="orb orb-b"></i><i class="orb orb-c"></i></div>
+      <div class="menu-shell">
+        <header class="menu-header">
+          <div class="game-mark" aria-hidden="true"><i></i></div>
+          <div class="menu-title">
+            <span class="kicker">PROCEDURAL ARCADE GOLF</span>
+            <h1>NOISE <b>GOLF</b> 2D</h1>
+            <p>Campos imposibles, física limpia y partidas P2P de hasta 16 jugadores.</p>
+          </div>
+          <div class="menu-header-side">
+            <div id="relayPill" class="relay-pill" data-state="idle"><i></i><span id="relayPillText">Comprobando relay…</span></div>
+            <button id="profileButton" class="profile-chip" type="button">
+              <span id="profileDot" class="profile-avatar"><b id="profileInitial">J</b></span>
+              <span class="profile-chip-text"><strong id="profileName">Jugador</strong><small>Editar perfil</small></span>
+            </button>
+          </div>
+        </header>
+
+        <div id="menuNotice" class="menu-notice hidden" data-tone="neutral"></div>
+
+        <!-- Preflight -->
+        <section id="screenPreflight" class="menu-screen preflight-screen active">
+          <div class="preflight-card">
+            <div class="preflight-top">
+              <div class="preflight-orb"><i></i><i></i><i></i></div>
+              <div>
+                <span class="kicker">COMPROBACIÓN DE CONEXIÓN</span>
+                <h2>Preparando multijugador</h2>
+                <p id="preflightStatusText">Comprobando configuración y conexión con el relay…</p>
+              </div>
+            </div>
+            <div class="preflight-grid">
+              <div id="preflightConfigRow" class="preflight-row" data-state="idle"><i class="prow-icon"></i><span>Configuración cliente/host</span><strong>PENDIENTE</strong></div>
+              <div id="preflightRelayRow" class="preflight-row" data-state="idle"><i class="prow-icon"></i><span>Relay público</span><strong>PENDIENTE</strong></div>
+              <div id="preflightProtocolRow" class="preflight-row" data-state="idle"><i class="prow-icon"></i><span>Compatibilidad de protocolo</span><strong>PENDIENTE</strong></div>
+              <div id="preflightLobbyRow" class="preflight-row" data-state="idle"><i class="prow-icon"></i><span>Directorio de partidas</span><strong>PENDIENTE</strong></div>
+            </div>
+            <div class="preflight-actions">
+              <button id="preflightRetryBtn" class="secondary-button" type="button"><svg class="ico" aria-hidden="true"><use href="#i-refresh"></use></svg>REINTENTAR</button>
+              <button id="preflightOfflineBtn" class="submit-button hidden" type="button"><svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg>JUGAR OFFLINE</button>
+              <button id="preflightMenuBtn" class="secondary-button hidden" type="button">CONTINUAR AL MENÚ</button>
+            </div>
+            <small class="preflight-note">Si el relay falla, Crear, Unirse y Reconectar permanecen bloqueados. Offline nunca depende de la red.</small>
+          </div>
+        </section>
+
+        <!-- Menú principal -->
+        <section id="screenMain" class="menu-screen main-screen">
+          <div class="hero-actions">
+            <button id="playOfflineBtn" class="menu-action primary" type="button">
+              <span class="action-icon"><svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg></span>
+              <span class="action-text"><strong>JUGAR</strong><small>Partida offline instantánea · sin red</small></span>
+              <span class="action-arrow" aria-hidden="true">→</span>
+            </button>
+            <button id="onlineBtn" class="menu-action" type="button" disabled data-network="offline">
+              <span class="action-icon"><svg class="ico" aria-hidden="true"><use href="#i-globe"></use></svg></span>
+              <span class="action-text"><strong>ONLINE</strong><small>Comprobando relay…</small></span>
+              <span class="action-arrow" aria-hidden="true">→</span>
+            </button>
+            <button id="reconnectBtn" class="menu-action reconnect hidden" type="button">
+              <span class="action-icon"><svg class="ico" aria-hidden="true"><use href="#i-refresh"></use></svg></span>
+              <span class="action-text"><strong>RECONECTAR</strong><small id="reconnectLabel">Última partida</small></span>
+              <span class="action-arrow" aria-hidden="true">→</span>
+            </button>
+          </div>
+
+        </section>
+
+        <!-- Hub online -->
+        <section id="screenOnline" class="menu-screen">
+          <div class="screen-toolbar">
+            <button class="back-button" data-back="main" type="button" aria-label="Volver"><svg class="ico" aria-hidden="true"><use href="#i-back"></use></svg></button>
+            <div><span class="kicker">MULTIJUGADOR</span><h2>Jugar online</h2></div>
+          </div>
+          <div class="online-grid">
+            <button id="createMatchBtn" class="feature-card" type="button">
+              <span class="feature-glyph"><svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg></span>
+              <strong>Crear partida</strong>
+              <small>Tu navegador será el host autoritativo de física y puntuación.</small>
+            </button>
+            <button id="browseMatchBtn" class="feature-card" type="button">
+              <span class="feature-glyph"><svg class="ico" aria-hidden="true"><use href="#i-search"></use></svg></span>
+              <strong>Unirse</strong>
+              <small>Explora las salas publicadas por el relay, con ping medido en vivo.</small>
+            </button>
+          </div>
+          <div id="onlineConfigStatus" class="online-config-card" data-state="offline">
+            <strong><svg class="ico" aria-hidden="true"><use href="#i-shield"></use></svg>CONFIGURACIÓN DE RED</strong>
+            <span>Relay obligatorio y parámetros cliente/host cargados desde <code>.env</code>. No se introducen direcciones en la interfaz.</span>
+          </div>
+        </section>
+
+        <!-- Crear partida -->
+        <section id="screenCreate" class="menu-screen create-screen">
+          <div class="screen-toolbar">
+            <button class="back-button" data-back="online" type="button" aria-label="Volver"><svg class="ico" aria-hidden="true"><use href="#i-back"></use></svg></button>
+            <div><span class="kicker">NUEVA SALA</span><h2>Crear partida</h2></div>
+          </div>
+          <form id="createForm" class="create-layout">
+            <div class="create-main">
+              <div class="form-grid">
+                <label class="field span-2"><span>Nombre de la partida</span><input id="createName" maxlength="40" required /></label>
+                <label class="field span-2"><span>Contraseña <em>opcional</em></span><input id="createPassword" type="password" maxlength="72" autocomplete="new-password" placeholder="Sin contraseña · sala pública" /></label>
+                <button id="openMatchConfigBtn" class="match-config-trigger span-2" type="button" aria-haspopup="dialog" aria-controls="matchConfigPanel" aria-expanded="false">
+                  <span class="match-config-glyph"><svg class="ico" aria-hidden="true"><use href="#i-settings"></use></svg></span>
+                  <span><strong>CONFIGURAR PARTIDA</strong><small id="configTriggerSummary">8 jugadores · 5.000 puntos · 6 ambientes</small></span>
+                  <svg class="ico match-config-arrow" aria-hidden="true"><use href="#i-chevron"></use></svg>
+                </button>
+              </div>
+            </div>
+
+            <aside class="create-summary" aria-label="Resumen de la sala">
+              <span class="kicker">RESUMEN</span>
+              <h3 id="summaryName">Partida</h3>
+              <ul class="summary-list">
+                <li><svg class="ico" aria-hidden="true"><use href="#i-turns"></use></svg><span>Modo</span><strong id="summaryMode">Por turnos</strong></li>
+                <li><svg class="ico" aria-hidden="true"><use href="#i-users"></use></svg><span>Jugadores</span><strong id="summaryPlayers">8</strong></li>
+                <li><svg class="ico" aria-hidden="true"><use href="#i-trophy"></use></svg><span>Meta</span><strong id="summaryPoints">5.000 pts</strong></li>
+                <li><svg class="ico" aria-hidden="true"><use href="#i-clock"></use></svg><span>Ritmo</span><strong id="summaryTiming">45 s al llegar</strong></li>
+                <li><svg class="ico" aria-hidden="true"><use href="#i-globe"></use></svg><span>Ambientes</span><strong id="summaryWorlds">6 activos</strong></li>
+                <li><svg class="ico" aria-hidden="true"><use href="#i-lock"></use></svg><span>Acceso</span><strong id="summaryAccess">Pública</strong></li>
+              </ul>
+              <p id="summaryHint" class="summary-hint">La cámara sigue al jugador con el turno activo.</p>
+              <button class="submit-button block" type="submit"><svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg>CREAR Y ENTRAR</button>
+            </aside>
+          </form>
+        </section>
+
+        <!-- Server browser -->
+        <section id="screenBrowser" class="menu-screen browser-screen">
+          <div class="screen-toolbar">
+            <button class="back-button" data-back="online" type="button" aria-label="Volver"><svg class="ico" aria-hidden="true"><use href="#i-back"></use></svg></button>
+            <div><span class="kicker">SERVER BROWSER</span><h2>Buscar partidas</h2></div>
+            <button id="refreshServersBtn" class="refresh-button" type="button"><svg class="ico" aria-hidden="true"><use href="#i-refresh"></use></svg><span>Actualizar</span></button>
+          </div>
+
+          <div class="browser-controls">
+            <label class="search-box"><svg class="ico" aria-hidden="true"><use href="#i-search"></use></svg><input id="serverSearchInput" type="search" placeholder="Buscar por nombre…" /></label>
+            <div class="filter-tabs" id="modeFilter" role="group" aria-label="Filtrar por modo">
+              <button type="button" data-filter="all" class="active">Todos</button>
+              <button type="button" data-filter="turn">Turnos</button>
+              <button type="button" data-filter="battle">Battle</button>
+            </div>
+            <label class="toggle-field inline"><input id="hideFullToggle" type="checkbox" /><i></i><span>Ocultar llenas</span></label>
+            <label class="sort-field"><span>Ordenar</span><select id="serverSort"><option value="ping">Ping</option><option value="players">Jugadores</option><option value="name">Nombre</option><option value="status">Estado</option></select></label>
+          </div>
+
+          <div class="browser-summary"><span id="serverCount">—</span><span id="autoRefreshLabel" class="auto-refresh"></span></div>
+
+          <div class="server-list-head"><span>PARTIDA</span><span>MODO</span><span>JUGADORES</span><span>SEÑAL</span><span></span></div>
+          <div id="serverList" class="server-list"><div class="empty-state">Pulsa Actualizar para consultar las partidas del relay.</div></div>
+          <div class="browser-legend">
+            <span><svg class="ico" aria-hidden="true"><use href="#i-shield"></use></svg>Todos los hosts visibles se publicaron mediante el relay configurado.</span>
+            <span><svg class="ico" aria-hidden="true"><use href="#i-users"></use></svg>Las partidas en curso te dejan entrar como espectador hasta el próximo hoyo.</span>
+          </div>
+        </section>
+
+        <!-- Perfil -->
+        <section id="screenProfile" class="menu-screen profile-screen">
+          <div class="screen-toolbar">
+            <button class="back-button" data-back="main" type="button" aria-label="Volver"><svg class="ico" aria-hidden="true"><use href="#i-back"></use></svg></button>
+            <div><span class="kicker">IDENTIDAD</span><h2>Tu perfil</h2></div>
+          </div>
+          <form id="profileForm" class="profile-layout">
+            <div class="profile-preview">
+              <span id="profilePreviewDot" class="profile-avatar xl"><b id="profilePreviewInitial">J</b></span>
+              <strong id="profilePreviewName">Jugador</strong>
+              <small>Así te verán en el marcador y sobre tu bola.</small>
+            </div>
+            <div class="profile-form">
+              <label class="field">
+                <span>Nombre de jugador</span>
+                <input id="usernameInput" maxlength="24" autocomplete="nickname" placeholder="Tu nombre" required />
+                <div class="field-foot"><small>Se guarda solo en este navegador. Puedes cambiarlo cuando quieras.</small><small id="nameCounter" class="counter">0/24</small></div>
+              </label>
+              <div class="profile-actions">
+                <button id="randomNameBtn" class="secondary-button" type="button"><svg class="ico" aria-hidden="true"><use href="#i-dice"></use></svg>SUGERIR</button>
+                <button class="submit-button" type="submit"><svg class="ico" aria-hidden="true"><use href="#i-check"></use></svg>GUARDAR PERFIL</button>
+              </div>
+            </div>
+          </form>
+        </section>
+
+        <!-- Conectando -->
+        <section id="screenJoining" class="menu-screen joining-screen">
+          <div class="joining-orb"><i></i><i></i><i></i></div>
+          <span class="kicker">CONEXIÓN MULTIJUGADOR</span>
+          <h2 id="joinTitle">Uniéndote…</h2>
+          <p id="joinStatus">Preparando conexión.</p>
+          <div class="join-progress"><i id="joinProgressBar"></i></div>
+          <ol id="joinSteps" class="join-steps">
+            <li data-step="relay"><i></i><span>Relay</span></li>
+            <li data-step="lobby"><i></i><span>Sala</span></li>
+            <li data-step="p2p"><i></i><span>P2P</span></li>
+            <li data-step="world"><i></i><span>Mundo</span></li>
+          </ol>
+          <button id="cancelJoinBtn" class="secondary-button" type="button">Cancelar</button>
+        </section>
+      </div>
+    </section>
+
+    <!-- ═══ MODAL DE CONTRASEÑA ═════════════════════════════════════════════ -->
+    <section id="joinPasswordPanel" class="mini-modal hidden" aria-modal="true">
+      <form id="joinPasswordForm" class="mini-modal-card">
+        <span class="kicker">PARTIDA PRIVADA</span><h2 id="joinPasswordTitle">Contraseña</h2>
+        <label class="field"><span>Contraseña</span><input id="joinPasswordInput" type="password" maxlength="72" autocomplete="current-password" /></label>
+        <div class="modal-actions"><button id="cancelPasswordBtn" class="secondary-button" type="button">Cancelar</button><button class="submit-button" type="submit">UNIRME</button></div>
+      </form>
+    </section>
+
+    <!-- ═══ ARRANQUE Y ERRORES ══════════════════════════════════════════════ -->
+    <section id="bootScreen" class="boot-screen" aria-label="Cargando">
+      <div class="boot-mark"><i></i></div>
+      <strong>NOISE GOLF <b>2D</b></strong>
+      <div class="boot-progress"><i id="bootProgressBar"></i></div>
+      <small id="bootStatus">Cargando motor procedural…</small>
+    </section>
+
+    <section id="bootError" class="boot-error hidden" role="alert">
+      <div class="boot-error-card">
+        <svg class="ico big" aria-hidden="true"><use href="#i-alert"></use></svg>
+        <strong>El juego no pudo iniciar</strong>
+        <span id="bootErrorDetail">Fallo cargando JavaScript local.</span>
+        <small>Offline sigue disponible. Online necesita <code>.env</code> accesible y un relay configurado.</small>
+      </div>
+    </section>
+    <noscript><section class="boot-error"><div class="boot-error-card"><strong>JavaScript está desactivado</strong><span>Actívalo para jugar.</span></div></section></noscript>
+  </main>
+
+  <!-- Runtime clásico: sin ES modules. En VPS/hosting estático, clientEnv.js lee .env desde el mismo directorio. -->
+  <script defer src="./js/utils/math.js" onerror="NoiseGolfBootError('js/utils/math.js')"></script>
+  <script defer src="./js/config.js" onerror="NoiseGolfBootError('js/config.js')"></script>
+  <script defer src="./js/core/noise.js" onerror="NoiseGolfBootError('js/core/noise.js')"></script>
+  <script defer src="./js/core/terrain.js" onerror="NoiseGolfBootError('js/core/terrain.js')"></script>
+  <script defer src="./js/core/physics.js" onerror="NoiseGolfBootError('js/core/physics.js')"></script>
+  <script defer src="./js/engine/camera.js" onerror="NoiseGolfBootError('js/engine/camera.js')"></script>
+  <script defer src="./js/engine/particles.js" onerror="NoiseGolfBootError('js/engine/particles.js')"></script>
+  <script defer src="./js/render/worldRenderer.js" onerror="NoiseGolfBootError('js/render/worldRenderer.js')"></script>
+  <script defer src="./js/ui/hud.js" onerror="NoiseGolfBootError('js/ui/hud.js')"></script>
+  <script defer src="./js/network/clientEnv.js" onerror="NoiseGolfBootError('js/network/clientEnv.js')"></script>
+  <script defer src="./js/network/netConfig.js" onerror="NoiseGolfBootError('js/network/netConfig.js')"></script>
+  <script defer src="./js/network/netClock.js" onerror="NoiseGolfBootError('js/network/netClock.js')"></script>
+  <script defer src="./js/network/netSmoothing.js" onerror="NoiseGolfBootError('js/network/netSmoothing.js')"></script>
+  <script defer src="./js/network/profile.js" onerror="NoiseGolfBootError('js/network/profile.js')"></script>
+  <script defer src="./js/network/relayClient.js" onerror="NoiseGolfBootError('js/network/relayClient.js')"></script>
+  <script defer src="./js/network/webrtcHostClient.js" onerror="NoiseGolfBootError('js/network/webrtcHostClient.js')"></script>
+  <script defer src="./js/network/multiplayerSession.js" onerror="NoiseGolfBootError('js/network/multiplayerSession.js')"></script>
+  <script defer src="./js/ui/metricsOverlay.js" onerror="NoiseGolfBootError('js/ui/metricsOverlay.js')"></script>
+  <script defer src="./js/ui/networkHud.js" onerror="NoiseGolfBootError('js/ui/networkHud.js')"></script>
+  <script defer src="./js/ui/menu.js" onerror="NoiseGolfBootError('js/ui/menu.js')"></script>
+  <script defer src="./js/core/game.js" onerror="NoiseGolfBootError('js/core/game.js')"></script>
+  <script defer src="./js/main.js" onerror="NoiseGolfBootError('js/main.js')"></script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+NOISE GOLF 2D WEB 0010 · PARCHE 0002 - INTERFAZ PREMIUM (ES)
+============================================================
+
+BASE: NOISE_GOLF_2D_WEB_0010_VPS (parche 0001)
+TIPO: rediseño completo de interfaz. Sin cambios de protocolo ni de física.
+DEPENDENCIAS: ninguna. Todo el arte es SVG y CSS local; cero CDN, cero fuentes remotas.
+
+--------------------------------------------------------------------------
+COMPATIBILIDAD
+--------------------------------------------------------------------------
+- protocolVersion sigue siendo 1: el relay 0003 no necesita actualizarse.
+- El .env del cliente no cambia. No hay variables nuevas.
+- La autoridad de host, los snapshots y la física quedan intactos.
+
+
+🆕 js/ui/metricsOverlay.js
+- Panel técnico opcional (tecla F3 o clic en el chip de red).
+- FPS, tiempo de frame, ping, jitter, snapshots/s, pérdida, RTT de relay,
+  rol, peers abiertos y partículas vivas.
+- Gráfica de ping de los últimos 60 s dibujada en canvas, coloreada por calidad.
+- Oculto por defecto: los datos duros no estorban mientras juegas.
+
+✏️ index.html
+- Pantalla de arranque con progreso real de las fases de carga.
+- HUD reorganizado en "docks": marcadores arriba a la izquierda, estado de
+  partida arriba en el centro, viento/red/controles a la derecha, información
+  del mundo en el lateral y telemetría de tiro abajo.
+- Tira de marcadores unificada (hoyo con puntos de progreso, par, golpes con
+  delta al par, score y puntos).
+- Barra de estado de partida con badge de modo, titular, pista y cronómetro.
+- Chip de red permanente con barras de señal, ping y rol.
+- Marcador multijugador rediseñado: cabecera, metadatos, indicador de turno,
+  barra de objetivo de puntos y tabla de posiciones plegable.
+- Panel nuevo de fin de partida con clasificación final.
+- Votación de mapa con anillo de progreso en vez de contador plano.
+- Resumen en vivo al crear sala y previsualización de identidad en el perfil.
+- Server browser con filtros por modo, "ocultar llenas" y contador de resultados.
+- Pantalla de conexión con 4 pasos (Relay · Sala · P2P · Mundo).
+- Biblioteca de iconos SVG inline: se sustituyen los glifos de texto y emoji.
+
+✏️ css/main.css
+- Reescrito como sistema de diseño con tokens (color, radios, sombras, curvas).
+- Números tabulares en todas las métricas para que no bailen al actualizarse.
+- Modo de foco: el HUD baja intensidad al apuntar y durante el vuelo de la bola,
+  y recupera opacidad al detenerse. Nunca oculta información crítica.
+- Codificación de color por modo: Por turnos en azul, Battle Royale en coral.
+- Responsive verificado sin solapes de 390 px a 1920 px.
+- Respeta prefers-reduced-motion.
+
+✏️ js/ui/hud.js
+- Escribe en el DOM solo cuando el valor cambia (evita layout thrashing a 60 fps).
+- Puntos de progreso del recorrido, delta al par, anillo de intensidad de viento.
+- Medidor de tiro con potencia y ángulo; en reposo se reduce a la distancia al hoyo.
+- Muestreo de FPS y tiempo de frame para el panel de métricas.
+- El desglose del resultado de hoyo pasa a tarjetas de datos.
+
+✏️ js/ui/networkHud.js
+- Marcador consciente del modo: en Battle Royale cada fila lleva su barra de
+  avance hacia el hoyo; en Por turnos se resalta el turno activo.
+- Ping por jugador: punto de color siempre visible y valor exacto al alternar
+  la columna GOLPES ↔ PING desde la cabecera.
+- Podio coloreado, etiquetas TÚ y ESP, filas de desconectados atenuadas.
+- Reutiliza los nodos de fila entre refrescos en lugar de recrear la tabla.
+- Barra de objetivo con el líder frente al límite de puntos de la sala.
+- Panel de fin de partida con clasificación final y ganador.
+
+✏️ js/ui/menu.js
+- Píldora de estado del relay en la cabecera con latencia medida.
+- Perfil con previsualización de avatar, contador de caracteres y sugerencia
+  de nombre generada en local.
+- Resumen de sala en vivo al crear partida.
+- Server browser: filtro por modo, ocultar llenas, contador de resultados y
+  auto-refresco con cuenta atrás visible.
+- Guarda contra refrescos solapados mientras se miden los pings.
+- Pasos de la pantalla de conexión sincronizados con el progreso de la sesión.
+
+✏️ js/network/multiplayerSession.js
+- getNetStats(): ping, jitter, snapshots/s, pérdida estimada, RTT de relay y
+  peers abiertos. Telemetría de presentación, fuera del protocolo.
+- Detección de huecos en la secuencia de snapshots para estimar pérdida.
+- getStandings() añade progreso hacia el hoyo y orden de llegada.
+
+✏️ js/core/game.js
+- Alimenta el medidor de tiro y el modo de foco del HUD desde el bucle de render.
+
+✏️ js/main.js
+- Progreso de arranque por fases y retirada de la pantalla de carga.
+- Cablea el panel de métricas con la sesión activa.
+
+
+--------------------------------------------------------------------------
+VERIFICACIÓN REALIZADA
+--------------------------------------------------------------------------
+- Arranque completo en navegador contra el relay real: preflight OK (config,
+  relay, protocolo V1, directorio de salas), sin errores ni avisos en consola.
+- Crear partida en ambos modos, marcador con 8 jugadores, votación de mapa,
+  fin de partida, menú de partida, resultado de hoyo y server browser con
+  4 salas reales publicadas en el relay.
+- Barrido de solapes del HUD en 1920, 1440, 1366, 1180, 1024, 920, 780, 660,
+  430 y 390 px: 0 colisiones y 0 desbordes horizontales.
+- Suite de tests del relay: 5/5 correctos.

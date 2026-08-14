@@ -1,0 +1,242 @@
+NOISE GOLF 2D WEB 0011 · NETCODE DE PRESENTACIÓN (ES)
+=====================================================
+
+BASE: NOISE_GOLF_2D_WEB_0010_VPS (parche 0002)
+TIPO: capa de sincronización del cliente, simulación determinista, cámara y
+      reconexión. La autoridad sigue siendo del host y el relay sigue
+      sirviendo SOLO para publicar/descubrir servidores y señalizar WebRTC.
+
+--------------------------------------------------------------------------
+COMPATIBILIDAD
+--------------------------------------------------------------------------
+- protocolVersion sigue siendo 1. El relay 0003 funciona sin tocar nada,
+  pero conviene subir PARTICIPANT_RESUME_SECONDS a 180 (ver más abajo).
+- Los snapshots añaden un campo `netTime`. Un cliente antiguo lo ignora y un
+  cliente nuevo contra un host antiguo cae al comportamiento previo.
+- El relay NO transporta gameplay en ningún momento. Sin cambios ahí.
+
+
+--------------------------------------------------------------------------
+1. FLUIDEZ DEL CLIENTE
+--------------------------------------------------------------------------
+
+PROBLEMA
+El cliente dibujaba el último snapshot recibido, extrapolaba en línea recta
+y corregía con un suavizado exponencial hacia un objetivo que se movía. Con
+jitter, cada llegada de paquete cambiaba el objetivo de golpe: la bola
+aceleraba y frenaba al ritmo de los ticks de red. Además el tiempo del mundo
+se mezclaba con un factor fijo (0.42), lo que hacía vibrar plataformas,
+muros móviles y spinners.
+
+SOLUCIÓN
+🆕 js/network/netClock.js
+   - NetClock: estima el reloj de simulación del host filtrando el jitter
+     (se queda con el offset mínimo de la ventana, como NTP). El reloj
+     expuesto nunca salta ni retrocede: acelera o frena como mucho un ±12 %.
+   - FixedStep: acumulador de paso fijo con techo de pasos por frame y
+     descarte del retraso irrecuperable.
+
+🆕 js/network/netSmoothing.js
+   - EntityInterpolator: buffer de snapshots por jugador. El cliente dibuja
+     el pasado reciente (reloj de host − retardo de interpolación) e
+     interpola con Hermite cúbica usando posiciones Y velocidades, así que la
+     curva es continua también en velocidad.
+   - Extrapolación con la física real cuando se pierden paquetes: un rebote
+     extrapolado sigue pareciendo un rebote, no una recta.
+   - Corrección suave: la diferencia entre lo extrapolado y lo que confirma
+     el host se guarda como desplazamiento visual y se disuelve con una
+     semivida corta, en vez de teletransportar la bola.
+   - Los portales, cuevas y reinicios por penalización se detectan como
+     discontinuidad y SÍ saltan: no se interpola a través de ellos.
+   - LocalPredictor: tu propia bola se simula en local con la MISMA física y
+     se reconcilia contra cada snapshot. Incluye replay del tiro aún no
+     confirmado, que es lo que evita que el snapshot en vuelo devuelva la
+     bola al reposo.
+
+✏️ js/network/multiplayerSession.js
+   - Retardo de interpolación adaptativo según el jitter de llegada medido:
+     sube rápido (proteger la fluidez es urgente) y baja despacio.
+   - Los obstáculos dinámicos se dibujan en el MISMO instante que las bolas
+     (worldTime reconstruido desde el reloj de red), no en el presente.
+   - Los flags y serials de efectos salen de la muestra ya alcanzada: el
+     impacto o el acelerador se ven cuando la bola llega, no al llegar el
+     paquete.
+
+MEDIDO (simulación host↔cliente, 400 frames, tirón medio entre frames como
+% del paso; más bajo = más fluido):
+
+  Enlace                                  ANTES    AHORA
+  90 ms, 5 % pérdida, sin jitter           0.8 %    1.7 %
+  200 ms, 45 ms jitter, 12 % pérdida      51.2 %    2.1 %
+  320 ms, 120 ms jitter, 25 % pérdida     60.0 %    3.6 %
+
+  El 1.7 % del primer caso es exactamente la aceleración real de la gravedad
+  (0.198 px/frame con g=790 px/s²): el cliente ya no filtra la trayectoria,
+  la reproduce. El 0.8 % anterior era MENOS que la gravedad, señal de que el
+  suavizado antiguo aplanaba el movimiento real y llegaba tarde.
+
+  Con ping alto la divergencia final entre autoridad y presentación es 0.00 px
+  y el salto máximo por frame se mantiene por debajo del límite físico.
+
+
+--------------------------------------------------------------------------
+2. DELTA TIME: LA FÍSICA YA NO DEPENDE DE LOS FPS
+--------------------------------------------------------------------------
+
+PROBLEMA
+La simulación usaba el dt del frame acotado a [1/240, 1/20]. A 20 FPS cada
+paso era de 50 ms y el submuestreo interno se saturaba: con pocos FPS la
+física se comportaba distinto (rebotes atravesados, alcance de tiro menor).
+
+SOLUCIÓN
+✏️ js/core/game.js · js/network/multiplayerSession.js
+   - Host, predicción local y modo offline avanzan SIEMPRE en pasos de
+     1/NG_SIMULATION_HZ (60 por defecto). Los FPS solo deciden cuántos pasos
+     se consumen por frame.
+   - Techo de pasos por frame y descarte del retraso acumulado: una
+     congelación larga (pestaña en segundo plano, GC) no dispara una ráfaga.
+   - Interpolación de render con la fracción de paso sobrante (alpha), para
+     que el paso fijo no se note en pantallas de más de 60 Hz.
+   - La presentación (cámara, partículas, HUD) mantiene su propio dt acotado.
+
+✏️ js/core/physics.js
+   - Nueva opción `speculative`: la predicción y la extrapolación simulan la
+     misma física pero NO alteran el estado del mundo (portales consumidos,
+     multiplicadores, cuevas descubiertas), que pertenece al host.
+
+
+--------------------------------------------------------------------------
+3. DESCONEXIÓN Y RECONEXIÓN
+--------------------------------------------------------------------------
+
+ANTES: a los 15 s de caerse, el host daba al jugador por retirado. El cliente
+marcaba "reconectando" pero no reintentaba nada por su cuenta.
+
+AHORA
+✏️ js/network/multiplayerSession.js
+   - El host reserva la plaza del jugador caído durante NG_PLAYER_GRACE_SECONDS
+     (180 s = 3 min). Durante ese tiempo conserva puntuación, color, golpes y
+     su bola, que termina el tiro que ya estaba en el aire y se congela.
+   - Al agotarse la gracia el jugador se ELIMINA por completo: se libera su
+     plaza y su color, y se avisa a la sala.
+   - Driver de reconexión del cliente: reintenta `lobby:resume` contra el
+     relay cada 2 s durante toda la ventana. El relay avisa al host, el host
+     abre un canal nuevo y envía `session:init`, que resincroniza el mundo
+     entero (seed, hoyo, reloj, portales consumidos, votación, marcador).
+   - Corte de tiro no confirmado: si el host descarta un tiro, el cliente ya
+     no se queda bloqueado sin poder volver a tirar.
+
+🆕 Ventana de reconexión (index.html + css/main.css + js/ui/menu.js)
+   - Se abre sola al perder el canal, con cuenta atrás de la reserva, número
+     de intento, último error y botones de reintentar o abandonar.
+   - Bloquea la entrada mientras dura: apuntar sobre un estado congelado solo
+     confundiría.
+
+
+--------------------------------------------------------------------------
+4. IDENTIDAD: NADIE TE QUITA TU PERSONAJE
+--------------------------------------------------------------------------
+
+- El identificador real sigue siendo `playerKey` (128 bits aleatorios,
+  persistente en el navegador). El nombre es solo una etiqueta.
+- La identidad la certifica el RELAY en peer:join / peer:resume. El canal de
+  datos ya no puede declarar quién es: antes bastaba con enviar el playerKey
+  ajeno por el canal para quedarse con la plaza y la puntuación de otro.
+- Guard de nombre duplicado, en relay y en host: dentro de una misma partida
+  dos perfiles distintos no pueden usar el mismo nombre (comparado sin
+  acentos, sin dobles espacios y sin mayúsculas).
+- El nombre sigue reservado al titular MIENTRAS conserve su plaza, aunque
+  esté desconectado: nadie puede ocupar tu identidad mientras intentas volver.
+- Reconectar tampoco permite adoptar el nombre de otro participante vivo.
+- El host rechaza con `session:reject` explicando el motivo, y el cliente lo
+  muestra en vez de reintentar en vano.
+
+
+--------------------------------------------------------------------------
+5. CÁMARA
+--------------------------------------------------------------------------
+
+PROBLEMA
+Temblaba, sobre todo en rebotes. Tres causas sumadas:
+ 1. El adelanto usaba Math.sign(vx) · velocidad. Un rebote invierte el signo
+    en un frame, así que el objetivo saltaba 410 px en X y 300 px en Y de
+    golpe. Con la bola casi parada el signo cambiaba cada frame.
+ 2. La respuesta conmutaba de golpe entre 7.4 y 11.5 según velocidad o
+    cercanía al borde: un interruptor, no una mezcla.
+ 3. La sacudida era ruido blanco por frame y tenía suelo mínimo (0.15), así
+    que hasta el último botecito la mantenía viva. Se percibía como zumbido.
+
+SOLUCIÓN
+✏️ js/engine/camera.js
+   - Muelle críticamente amortiguado (SmoothDamp) en vez de suavizado
+     exponencial: la cámara tiene velocidad propia y continua, así que ante un
+     cambio brusco del objetivo frena y reacelera en lugar de dar el tirón.
+   - Adelanto CONTINUO y proporcional a la velocidad, con su propio filtro.
+     Pasa suavemente por cero: un rebote ya no invierte nada de golpe.
+   - Zona muerta: mientras el objetivo se mueve poco alrededor del encuadre,
+     la cámara no se mueve en absoluto. Encoge con la velocidad para no ir
+     suelta en vuelo. Es lo que elimina el temblor al rodar y asentarse.
+   - Respuesta como mezcla continua según velocidad y cercanía al borde.
+   - Techo de velocidad de cámara: una recuperación larga llegaba a 8000 px/s
+     y frenaba en seco al alcanzar la bola.
+   - La velocidad se mide sobre el punto enfocado, no sobre ball.vx/vy: en una
+     cueva secreta o sobre una plataforma la bola se desplaza con velocidad
+     cero y la cámara se quedaba atrás.
+   - Sacudida direccional que oscila y muere (envolvente exponencial). Un
+     golpe flojo ya no reaviva una sacudida fuerte en curso.
+   - Objetivo acotado al mundo ANTES de suavizar: se acabó el "pegarse al
+     borde y pegar un tirón al volver".
+   - Corte en seco ante saltos imposibles (portal, penalización, cambio de
+     turno) en vez de barrer el mapa a cámara lenta perdiendo la bola.
+
+   NUNCA PERDER LA BOLA
+   - Correa dura: tras acotar al mundo, si la bola quedaría a menos del margen
+     de seguridad del borde, la cámara se pega a ella. El orden es
+     deliberado: ver la bola manda sobre no enseñar cielo de más.
+   - En ejes donde el mundo cabe entero en pantalla la correa no actúa: ahí el
+     encuadre fijo es correcto y moverlo solo lo rompería.
+
+✏️ js/core/game.js
+   - Un impacto solo sacude si de verdad suena (umbral por velocidad). Antes
+     todo bote tenía sacudida mínima garantizada.
+
+MEDIDO (24 mapas procedurales, 3 tiros cada uno, cortes intencionados
+excluidos; temblor = cambio de la velocidad de la cámara entre frames):
+
+                                      ANTES      AHORA
+  temblor mediano (px/frame²)         2.770      0.443
+  temblor medio                       2.803      0.494
+  peor margen bola-borde                -1952 px   +283 px
+  frames con la bola fuera de pantalla     18          0
+  mapas donde se perdió la bola         8 de 24    0 de 24
+
+  6.3× más suave, y el problema de perder la bola desaparece por completo.
+
+Ajustes nuevos en CONFIG.camera: anchorX/anchorY, lookAheadRefSpeed,
+lookAheadResponsiveness, followSmoothTime, fastSmoothTime, zoomSmoothTime,
+maxFollowSpeed, deadZoneX/deadZoneY, leashMarginX/leashMarginY, cutDistance,
+shakeFrequency, shakeDamping y maxShake. Desaparecen positionResponsiveness y
+fastResponsiveness. Si quieres la cámara más pegada, baja followSmoothTime; si
+la quieres más cinematográfica, súbelo.
+
+
+--------------------------------------------------------------------------
+6. PANEL DE MÉTRICAS (F3)
+--------------------------------------------------------------------------
+Cuatro lecturas nuevas: SIM (Hz de simulación y pasos del último frame),
+INTERP (retardo de interpolación actual), RELOJ (desfase pendiente del reloj
+de host) y CORRECCIÓN (píxeles de error que quedan por disolver).
+
+
+--------------------------------------------------------------------------
+7. CONFIGURACIÓN NUEVA (.env del juego)
+--------------------------------------------------------------------------
+NG_SIMULATION_HZ=60                    paso fijo de simulación
+NG_CLIENT_CORRECTION_HALFLIFE_MS=105   semivida de la corrección visual
+NG_CLIENT_PREDICTION=true              predicción local de tu propia bola
+NG_PLAYER_GRACE_SECONDS=180            reserva de plaza del jugador caído
+
+IMPORTANTE: en el relay, PARTICIPANT_RESUME_SECONDS debe ser >= a
+NG_PLAYER_GRACE_SECONDS. Si el relay olvidase la reserva antes, el jugador no
+podría volver aunque el host le siguiera guardando la plaza. Los valores por
+defecto del relay pasan de 120 s a 180 s.
