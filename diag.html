@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>Noise Golf · Diagnóstico de conexión</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; padding: 24px; background: #050f1a; color: #eaf6ff; font: 15px/1.5 system-ui, sans-serif; }
+    main { max-width: 720px; margin: 0 auto; }
+    h1 { font-size: 1.3rem; letter-spacing: .04em; }
+    h1 span { color: #40d38a; }
+    .test { background: #0a1a2b; border: 1px solid #14304a; border-radius: 10px; padding: 12px 16px; margin: 10px 0; }
+    .test h2 { margin: 0 0 4px; font-size: .95rem; display: flex; align-items: center; gap: 8px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #5b7288; flex: none; }
+    .run .dot { background: #e8c34a; animation: pulse 1s infinite alternate; }
+    .ok .dot { background: #40d38a; }
+    .bad .dot { background: #e8564a; }
+    @keyframes pulse { to { opacity: .35; } }
+    .detail { color: #9db6c9; font-size: .85rem; white-space: pre-wrap; word-break: break-word; margin: 0; }
+    button { background: #123551; color: #eaf6ff; border: 1px solid #1e527c; border-radius: 8px; padding: 10px 18px; font-size: .95rem; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: default; }
+    #copy { margin-left: 8px; }
+    textarea { width: 100%; min-height: 130px; background: #06131f; color: #9db6c9; border: 1px solid #14304a; border-radius: 8px; padding: 8px; font: 12px/1.4 monospace; box-sizing: border-box; }
+    .hint { color: #6d8aa3; font-size: .8rem; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>NOISE <span>GOLF</span> · Diagnóstico de conexión</h1>
+  <p class="hint">Comprueba desde TU red todo lo que el modo Online necesita. Si no puedes unirte o alojar partidas, pulsa Ejecutar y comparte el informe final con el administrador.</p>
+  <button id="go">Ejecutar diagnóstico</button>
+  <button id="copy" disabled>Copiar informe</button>
+
+  <div class="test" id="t-config"><h2><i class="dot"></i>1 · config.json</h2><p class="detail">—</p></div>
+  <div class="test" id="t-relay"><h2><i class="dot"></i>2 · Relay WebSocket (wss)</h2><p class="detail">—</p></div>
+  <div class="test" id="t-ice"><h2><i class="dot"></i>3 · Candidatos ICE (STUN/TURN)</h2><p class="detail">—</p></div>
+  <div class="test" id="t-turn"><h2><i class="dot"></i>4 · Conexión forzada por TURN</h2><p class="detail">—</p></div>
+
+  <textarea id="report" readonly placeholder="El informe aparecerá aquí…"></textarea>
+</main>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const report = { at: new Date().toISOString(), ua: navigator.userAgent, tests: {} };
+
+  function mark(id, cls, text) {
+    const el = $(id);
+    el.className = 'test ' + cls;
+    el.querySelector('.detail').textContent = text;
+  }
+
+  async function testConfig() {
+    mark('t-config', 'run', 'Descargando…');
+    const r = await fetch('./config.json', { cache: 'no-store' });
+    const cfg = await r.json();
+    const okUrl = /^wss:\/\//.test(cfg.relayUrl || '');
+    const iceEmpty = Array.isArray(cfg.publicIceServers) && cfg.publicIceServers.length === 0;
+    const txt = 'relayUrl=' + cfg.relayUrl + ' · publicIceServers=' + JSON.stringify(cfg.publicIceServers);
+    report.tests.config = { relayUrl: cfg.relayUrl, publicIceServers: cfg.publicIceServers };
+    mark('t-config', okUrl && iceEmpty ? 'ok' : 'bad', txt + (iceEmpty ? '' : '\nAVISO: publicIceServers no está vacío: anula la lista TURN del relay.'));
+    return cfg;
+  }
+
+  function testRelay(cfg) {
+    mark('t-relay', 'run', 'Conectando a ' + cfg.relayUrl + '…');
+    return new Promise((resolve, reject) => {
+      const started = performance.now();
+      const ws = new WebSocket(cfg.relayUrl);
+      const timer = setTimeout(() => { ws.close(); reject(new Error('timeout 8s')); }, 8000);
+      ws.onmessage = (ev) => {
+        try {
+          const msg = JSON.parse(ev.data);
+          if (msg.type === 'welcome') {
+            clearTimeout(timer);
+            const rtt = Math.round(performance.now() - started);
+            const ice = msg.payload && msg.payload.iceServers || [];
+            report.tests.relay = { rtt, iceServers: ice.map((s) => s.urls) };
+            mark('t-relay', 'ok', 'welcome en ' + rtt + ' ms · iceServers recibidos: ' + ice.length + (rtt > 400 ? '\nAVISO: RTT muy alto. ¿VPN o proxy activo?' : ''));
+            ws.close();
+            resolve(ice);
+          }
+        } catch (_) { /* ignora */ }
+      };
+      ws.onopen = () => ws.send(JSON.stringify({ v: 1, type: 'hello', payload: { playerKey: 'diag-' + Math.random().toString(36).slice(2, 14), username: 'diag' } }));
+      ws.onerror = () => { clearTimeout(timer); reject(new Error('no se pudo abrir el WebSocket')); };
+    });
+  }
+
+  function gather(iceServers, policy, label) {
+    return new Promise((resolve) => {
+      const out = { candidates: [], errors: [] };
+      let pc;
+      try { pc = new RTCPeerConnection({ iceServers, iceTransportPolicy: policy }); } catch (e) { out.errors.push('setup: ' + e.message); return resolve(out); }
+      pc.createDataChannel('d');
+      pc.onicecandidate = (e) => { if (e.candidate) out.candidates.push(e.candidate.candidate); };
+      pc.onicecandidateerror = (e) => out.errors.push((e.errorCode || '?') + ' ' + (e.errorText || '') + ' ' + (e.url || ''));
+      const finish = () => { try { pc.close(); } catch (_) {} resolve(out); };
+      pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') finish(); };
+      setTimeout(finish, 9000);
+      pc.createOffer().then((o) => pc.setLocalDescription(o)).catch((e) => { out.errors.push('offer: ' + e.message); finish(); });
+    });
+  }
+
+  async function testIce(ice) {
+    mark('t-ice', 'run', 'Recolectando candidatos (9 s máx)…');
+    const res = await gather(ice, 'all', 'all');
+    const types = { host: 0, srflx: 0, relay: 0 };
+    res.candidates.forEach((c) => { const m = c.match(/ typ (\w+)/); if (m && types[m[1]] !== undefined) types[m[1]]++; });
+    report.tests.ice = { types, errors: res.errors };
+    const txt = 'host=' + types.host + ' · srflx=' + types.srflx + ' · relay=' + types.relay + (res.errors.length ? '\nerrores: ' + res.errors.join(' | ') : '');
+    const ok = types.relay > 0;
+    mark('t-ice', ok ? 'ok' : 'bad', txt + (ok ? '' : '\nSin candidatos relay: el TURN no es alcanzable desde esta red.'));
+  }
+
+  async function testTurn(ice) {
+    mark('t-turn', 'run', 'Conectando dos peers locales SOLO via TURN (20 s máx)…');
+    return new Promise((resolve) => {
+      const out = { open: false, errors: [] };
+      const cfg = { iceServers: ice, iceTransportPolicy: 'relay' };
+      let a, b;
+      const finish = (why) => {
+        out.why = why;
+        report.tests.turnRelay = out;
+        try { a && a.close(); b && b.close(); } catch (_) {}
+        mark('t-turn', out.open ? 'ok' : 'bad', out.open
+          ? 'Datachannel abierto a través del TURN (' + (out.pair || 'par relay') + ')'
+          : 'FALLO: ' + why + (out.errors.length ? '\nerrores: ' + out.errors.slice(0, 4).join(' | ') : ''));
+        resolve();
+      };
+      const timer = setTimeout(() => finish('timeout 20s'), 20000);
+      try { a = new RTCPeerConnection(cfg); b = new RTCPeerConnection(cfg); } catch (e) { clearTimeout(timer); return finish('setup: ' + e.message); }
+      const wire = (x, y, tag) => {
+        x.onicecandidate = (e) => { if (e.candidate) y.addIceCandidate(e.candidate).catch((err) => out.errors.push(tag + ' add ' + err.message)); };
+        x.onicecandidateerror = (e) => out.errors.push(tag + ' ' + (e.errorCode || '?') + ' ' + (e.url || ''));
+      };
+      wire(a, b, 'A'); wire(b, a, 'B');
+      const dc = a.createDataChannel('t');
+      dc.onopen = () => {
+        out.open = true;
+        a.getStats().then((stats) => {
+          stats.forEach((s) => {
+            if (s.type === 'candidate-pair' && (s.selected || s.nominated) && s.state === 'succeeded') {
+              const loc = stats.get(s.localCandidateId);
+              if (loc) out.pair = 'relay ' + (loc.address || loc.ip || '?') + ':' + loc.port;
+            }
+          });
+          clearTimeout(timer); finish('ok');
+        });
+      };
+      a.oniceconnectionstatechange = () => { if (a.iceConnectionState === 'failed') { clearTimeout(timer); finish('ice failed'); } };
+      a.createOffer().then((o) => a.setLocalDescription(o).then(() => b.setRemoteDescription(o)))
+        .then(() => b.createAnswer()).then((ans) => b.setLocalDescription(ans).then(() => a.setRemoteDescription(ans)))
+        .catch((e) => { out.errors.push('neg: ' + e.message); clearTimeout(timer); finish('negociación'); });
+    });
+  }
+
+  $('go').onclick = async () => {
+    $('go').disabled = true;
+    $('copy').disabled = true;
+    try {
+      const cfg = await testConfig();
+      let ice = [];
+      try { ice = await testRelay(cfg); } catch (e) {
+        report.tests.relay = { error: e.message };
+        mark('t-relay', 'bad', 'FALLO: ' + e.message);
+      }
+      if (ice.length) {
+        await testIce(ice);
+        await testTurn(ice);
+      } else {
+        mark('t-ice', 'bad', 'Sin lista ICE del relay; no se puede probar.');
+        mark('t-turn', 'bad', 'Sin lista ICE del relay; no se puede probar.');
+      }
+    } catch (e) {
+      mark('t-config', 'bad', 'FALLO: ' + (e.message || e));
+    }
+    $('report').value = JSON.stringify(report, null, 1);
+    $('copy').disabled = false;
+    $('go').disabled = false;
+  };
+
+  $('copy').onclick = () => {
+    $('report').select();
+    navigator.clipboard.writeText($('report').value).catch(() => document.execCommand('copy'));
+  };
+}());
+</script>
+</body>
+</html>
