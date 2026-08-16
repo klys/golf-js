@@ -4,13 +4,11 @@
   "onlineEnabled": true,
   "maxPlayers": 16,
 
-  "relayUrl": "ws://golf-relay.klys.dev:8787",
+  "relayUrl": "wss://golf-relay.klys.dev",
   "relayConnectTimeoutMs": 6500,
   "preflightTimeoutMs": 6500,
 
-  "publicIceServers": [
-    { "urls": "stun:golf-relay.klys.dev:3478" }
-  ],
+  "publicIceServers": [],
 
   "snapshotHz": 20,
   "reliablePingSeconds": 2,
