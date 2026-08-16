@@ -521,7 +521,7 @@
           </div>
           <div id="onlineConfigStatus" class="online-config-card" data-state="offline">
             <strong><svg class="ico" aria-hidden="true"><use href="#i-shield"></use></svg>CONFIGURACIÓN DE RED</strong>
-            <span>Relay obligatorio y parámetros cliente/host cargados desde <code>.env</code>. No se introducen direcciones en la interfaz.</span>
+            <span>Relay obligatorio y parámetros cliente/host cargados desde <code>config.json</code>. No se introducen direcciones en la interfaz.</span>
           </div>
         </section>
 
@@ -656,13 +656,13 @@
         <svg class="ico big" aria-hidden="true"><use href="#i-alert"></use></svg>
         <strong>El juego no pudo iniciar</strong>
         <span id="bootErrorDetail">Fallo cargando JavaScript local.</span>
-        <small>Offline sigue disponible. Online necesita <code>.env</code> accesible y un relay configurado.</small>
+        <small>Offline sigue disponible. Online necesita <code>config.json</code> accesible y un relay configurado.</small>
       </div>
     </section>
     <noscript><section class="boot-error"><div class="boot-error-card"><strong>JavaScript está desactivado</strong><span>Actívalo para jugar.</span></div></section></noscript>
   </main>
 
-  <!-- Runtime clásico: sin ES modules. En VPS/hosting estático, clientEnv.js lee .env desde el mismo directorio. -->
+  <!-- Runtime clásico: sin ES modules. En VPS/hosting estático, clientEnv.js lee config.json desde el mismo directorio. -->
   <script defer src="./js/utils/math.js" onerror="NoiseGolfBootError('js/utils/math.js')"></script>
   <script defer src="./js/config.js" onerror="NoiseGolfBootError('js/config.js')"></script>
   <script defer src="./js/core/noise.js" onerror="NoiseGolfBootError('js/core/noise.js')"></script>

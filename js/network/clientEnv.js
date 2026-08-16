@@ -25,58 +25,49 @@
 
   function parseBoolean(value, fallback) {
     if (value == null || value === '') return fallback;
+    if (typeof value === 'boolean') return value;
     return /^(1|true|yes|on|si|sí)$/i.test(String(value).trim());
   }
 
   function parseNumber(value, fallback) {
+    if (value == null || value === '') return fallback;
     const n = Number(value);
     return Number.isFinite(n) ? n : fallback;
   }
 
-  function parseJson(value, fallback) {
-    if (value == null || String(value).trim() === '') return fallback;
-    try {
-      const parsed = JSON.parse(String(value));
-      return parsed == null ? fallback : parsed;
-    } catch (_) { return fallback; }
-  }
-
-  function parseDotEnv(text) {
-    const out = Object.create(null);
-    for (const rawLine of String(text || '').split(/\r?\n/)) {
-      const line = rawLine.trim();
-      if (!line || line.startsWith('#')) continue;
-      const eq = line.indexOf('=');
-      if (eq <= 0) continue;
-      const key = line.slice(0, eq).trim();
-      let value = line.slice(eq + 1).trim();
-      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) value = value.slice(1, -1);
-      out[key] = value;
+  function parseList(value, fallback) {
+    if (Array.isArray(value)) return value;
+    // Tolerancia: también se admite el array serializado como texto JSON.
+    if (typeof value === 'string' && value.trim() !== '') {
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : fallback;
+      } catch (_) { return fallback; }
     }
-    return out;
+    return fallback;
   }
 
-  function mapEnv(env) {
+  function mapConfig(raw) {
     return {
-      onlineEnabled: parseBoolean(env.NG_ONLINE_ENABLED, defaults.onlineEnabled),
-      maxPlayers: parseNumber(env.NG_MAX_PLAYERS, defaults.maxPlayers),
-      snapshotHz: parseNumber(env.NG_SNAPSHOT_HZ, defaults.snapshotHz),
-      reliablePingSeconds: parseNumber(env.NG_RELIABLE_PING_SECONDS, defaults.reliablePingSeconds),
-      requestTimeoutMs: parseNumber(env.NG_REQUEST_TIMEOUT_MS, defaults.requestTimeoutMs),
-      webRtcConnectTimeoutMs: parseNumber(env.NG_WEBRTC_CONNECT_TIMEOUT_MS, defaults.webRtcConnectTimeoutMs),
-      mapVoteTimeoutMs: parseNumber(env.NG_MAP_VOTE_TIMEOUT_SECONDS, defaults.mapVoteTimeoutMs / 1000) * 1000,
-      relayUrl: String(env.NG_RELAY_URL || '').trim(),
-      relayConnectTimeoutMs: parseNumber(env.NG_RELAY_CONNECT_TIMEOUT_MS, defaults.relayConnectTimeoutMs),
-      preflightTimeoutMs: parseNumber(env.NG_PREFLIGHT_TIMEOUT_MS, defaults.preflightTimeoutMs),
-      publicIceServers: parseJson(env.NG_PUBLIC_ICE_SERVERS_JSON, defaults.publicIceServers),
-      interpolationMs: parseNumber(env.NG_CLIENT_INTERPOLATION_MS, defaults.interpolationMs),
-      maxExtrapolationMs: parseNumber(env.NG_CLIENT_MAX_EXTRAPOLATION_MS, defaults.maxExtrapolationMs),
-      smoothingResponsiveness: parseNumber(env.NG_CLIENT_SMOOTHING_RESPONSIVENESS, defaults.smoothingResponsiveness),
-      snapDistance: parseNumber(env.NG_CLIENT_SNAP_DISTANCE, defaults.snapDistance),
-      simulationHz: parseNumber(env.NG_SIMULATION_HZ, defaults.simulationHz),
-      correctionHalfLifeMs: parseNumber(env.NG_CLIENT_CORRECTION_HALFLIFE_MS, defaults.correctionHalfLifeMs),
-      predictionEnabled: parseBoolean(env.NG_CLIENT_PREDICTION, defaults.predictionEnabled),
-      playerGraceSeconds: parseNumber(env.NG_PLAYER_GRACE_SECONDS, defaults.playerGraceSeconds),
+      onlineEnabled: parseBoolean(raw.onlineEnabled, defaults.onlineEnabled),
+      maxPlayers: parseNumber(raw.maxPlayers, defaults.maxPlayers),
+      snapshotHz: parseNumber(raw.snapshotHz, defaults.snapshotHz),
+      reliablePingSeconds: parseNumber(raw.reliablePingSeconds, defaults.reliablePingSeconds),
+      requestTimeoutMs: parseNumber(raw.requestTimeoutMs, defaults.requestTimeoutMs),
+      webRtcConnectTimeoutMs: parseNumber(raw.webRtcConnectTimeoutMs, defaults.webRtcConnectTimeoutMs),
+      mapVoteTimeoutMs: parseNumber(raw.mapVoteTimeoutSeconds, defaults.mapVoteTimeoutMs / 1000) * 1000,
+      relayUrl: String(raw.relayUrl || '').trim(),
+      relayConnectTimeoutMs: parseNumber(raw.relayConnectTimeoutMs, defaults.relayConnectTimeoutMs),
+      preflightTimeoutMs: parseNumber(raw.preflightTimeoutMs, defaults.preflightTimeoutMs),
+      publicIceServers: parseList(raw.publicIceServers, defaults.publicIceServers),
+      interpolationMs: parseNumber(raw.interpolationMs, defaults.interpolationMs),
+      maxExtrapolationMs: parseNumber(raw.maxExtrapolationMs, defaults.maxExtrapolationMs),
+      smoothingResponsiveness: parseNumber(raw.smoothingResponsiveness, defaults.smoothingResponsiveness),
+      snapDistance: parseNumber(raw.snapDistance, defaults.snapDistance),
+      simulationHz: parseNumber(raw.simulationHz, defaults.simulationHz),
+      correctionHalfLifeMs: parseNumber(raw.correctionHalfLifeMs, defaults.correctionHalfLifeMs),
+      predictionEnabled: parseBoolean(raw.predictionEnabled, defaults.predictionEnabled),
+      playerGraceSeconds: parseNumber(raw.playerGraceSeconds, defaults.playerGraceSeconds),
     };
   }
 
@@ -88,21 +79,21 @@
 
   state.ready = (async () => {
     if (location.protocol === 'file:') {
-      state.source = 'env-unavailable-file';
-      state.loadError = 'El modo Online necesita que el juego esté servido por HTTP/HTTPS para poder leer .env.';
+      state.source = 'config-unavailable-file';
+      state.loadError = 'El modo Online necesita que el juego esté servido por HTTP/HTTPS para poder leer config.json.';
       return state.config;
     }
     try {
-      const response = await fetch('./.env', { cache: 'no-store', credentials: 'same-origin' });
+      const response = await fetch('./config.json', { cache: 'no-store', credentials: 'same-origin' });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const raw = parseDotEnv(await response.text());
-      const mapped = mapEnv(raw);
-      state.config = { ...defaults, ...mapped };
-      state.source = 'env';
+      const raw = JSON.parse(await response.text());
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('El contenido no es un objeto JSON.');
+      state.config = { ...defaults, ...mapConfig(raw) };
+      state.source = 'config';
       state.loadError = null;
     } catch (error) {
-      state.source = 'env-error';
-      state.loadError = `No se pudo cargar .env (${error.message || error}).`;
+      state.source = 'config-error';
+      state.loadError = `No se pudo cargar config.json (${error.message || error}).`;
       console.warn('[ClientEnv]', state.loadError);
     }
     return state.config;

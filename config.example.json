@@ -1,0 +1,52 @@
+{
+  "_readme": "Noise Golf 2D - Cliente/Host web. ESTE ARCHIVO ES PUBLICO: el navegador lo descarga. NO pongas contraseñas privadas, tokens ni secretos aquí. Copia este archivo como config.json y ajusta los valores.",
+
+  "onlineEnabled": true,
+  "maxPlayers": 16,
+
+  "relayUrl": "ws://127.0.0.1:8787",
+  "relayConnectTimeoutMs": 6500,
+  "preflightTimeoutMs": 6500,
+
+  "publicIceServers": [],
+
+  "snapshotHz": 20,
+  "reliablePingSeconds": 2,
+  "requestTimeoutMs": 6500,
+  "webRtcConnectTimeoutMs": 14000,
+
+  "simulationHz": 60,
+
+  "interpolationMs": 70,
+  "maxExtrapolationMs": 125,
+  "correctionHalfLifeMs": 105,
+  "predictionEnabled": true,
+  "smoothingResponsiveness": 18,
+  "snapDistance": 210,
+
+  "playerGraceSeconds": 180,
+
+  "mapVoteTimeoutSeconds": 30,
+
+  "_docs": {
+    "onlineEnabled": "Activa o desactiva el modo Online. Con false solo queda Offline.",
+    "maxPlayers": "Jugadores máximos por partida.",
+    "relayUrl": "Relay público obligatorio para discovery/señalización. Producción HTTPS: usa wss://",
+    "relayConnectTimeoutMs": "Tiempo máximo para abrir el WebSocket con el relay.",
+    "preflightTimeoutMs": "Tiempo máximo de la comprobación previa del relay al entrar en Online.",
+    "publicIceServers": "ICE WebRTC. Para Internet real conviene STUN y TURN propio. Ejemplo: [{\"urls\":\"stun:stun.tudominio.com:3478\"}]",
+    "snapshotHz": "Sincronización/presentación cliente: snapshots por segundo enviados por el host.",
+    "reliablePingSeconds": "Intervalo del ping fiable para medir latencia.",
+    "requestTimeoutMs": "Tiempo máximo de las peticiones al relay.",
+    "webRtcConnectTimeoutMs": "Tiempo máximo para establecer la conexión WebRTC con el host.",
+    "simulationHz": "Paso fijo de simulación. El host y la predicción local avanzan siempre en pasos de este tamaño, así que los FPS no alteran la física.",
+    "interpolationMs": "Retardo mínimo de interpolación. El cliente dibuja el pasado reciente para tener siempre dos muestras que interpolar; sube solo si hay jitter alto.",
+    "maxExtrapolationMs": "Techo de extrapolación cuando se pierden paquetes.",
+    "correctionHalfLifeMs": "Semivida de la corrección visual: más bajo = converge antes pero se nota más.",
+    "predictionEnabled": "Predicción local de tu propia bola (recomendado true; false = todo desde el host).",
+    "smoothingResponsiveness": "Respuesta del suavizado visual de las entidades remotas.",
+    "snapDistance": "Distancia a partir de la cual el cliente salta a la posición del host en vez de suavizar.",
+    "playerGraceSeconds": "Reconexión: el host reserva la plaza del jugador caído este tiempo y, al agotarse, lo elimina por completo de la partida. El relay debe conservar la reserva al menos igual de tiempo (PARTICIPANT_RESUME_SECONDS).",
+    "mapVoteTimeoutSeconds": "Votación de mapa. El cambio tiene un enfriamiento fijo de 60 segundos."
+  }
+}

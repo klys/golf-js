@@ -32,8 +32,8 @@ Ejemplo recomendado:
 La estructura debe conservarse:
 
   /var/www/noise-golf/
-  |-- .env
-  |-- .env.example
+  |-- config.json
+  |-- config.example.json
   |-- index.html
   |-- css/
   |-- js/
@@ -41,7 +41,7 @@ La estructura debe conservarse:
   |-- VERSION.txt
   `-- ...
 
-MUY IMPORTANTE: conserva el archivo oculto .env.
+MUY IMPORTANTE: conserva el archivo config.json junto a index.html.
 
 Ejemplo de permisos en Ubuntu/Debian:
 
@@ -50,40 +50,46 @@ Ejemplo de permisos en Ubuntu/Debian:
   sudo find /var/www/noise-golf -type f -exec chmod 644 {} \;
 
 
-2. CONFIGURAR EL .env DEL JUEGO
--------------------------------
+2. CONFIGURAR EL config.json DEL JUEGO
+--------------------------------------
 Edita:
 
-  /var/www/noise-golf/.env
+  /var/www/noise-golf/config.json
+
+Debe ser JSON valido (sin comentarios ni comas finales). La descripcion de cada
+campo esta en config.example.json, dentro del bloque "_docs".
 
 Configuración recomendada para producción HTTPS:
 
-  NG_ONLINE_ENABLED=true
-  NG_MAX_PLAYERS=16
+  {
+    "onlineEnabled": true,
+    "maxPlayers": 16,
 
-  NG_RELAY_URL=wss://relay.tudominio.com
-  NG_RELAY_CONNECT_TIMEOUT_MS=6500
-  NG_PREFLIGHT_TIMEOUT_MS=6500
+    "relayUrl": "wss://relay.tudominio.com",
+    "relayConnectTimeoutMs": 6500,
+    "preflightTimeoutMs": 6500,
 
-  NG_SNAPSHOT_HZ=20
-  NG_RELIABLE_PING_SECONDS=2
-  NG_REQUEST_TIMEOUT_MS=6500
-  NG_WEBRTC_CONNECT_TIMEOUT_MS=14000
+    "publicIceServers": [],
 
-  NG_CLIENT_INTERPOLATION_MS=70
-  NG_CLIENT_MAX_EXTRAPOLATION_MS=125
-  NG_CLIENT_SMOOTHING_RESPONSIVENESS=18
-  NG_CLIENT_SNAP_DISTANCE=210
+    "snapshotHz": 20,
+    "reliablePingSeconds": 2,
+    "requestTimeoutMs": 6500,
+    "webRtcConnectTimeoutMs": 14000,
 
-  NG_PUBLIC_ICE_SERVERS_JSON=[]
+    "interpolationMs": 70,
+    "maxExtrapolationMs": 125,
+    "smoothingResponsiveness": 18,
+    "snapDistance": 210,
+
+    "mapVoteTimeoutSeconds": 30
+  }
 
   El cambio de mundo tiene un enfriamiento fijo de 60 segundos.
-  NG_MAP_VOTE_TIMEOUT_SECONDS=30
 
-Si el juego usa HTTPS, NG_RELAY_URL debe usar wss:// y NO ws://.
+Si el juego usa HTTPS, relayUrl debe usar wss:// y NO ws://.
 
 SEGURIDAD IMPORTANTE:
-El .env DEL JUEGO es PUBLICO porque el navegador necesita descargarlo.
+El config.json DEL JUEGO es PUBLICO porque el navegador necesita descargarlo.
 NO introduzcas:
   - contraseñas privadas;
   - API keys secretas;
@@ -156,11 +162,11 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
-    # El cliente necesita leer exclusivamente SU .env publico.
-    location = /.env {
-        default_type text/plain;
+    # El cliente necesita leer su configuracion publica.
+    location = /config.json {
+        default_type application/json;
         add_header Cache-Control "no-store, no-cache, must-revalidate" always;
-        try_files /.env =404;
+        try_files /config.json =404;
     }
 
     # Bloquear el resto de dotfiles.
@@ -253,17 +259,17 @@ A) Juego:
   https://golf.tudominio.com/
 
 B) Configuracion publica del juego:
-  https://golf.tudominio.com/.env
+  https://golf.tudominio.com/config.json
 
-Debe mostrar el .env y contener:
-  NG_RELAY_URL=wss://relay.tudominio.com
+Debe mostrar el config.json y contener:
+  "relayUrl": "wss://relay.tudominio.com"
 
 C) Health del Relay:
   https://relay.tudominio.com/health
 
 D) Desde consola:
   curl https://relay.tudominio.com/health
-  curl https://golf.tudominio.com/.env
+  curl https://golf.tudominio.com/config.json
 
 E) Recarga el juego.
 El preflight debe validar:
@@ -386,7 +392,7 @@ En ese caso configura STUN/TURN propios.
 TURN es un servicio distinto del Noise Golf Server Relay.
 El Relay hace discovery/señalizacion; TURN puede transportar WebRTC cuando no existe ruta directa viable.
 
-No guardes credenciales TURN permanentes sensibles dentro del .env publico del juego.
+No guardes credenciales TURN permanentes sensibles dentro del config.json publico del juego.
 Para produccion profesional usa credenciales temporales/rotables cuando implementemos esa capa.
 
 
@@ -395,16 +401,16 @@ Para produccion profesional usa credenciales temporales/rotables cuando implemen
 Si ONLINE aparece NO DISPONIBLE:
 
 1) Comprueba:
-   https://golf.tudominio.com/.env
+   https://golf.tudominio.com/config.json
 
 2) Comprueba:
    https://relay.tudominio.com/health
 
-3) Verifica en .env del juego:
-   NG_ONLINE_ENABLED=true
-   NG_RELAY_URL=wss://relay.tudominio.com
+3) Verifica en config.json del juego:
+   "onlineEnabled": true
+   "relayUrl": "wss://relay.tudominio.com"
 
-4) Verifica en .env privado del Relay:
+4) Verifica en el .env privado del Relay:
    PUBLIC_WS_URL=wss://relay.tudominio.com
    ALLOWED_ORIGINS=https://golf.tudominio.com
    TRUST_PROXY=true

@@ -329,7 +329,7 @@
       const el = document.querySelector('#onlineConfigStatus');
       if (!el) return;
       const span = el.querySelector('span');
-      const source = NG.ClientEnv?.source === 'env' ? '.env cargado' : '.env no disponible';
+      const source = NG.ClientEnv?.source === 'config' ? 'config.json cargado' : 'config.json no disponible';
       const latency = Number.isFinite(this.preflightRtt) && this.preflightRtt > 0 ? ` · ${this.preflightRtt} ms` : '';
       if (span) {
         span.textContent = this.onlineAvailable
@@ -395,11 +395,11 @@
 
       let probe = null;
       try {
-        if (NG.ClientEnv?.source !== 'env') throw new Error(NG.ClientEnv?.loadError || 'No se pudo cargar .env.');
-        if (!cfg.onlineEnabled) throw new Error('Multiplayer está desactivado en .env.');
-        if (!String(cfg.relayUrl || '').trim()) throw new Error('NG_RELAY_URL no está configurado en .env.');
+        if (NG.ClientEnv?.source !== 'config') throw new Error(NG.ClientEnv?.loadError || 'No se pudo cargar config.json.');
+        if (!cfg.onlineEnabled) throw new Error('Multiplayer está desactivado en config.json.');
+        if (!String(cfg.relayUrl || '').trim()) throw new Error('relayUrl no está configurado en config.json.');
         const relayUrl = this.profile.setRelayUrl(this.profile.getRelayUrl());
-        this.setPreflightRow('preflightConfigRow', 'ok', '.ENV OK');
+        this.setPreflightRow('preflightConfigRow', 'ok', 'CONFIG OK');
         this.setPreflightRow('preflightRelayRow', 'working', 'CONECTANDO');
 
         probe = new NG.RelayClient(this.profile);

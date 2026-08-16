@@ -52,9 +52,9 @@
     getRelayUrl() { return String(NG.ClientEnv?.config?.relayUrl || NG.NET_CONFIG.defaultRelayUrl || '').trim(); }
     setRelayUrl(url) {
       const value = String(url || this.getRelayUrl()).trim();
-      if (!/^wss?:\/\//i.test(value)) throw new Error('El relay configurado en .env debe usar ws:// o wss://.');
+      if (!/^wss?:\/\//i.test(value)) throw new Error('El relay configurado en config.json debe usar ws:// o wss://.');
       if (window.location?.protocol === 'https:' && /^ws:\/\//i.test(value)) {
-        throw new Error('La web usa HTTPS: configura NG_RELAY_URL con wss:// para evitar contenido mixto bloqueado por el navegador.');
+        throw new Error('La web usa HTTPS: configura relayUrl con wss:// para evitar contenido mixto bloqueado por el navegador.');
       }
       return value;
     }
