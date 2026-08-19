@@ -141,9 +141,11 @@
       if (this.timer) {
         this.timer.textContent = timeText(clockSeconds);
         this.timer.dataset.phase = status.timerPhase || 'elapsed';
-        this.timer.title = status.timerPhase === 'finish'
-          ? 'Tiempo restante para terminar el mundo'
-          : (status.timerPhase === 'world' ? 'Tiempo restante del mundo' : 'Tiempo total de partida');
+        this.timer.title = status.timerPhase === 'grace'
+          ? 'Prórroga: margen máximo para que las bolas en juego se detengan'
+          : (status.timerPhase === 'finish'
+            ? 'Tiempo restante para terminar el mundo'
+            : (status.timerPhase === 'world' ? 'Tiempo restante del mundo' : 'Tiempo total de partida'));
       }
       if (this.playerCount) this.playerCount.textContent = `${connected}/${settings.maxPlayers || rows.length || 0}`;
 
@@ -216,6 +218,21 @@
           title: winner ? `${winner.username} gana la partida` : 'Partida terminada',
           hint: 'Marcador final disponible',
           scoreboardText: winner ? `🏆 ${winner.username}` : 'FINAL',
+        };
+      }
+      // Prórroga: el mundo ya está cerrado y solo se espera a que las bolas
+      // que seguían en el aire terminen su tiro.
+      if (status.timerPhase === 'grace') {
+        const rolling = Number(status.rollingBalls) || 0;
+        return {
+          tone: 'battle',
+          title: 'Mundo cerrado',
+          hint: rolling
+            ? `Se espera a que ${rolling === 1 ? 'la última bola se detenga' : `se detengan las ${rolling} bolas en juego`}`
+            : 'Cambiando de hoyo…',
+          scoreboardText: rolling
+            ? `PRÓRROGA · ${rolling} ${rolling === 1 ? 'BOLA EN JUEGO' : 'BOLAS EN JUEGO'}`
+            : 'CAMBIANDO DE HOYO',
         };
       }
       if (status.timerPhase === 'finish' && status.finishCountdownRemaining != null) {

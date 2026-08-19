@@ -537,6 +537,8 @@ body[data-focus="aim"] #helpChip { opacity: 0; transform: translateY(6px); }
 .net-meta-item b { font-family: var(--font-num); font-weight: 800; color: var(--ink-2); }
 #netTimerLabel[data-phase="world"] { color: var(--gold); }
 #netTimerLabel[data-phase="finish"] { color: var(--coral); text-shadow: 0 0 10px rgba(255,127,112,.35); }
+#netTimerLabel[data-phase="grace"] { color: var(--coral); opacity: .8; animation: gracePulse 1.1s var(--ease) infinite; }
+@keyframes gracePulse { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
 .signal-wrap { display: flex; align-items: center; gap: 5px; margin-left: auto; }
 
 .turn-indicator {

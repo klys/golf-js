@@ -43,6 +43,11 @@
       this.elapsed = 0;
       this.holeElapsed = 0;
       this.finishCountdownRemaining = null;
+      // Prórroga del cierre del mundo. `null` = no hay prórroga en curso; un
+      // número son los segundos que aún se está dispuesto a esperar a que las
+      // bolas en movimiento terminen su tiro.
+      this.graceRemaining = null;
+      this.graceReason = null;
       this.startedAt = 0;
       this.matchStarted = false;
       this.matchOver = false;
@@ -58,6 +63,9 @@
       this.lastSnapshotSeq = -1;
       this.lobbyUpdateAccumulator = 0;
       this.transitionTimer = 0;
+      // Cuánto lleva la transición de hoyo esperando a que se pare la última
+      // bola. Acotado para que una bola atrapada no cuelgue la sala.
+      this.transitionHold = 0;
       this.courseRound = 0;
       this.listeners = new Map();
       this.resumeToken = null;
@@ -312,6 +320,9 @@
       this.elapsed = 0;
       this.holeElapsed = 0;
       this.finishCountdownRemaining = null;
+      this.graceRemaining = null;
+      this.graceReason = null;
+      this.transitionHold = 0;
       this.startedAt = 0;
       this.matchStarted = false;
       this.matchOver = false;
@@ -626,6 +637,7 @@
         elapsed: this.elapsed,
         holeElapsed: this.holeElapsed,
         finishCountdownRemaining: this.finishCountdownRemaining,
+        graceRemaining: this.graceRemaining,
         matchStarted: this.matchStarted,
         matchOver: this.matchOver,
         winnerPlayerKey: this.winnerPlayerKey,
@@ -652,6 +664,7 @@
       this.elapsed = Number(message.elapsed) || 0;
       this.holeElapsed = Number(message.holeElapsed) || 0;
       this.finishCountdownRemaining = message.finishCountdownRemaining == null ? null : Math.max(0, Number(message.finishCountdownRemaining) || 0);
+      this.graceRemaining = message.graceRemaining == null ? null : Math.max(0, Number(message.graceRemaining) || 0);
       this.syncWorld(message.seed, message.holeIndex || 0);
       this.applyWorldState(message.worldState);
       this.worldTime = Number(message.worldTime) || 0;
@@ -879,6 +892,7 @@
       this.elapsed = Number(snapshot.elapsed) || 0;
       this.holeElapsed = Number(snapshot.holeElapsed) || 0;
       this.finishCountdownRemaining = snapshot.finishCountdownRemaining == null ? null : Math.max(0, Number(snapshot.finishCountdownRemaining) || 0);
+      this.graceRemaining = snapshot.graceRemaining == null ? null : Math.max(0, Number(snapshot.graceRemaining) || 0);
       this.matchStarted = !!snapshot.matchStarted;
       this.matchOver = !!snapshot.matchOver;
       this.turnPlayerKey = snapshot.turnPlayerKey || null;
@@ -893,6 +907,9 @@
     canLocalShoot() {
       if (this.role === 'offline') return true;
       if (this.matchOver || this.state === 'joining' || this.state === 'syncing') return false;
+      // El mundo ya está cerrado: la prórroga solo deja acabar los tiros que
+      // ya estaban en el aire, no empezar otros nuevos.
+      if (this.graceRemaining != null) return false;
       const player = this.players.get(this.localPlayerKey);
       if (!player || player.role !== 'player' || !player.ball || player.finished || !player.connected) return false;
       if (this.settings?.maxTurnsPerWorld != null && player.turnsUsed >= this.settings.maxTurnsPerWorld) return false;
@@ -934,7 +951,8 @@
     }
 
     canPlayerReset(player) {
-      if (this.matchOver || !player || player.role !== 'player' || !player.ball || player.finished || player.ball.holed) return false;
+      if (this.matchOver || this.graceRemaining != null) return false;
+      if (!player || player.role !== 'player' || !player.ball || player.finished || player.ball.holed) return false;
       const mode = this.settings?.mode || this.lobby?.mode || 'turn';
       return mode !== 'turn' || !this.turnPlayerKey || this.turnPlayerKey === player.playerKey;
     }
@@ -956,6 +974,7 @@
 
     applyShot(player, velocity) {
       if (!player || player.role !== 'player' || !player.ball || player.finished || !player.connected || this.matchOver) return false;
+      if (this.graceRemaining != null) return false;
       const speed = Math.hypot(Number(velocity?.x) || 0, Number(velocity?.y) || 0);
       if (!Number.isFinite(speed) || speed < NG.CONFIG.shot.minLaunchSpeed || speed > NG.CONFIG.ball.maxSpeed * 1.03) return false;
       if (player.ball.moving || player.ball.holed || player.ball.inWater) return false;
@@ -1107,16 +1126,71 @@
       return true;
     }
 
+    /** Bola que todavía está resolviendo su tiro: nadie debería cortarla. */
+    isBallInPlay(player) {
+      return !!(player
+        && player.role === 'player'
+        && !player.finished
+        && player.ball
+        && player.ball.moving
+        && !player.ball.holed);
+    }
+
+    /** ¿Queda alguna bola rodando en el mundo, de quien sea? */
+    anyBallRolling() {
+      for (const p of this.players.values()) {
+        if (p.role !== 'player' || !p.ball) continue;
+        if (p.ball.moving && !p.ball.holed) return true;
+      }
+      return false;
+    }
+
+    /**
+     * Se acabó el mundo: o el reloj del hoyo, o el contador que arranca cuando
+     * alguien emboca.
+     *
+     * A nadie se le corta la bola en el aire. El golpe ya estaba dado cuando
+     * sonó la bocina, y congelarlo a media parábola es lo único que el jugador
+     * no puede ni prever ni evitar; además deja la cámara mirando una bola que
+     * se para en el vacío. Los que ya estaban parados se retiran ahora mismo,
+     * y los que ruedan entran en prórroga hasta detenerse.
+     */
     expireCurrentWorld(reason) {
       if (this.matchOver) return;
-      for (const player of this.players.values()) {
-        if (player.role === 'player' && !player.finished) this.finishPlayerWithoutPoints(player, reason);
-      }
       this.turnPlayerKey = null;
       this.finishCountdownRemaining = null;
+      let rolling = 0;
+      for (const player of this.players.values()) {
+        if (player.role !== 'player' || player.finished) continue;
+        if (this.isBallInPlay(player)) rolling += 1;
+        else this.finishPlayerWithoutPoints(player, reason);
+      }
+      this.graceReason = rolling ? reason : null;
+      this.graceRemaining = rolling ? Math.max(0, NG.NET_CONFIG.worldGraceMaxSeconds) : null;
+      if (!rolling && !this.transitionTimer) this.transitionTimer = 2.35;
+      this.broadcastReliable({ type: 'session:event', event: 'world:expired', reason, rolling });
+      this.emit('gameevent', { event: 'world:expired', reason, rolling });
+    }
+
+    /**
+     * Prórroga tras el cierre. Cada bola se retira en cuanto se para —no tiene
+     * por qué esperar a las demás— y el hoyo no avanza hasta que la última lo
+     * hace. El tope existe por si alguna se queda dando vueltas en un molino:
+     * sin él, una bola en bucle dejaría la sala colgada para siempre.
+     */
+    tickWorldGrace(dt) {
+      this.graceRemaining = Math.max(0, this.graceRemaining - dt);
+      const expired = this.graceRemaining <= 0;
+      let rolling = 0;
+      for (const p of this.players.values()) {
+        if (p.role !== 'player' || p.finished) continue;
+        if (!expired && this.isBallInPlay(p)) rolling += 1;
+        else this.finishPlayerWithoutPoints(p, this.graceReason || 'world-time');
+      }
+      if (rolling > 0) return;
+      this.graceRemaining = null;
+      this.graceReason = null;
       if (!this.transitionTimer) this.transitionTimer = 2.35;
-      this.broadcastReliable({ type: 'session:event', event: 'world:expired', reason });
-      this.emit('gameevent', { event: 'world:expired', reason });
     }
 
     /**
@@ -1159,8 +1233,12 @@
         if (p.ball?.holed && !p.finished) this.finishPlayerHole(p);
         if (p.shotInProgress && p.ball && !p.ball.moving && !p.ball.holed && !p.ball.inWater) {
           p.shotInProgress = false;
-          if (this.turnLimitReached(p)) this.finishPlayerWithoutPoints(p, 'turn-limit');
-          else if ((this.settings?.mode || 'turn') === 'turn') this.advanceTurnFrom(p.playerKey);
+          // Con el mundo ya cerrado no hay turno que pasar ni límite que
+          // aplicar: de retirar a quien se para se encarga la prórroga.
+          if (this.graceRemaining == null) {
+            if (this.turnLimitReached(p)) this.finishPlayerWithoutPoints(p, 'turn-limit');
+            else if ((this.settings?.mode || 'turn') === 'turn') this.advanceTurnFrom(p.playerKey);
+          }
         }
         if (p.ball && !p.ball.moving && !p.ball.inWater && !p.ball.holed) this.clearSabotageAttribution(p.ball);
       }
@@ -1172,7 +1250,9 @@
       if ((this.settings?.mode || 'turn') === 'battle' && this.settings?.collisionsEnabled !== false) this.resolveBallCollisions();
 
       if (this.matchStarted && !this.matchOver && !this.transitionTimer) {
-        if (this.finishCountdownRemaining != null) {
+        if (this.graceRemaining != null) {
+          this.tickWorldGrace(dt);
+        } else if (this.finishCountdownRemaining != null) {
           this.finishCountdownRemaining = Math.max(0, this.finishCountdownRemaining - dt);
           if (this.finishCountdownRemaining <= 0) this.expireCurrentWorld('finish-countdown');
         } else if (this.settings?.worldTimeSeconds != null && this.holeElapsed >= this.settings.worldTimeSeconds) {
@@ -1183,8 +1263,18 @@
       const stillPlaying = [...this.players.values()].filter((p) => p.role === 'player' && !p.finished);
       if (this.matchStarted && stillPlaying.length === 0 && !this.transitionTimer && !this.matchOver) this.transitionTimer = 2.35;
       if (this.transitionTimer > 0) {
-        this.transitionTimer -= dt;
-        if (this.transitionTimer <= 0) this.advanceHole();
+        // No se cambia de mapa con una bola aún rodando: el reloj de
+        // transición se congela hasta que la última se para. Con el mismo tope
+        // que la prórroga, para no depender de que toda bola acabe parándose.
+        if (this.anyBallRolling() && this.transitionHold < NG.NET_CONFIG.worldGraceMaxSeconds) {
+          this.transitionHold += dt;
+        } else {
+          this.transitionTimer -= dt;
+          if (this.transitionTimer <= 0) {
+            this.transitionHold = 0;
+            this.advanceHole();
+          }
+        }
       }
 
       this.snapshotAccumulator += dt;
@@ -1527,8 +1617,10 @@
       player.ball = fresh;
       player.physics.time = this.worldTime;
       player.shotInProgress = false;
-      if (this.turnLimitReached(player)) this.finishPlayerWithoutPoints(player, 'turn-limit');
-      else if ((this.settings?.mode || 'turn') === 'turn') this.advanceTurnFrom(player.playerKey);
+      if (this.graceRemaining == null) {
+        if (this.turnLimitReached(player)) this.finishPlayerWithoutPoints(player, 'turn-limit');
+        else if ((this.settings?.mode || 'turn') === 'turn') this.advanceTurnFrom(player.playerKey);
+      }
       const event = {
         type: 'session:event', event: 'penalty', playerKey: player.playerKey, reason, penalty,
         resetTarget: target, ...(context || {}),
@@ -1559,7 +1651,9 @@
         return;
       }
       const othersPlaying = [...this.players.values()].some((candidate) => candidate.role === 'player' && !candidate.finished);
-      if (othersPlaying && this.settings?.finishCountdownSeconds != null && this.finishCountdownRemaining == null) {
+      // Durante la prórroga el mundo ya está cerrado: embocar en el último
+      // segundo cuenta, pero no vuelve a abrir el contador de cierre.
+      if (othersPlaying && this.graceRemaining == null && this.settings?.finishCountdownSeconds != null && this.finishCountdownRemaining == null) {
         this.finishCountdownRemaining = this.settings.finishCountdownSeconds;
         this.broadcastReliable({ type: 'session:event', event: 'finish-countdown', seconds: this.finishCountdownRemaining });
         this.emit('gameevent', { event: 'finish-countdown', seconds: this.finishCountdownRemaining });
@@ -1570,7 +1664,11 @@
       if (this.matchOver) return;
       this.matchOver = true;
       this.winnerPlayerKey = winnerPlayerKey;
+      this.finishCountdownRemaining = null;
+      this.graceRemaining = null;
+      this.graceReason = null;
       this.transitionTimer = 0;
+      this.transitionHold = 0;
       this.broadcastReliable({ type: 'match:over', winnerPlayerKey });
       this.updateDiscoveryLobby(true);
       this.emit('matchover', { winnerPlayerKey, standings: this.getStandings() });
@@ -1692,8 +1790,11 @@
       this.worldTime = 0;
       this.holeElapsed = 0;
       this.finishCountdownRemaining = null;
+      this.graceRemaining = null;
+      this.graceReason = null;
       this.finishOrder = 0;
       this.transitionTimer = 0;
+      this.transitionHold = 0;
       this.mapChangeCooldownUntil = Date.now() + NG.NET_CONFIG.mapVoteCooldownMs;
       for (const p of this.players.values()) {
         if (p.role === 'spectator' && p.connected) p.role = 'player';
@@ -1747,6 +1848,7 @@
       if (this.matchOver) return;
       this.finishOrder = 0;
       this.transitionTimer = 0;
+      this.transitionHold = 0;
       let next = this.game.holeIndex + 1;
       if (next >= this.game.holes.length) {
         this.courseRound += 1;
@@ -1757,6 +1859,8 @@
       this.worldTime = 0;
       this.holeElapsed = 0;
       this.finishCountdownRemaining = null;
+      this.graceRemaining = null;
+      this.graceReason = null;
       for (const p of this.players.values()) {
         if (p.role === 'spectator') p.role = 'player';
         p.ball = this.makeBall();
@@ -1861,7 +1965,8 @@
         type: 'state:snapshot', seq: ++this.snapshotSeq, seed: this.game.seed, holeIndex: this.game.holeIndex,
         netTime: this.netTime,
         worldTime: this.worldTime, elapsed: this.elapsed, holeElapsed: this.holeElapsed,
-        finishCountdownRemaining: this.finishCountdownRemaining, matchStarted: this.matchStarted,
+        finishCountdownRemaining: this.finishCountdownRemaining, graceRemaining: this.graceRemaining,
+        matchStarted: this.matchStarted,
         matchOver: this.matchOver, winnerPlayerKey: this.winnerPlayerKey, turnPlayerKey: this.turnPlayerKey,
         mapVote: this.serializeMapVote(), worldState: this.serializeWorldState(),
         mapChangeCooldownRemainingMs: Math.max(0, this.mapChangeCooldownUntil - Date.now()),
@@ -2149,9 +2254,11 @@
       const worldRemaining = this.settings?.worldTimeSeconds == null
         ? null
         : Math.max(0, this.settings.worldTimeSeconds - this.holeElapsed);
-      const timerPhase = this.finishCountdownRemaining != null
-        ? 'finish'
-        : (worldRemaining != null ? 'world' : 'elapsed');
+      const timerPhase = this.graceRemaining != null
+        ? 'grace'
+        : (this.finishCountdownRemaining != null
+          ? 'finish'
+          : (worldRemaining != null ? 'world' : 'elapsed'));
       return {
         role: this.role,
         state: this.state,
@@ -2161,8 +2268,13 @@
         elapsed: this.elapsed,
         holeElapsed: this.holeElapsed,
         finishCountdownRemaining: this.finishCountdownRemaining,
+        graceRemaining: this.graceRemaining,
+        // Cuántas bolas siguen rodando: es lo que el mundo está esperando.
+        rollingBalls: [...this.players.values()].filter((p) => this.isBallInPlay(p)).length,
         timerPhase,
-        timerRemaining: timerPhase === 'finish' ? this.finishCountdownRemaining : worldRemaining,
+        timerRemaining: timerPhase === 'grace'
+          ? this.graceRemaining
+          : (timerPhase === 'finish' ? this.finishCountdownRemaining : worldRemaining),
         matchStarted: this.matchStarted,
         matchOver: this.matchOver,
         winnerPlayerKey: this.winnerPlayerKey,
@@ -2215,6 +2327,11 @@
       this.matchOver = false;
       this.winnerPlayerKey = null;
       this.turnPlayerKey = null;
+      this.finishCountdownRemaining = null;
+      this.graceRemaining = null;
+      this.graceReason = null;
+      this.transitionTimer = 0;
+      this.transitionHold = 0;
       this.mapVote = null;
       this.mapChangeCooldownUntil = 0;
       this.signaling = null;

@@ -66,6 +66,12 @@
     // Error tolerado sin reconciliar (evita micro-tirones con ruido de red).
     predictionToleranceDistance: 6,
 
+    // ── Cierre del mundo ──────────────────────────────────────────────────
+    // Prórroga tras agotarse el reloj del mundo o el contador de cierre.
+    // El golpe ya dado cuando suena la bocina se termina de resolver: solo se
+    // deja de esperar si una bola se queda atrapada dando vueltas.
+    worldGraceMaxSeconds: 12,
+
     // ── Reconexión y gracia ───────────────────────────────────────────────
     // El host reserva la plaza del jugador caído durante este tiempo.
     // Al agotarse, el jugador se elimina por completo de la partida.
@@ -93,6 +99,10 @@
     cfg.correctionHalfLifeMs = Math.max(20, Math.min(400, Number(env.correctionHalfLifeMs) || 105));
     cfg.predictionEnabled = env.predictionEnabled !== false;
     cfg.playerGraceMs = Math.max(15000, Math.min(900000, Number(env.playerGraceSeconds) * 1000 || 180000));
+    // El 0 es un valor válido (cierre inmediato), así que no vale `|| 12`.
+    cfg.worldGraceMaxSeconds = env.worldGraceSeconds == null
+      ? 12
+      : Math.max(0, Math.min(60, Number(env.worldGraceSeconds) || 0));
     cfg.reconnectWindowMs = cfg.playerGraceMs;
     // El retardo mínimo nunca debe bajar de un intervalo de snapshot: sin eso
     // el cliente se queda sin muestras que interpolar y vuelve a extrapolar.

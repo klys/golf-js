@@ -25,6 +25,7 @@
   "snapDistance": 210,
 
   "playerGraceSeconds": 180,
+  "worldGraceSeconds": 12,
 
   "mapVoteTimeoutSeconds": 30,
 
@@ -47,6 +48,7 @@
     "smoothingResponsiveness": "Respuesta del suavizado visual de las entidades remotas.",
     "snapDistance": "Distancia a partir de la cual el cliente salta a la posición del host en vez de suavizar.",
     "playerGraceSeconds": "Reconexión: el host reserva la plaza del jugador caído este tiempo y, al agotarse, lo elimina por completo de la partida. El relay debe conservar la reserva al menos igual de tiempo (PARTICIPANT_RESUME_SECONDS).",
+    "worldGraceSeconds": "Prórroga al cerrarse el mundo (se acaba el reloj del hoyo o el contador que arranca cuando alguien emboca). Las bolas que ya estaban rodando terminan su tiro y el hoyo no cambia hasta que la última se para; este valor es solo el tope, por si alguna se queda atrapada. 0 = cierre inmediato.",
     "mapVoteTimeoutSeconds": "Votación de mapa. El cambio tiene un enfriamiento fijo de 60 segundos."
   }
 }

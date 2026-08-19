@@ -714,7 +714,13 @@
           this.game.hud.flashStatus(`${Math.round(event.seconds || 0)} s para que los demás lleguen`, 'penalty', 1.6);
         } else if (event?.event === 'world:expired') {
           const text = event.reason === 'finish-countdown' ? 'Se acabó el tiempo restante' : 'Se acabó el tiempo del mundo';
-          this.game.hud.flashStatus(`${text} · avanzando`, 'penalty', 1.5);
+          // Con bolas aún rodando el mundo no avanza todavía: se las deja
+          // terminar el tiro, y decirlo evita que parezca que se ha colgado.
+          const rolling = Number(event.rolling) || 0;
+          const tail = rolling
+            ? (rolling === 1 ? ' · la bola en juego termina su tiro' : ` · las ${rolling} bolas en juego terminan su tiro`)
+            : ' · avanzando';
+          this.game.hud.flashStatus(`${text}${tail}`, 'penalty', 1.5);
         }
         else if (event?.event === 'penalty' && event.playerKey === session.localPlayerKey) {
           const text = event.sabotageBy
