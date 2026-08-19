@@ -30,8 +30,8 @@
    *
    * La mezcla va por Web Audio:
    *
-   *     <audio> ─► paso bajo ─► realce de graves ─┬─► seco ──────────┐
-   *              (hundimiento)   (tensión)        └─► reverb ─► húmedo ─┴─► maestro ─► salida
+   *     <audio> ─► paso bajo ─► graves ─┬─► seco ────────┐
+   *              (hundimiento)  (tensión) └─► reverb ─► húmedo ─┴─► maestro ─► limitador ─► salida
    *
    * Si el navegador no tiene Web Audio (o lo bloquea, típico en `file://`), el
    * grafo se descarta entero y queda el volumen del elemento: se pierden los
@@ -164,6 +164,19 @@
         wet.gain.value = cfg.baseReverb;
         master.gain.value = 0;
 
+        // Techo duro al final de la cadena. La sala abierta suma energía sobre
+        // el seco justo cuando el maestro ya está al máximo del jugador, y sin
+        // esto los picos se saldrían del rango: eso no suena a fuerza, suena a
+        // distorsión. Si el navegador no trae compresor, se sigue sin él.
+        const limiter = ctx.createDynamicsCompressor ? ctx.createDynamicsCompressor() : null;
+        if (limiter) {
+          limiter.threshold.value = cfg.limiterThresholdDb;
+          limiter.knee.value = 0;
+          limiter.ratio.value = cfg.limiterRatio;
+          limiter.attack.value = cfg.limiterAttack;
+          limiter.release.value = cfg.limiterRelease;
+        }
+
         source.connect(muffle);
         muffle.connect(bass);
         bass.connect(dry);
@@ -171,11 +184,14 @@
         verb.connect(wet);
         dry.connect(master);
         wet.connect(master);
-        master.connect(ctx.destination);
+        if (limiter) {
+          master.connect(limiter);
+          limiter.connect(ctx.destination);
+        } else master.connect(ctx.destination);
 
         // A partir de aquí el nivel lo manda el grafo, no el elemento.
         this.audio.volume = 1;
-        this.graph = { ctx, muffle, bass, verb, dry, wet, master };
+        this.graph = { ctx, muffle, bass, verb, dry, wet, master, limiter };
         return this.graph;
       } catch (_) {
         // `file://`, políticas raras o navegadores viejos. Que falte el

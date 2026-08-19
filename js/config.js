@@ -198,13 +198,18 @@
       // TODO lo que sigue se mueve dentro del volumen del jugador: su ajuste
       // es el techo, no el nivel. Por eso el reposo está por debajo de 1, para
       // que quede sitio donde crecer sin pasarse nunca de lo que pidió.
-      baseLevel: 0.58,
+      // El reparto del techo: la música vive al 60 % del volumen del jugador y
+      // el 40 % restante NO se usa nunca en juego normal — está guardado
+      // entero para la aproximación al hoyo. Ese margen es el efecto: lo que
+      // convierte acercarse a la copa en algo que se oye, no en un detalle.
+      baseLevel: 0.60,
       baseCutoff: 20000,
       baseReverb: 0.10,
-      maxReverb: 0.55,
-      // Cuánto se aparta el sonido seco para dejar sitio al reverb. Sin esto,
-      // mojar la mezcla se percibe como un subidón de volumen.
-      dryDuck: 0.45,
+      maxReverb: 0.85,
+      // Cuánto se aparta el sonido seco al mojar la mezcla. Con reverb fuerte
+      // esto deja de ser cosmético: sin ceder sitio, la sala se suma entera al
+      // seco y lo que se oye es un subidón de volumen, no un espacio grande.
+      dryDuck: 0.55,
       // Suavizados (1/s). El nivel manda: demasiado rápido suena a automático
       // de radio, demasiado lento y el efecto llega cuando ya no viene a cuento.
       levelResponse: 2.4,
@@ -217,14 +222,17 @@
       // chapuzón se oía un bajón vago.
       impactResponse: 9,
 
-      // Cercanía al hoyo — solo cuenta NUESTRA bola.
-      // Radio generoso para que se note la entrada, con una curva que guarda
-      // casi todo el efecto para los últimos metros: acercarse se insinúa,
-      // llegar suena a final.
-      holeRange: 950,
+      // Cercanía al hoyo — cuenta la bola que enfoca la cámara.
+      // El radio es deliberadamente enorme: más ancho que una pantalla de
+      // juego, así que la aproximación no es un interruptor que salta al final
+      // sino una cuesta larga que se va sintiendo. La curva sigue guardando lo
+      // más gordo para los últimos metros: acercarse se insinúa, llegar suena
+      // a final. Y la sala se abre de par en par, que es lo que hace épico un
+      // final: no más volumen, más sitio.
+      holeRange: 2600,
       holeCurve: 1.8,
       holeLevel: 1.0,
-      holeReverb: 0.44,
+      holeReverb: 0.72,
 
       // Vuelo largo. Una bola que sigue viva pasados unos segundos es una bola
       // a la que está pasando algo: graves que crecen y algo más de cuerpo.
@@ -252,8 +260,17 @@
       // Cola del reverb generado. Se sintetiza al vuelo: un impulso de sala es
       // ruido que se apaga, y traerlo como archivo sería otro asset que
       // mantener para algo que nadie distinguiría.
-      reverbSeconds: 2.6,
-      reverbDecay: 2.4,
+      reverbSeconds: 3.4,
+      reverbDecay: 2.1,
+      // Limitador de salida. Con la sala abierta al máximo, el reverb suma
+      // energía encima del seco y el maestro ya está al tope del jugador: sin
+      // techo duro, los picos se salen del rango y eso no se oye como fuerza,
+      // se oye como distorsión. Es la red que permite pedir reverb fuerte sin
+      // pagarlo en calidad.
+      limiterThresholdDb: -1.5,
+      limiterRatio: 20,
+      limiterAttack: 0.003,
+      limiterRelease: 0.25,
     }),
 
     shot: Object.freeze({
