@@ -1,8 +1,16 @@
 (function (NG) {
   'use strict';
 
-  const STORAGE_KEY = 'noiseGolf.announcer.v1';
+  const LEGACY_STORAGE_KEY = 'noiseGolf.announcer.v1';
+  const USER_DEFAULTS = Object.freeze({
+    sharedVolume: 0.9,
+    captionsCollapsed: false,
+    commentator: { name: 'Rafa Voltio', voiceURI: 'Microsoft Pablo - Spanish (Spain)', rate: 1.75, pitch: 1.46 },
+    informant: { name: 'Álex Prisma', voiceURI: 'Cleveland', rate: 1.71, pitch: 1.51 },
+  });
   const { clamp, chance, clone } = NG.AnnouncerUtils;
+  const GUARANTEED_EVENTS = new Set(['HOLE', 'HOLE_IN_ONE']);
+  const POST_MATCH_ALLOWED_EVENTS = new Set(['HOLE', 'HOLE_IN_ONE', 'VICTORY', 'BATTLE_ROYALE_WINNER']);
 
   const merge = (base, value) => {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return clone(base);
@@ -15,19 +23,25 @@
     return out;
   };
 
-  function safeReadStorage() {
-    try { return JSON.parse(window.localStorage?.getItem(STORAGE_KEY) || '{}'); }
+  function safeReadLegacyStorage() {
+    try { return JSON.parse(window.localStorage?.getItem(LEGACY_STORAGE_KEY) || '{}'); }
     catch (_) { return {}; }
   }
 
-  function safeWriteStorage(value) {
-    try { window.localStorage?.setItem(STORAGE_KEY, JSON.stringify(value)); }
+  function safeWriteLegacyStorage(value) {
+    try { window.localStorage?.setItem(LEGACY_STORAGE_KEY, JSON.stringify(value)); }
     catch (_) { /* storage may be unavailable in private/file contexts */ }
   }
 
+  function safeRemoveLegacyStorage() {
+    try { window.localStorage?.removeItem(LEGACY_STORAGE_KEY); }
+    catch (_) { /* noop */ }
+  }
+
   class AnnouncerSystem {
-    constructor(game) {
+    constructor(game, profile = null) {
       this.game = game;
+      this.profile = profile;
       this.ready = false;
       this.enabled = true;
       this.language = 'es-ES';
@@ -52,6 +66,12 @@
       this.pendingTimers = new Set();
       this.lastByPlayerEvent = new Map();
       this.lastHoleSignature = '';
+      this.narrativePhase = 'inactive';
+      this.activeAims = new Map();
+      this.postMatchInfo = null;
+      this.postMatchSummaryCount = 0;
+      this.lastPostMatchSummaryAt = 0;
+      this.informativeSequence = 0;
     }
 
     async init() {
@@ -93,10 +113,21 @@
     }
 
     loadSettings() {
-      const defaults = this.runtimeConfig.defaults || {};
-      const stored = safeReadStorage();
+      // Los defaults editables viven en el config.json general del juego.
+      // Los cambios del jugador viven dentro de noiseGolf.profile.v1 mediante PlayerProfile.
+      const defaults = merge(USER_DEFAULTS, NG.ClientEnv?.config?.announcerUserDefaults || {});
+      let stored = this.profile?.getAnnouncerSettings?.() || {};
+      let migratedLegacy = false;
+      if (!stored || !Object.keys(stored).length) {
+        const legacy = safeReadLegacyStorage();
+        if (legacy && Object.keys(legacy).length) {
+          stored = legacy;
+          migratedLegacy = true;
+        }
+      }
       this.settings = {
         sharedVolume: clamp(stored.sharedVolume ?? defaults.sharedVolume ?? 0.9, 0, 1),
+        captionsCollapsed: Boolean(stored.captionsCollapsed ?? defaults.captionsCollapsed ?? false),
         commentator: {
           name: String(stored.commentator?.name || defaults.commentator?.name || this.personas.commentator.identity?.name || 'Rafa Voltio').slice(0, 32),
           voiceURI: String(stored.commentator?.voiceURI || defaults.commentator?.voiceURI || ''),
@@ -111,13 +142,18 @@
         },
       };
       this.saveSettings();
+      if (migratedLegacy && this.profile?.getAnnouncerSettings?.()) safeRemoveLegacyStorage();
     }
 
-    saveSettings() { safeWriteStorage(this.settings); }
+    saveSettings() {
+      if (this.profile?.setAnnouncerSettings) this.profile.setAnnouncerSettings(this.settings);
+      else safeWriteLegacyStorage(this.settings); // compatibilidad del demo aislado del subsistema
+    }
 
     updateSettings(next) {
       if (!next || typeof next !== 'object') return this.getSettings();
       if (next.sharedVolume != null) this.settings.sharedVolume = clamp(next.sharedVolume, 0, 1);
+      if (next.captionsCollapsed != null) this.settings.captionsCollapsed = Boolean(next.captionsCollapsed);
       for (const key of ['commentator', 'informant']) {
         const source = next[key];
         if (!source) continue;
@@ -127,6 +163,7 @@
         if (source.pitch != null) this.settings[key].pitch = clamp(source.pitch, 0, 2);
       }
       this.saveSettings();
+      window.dispatchEvent(new CustomEvent('noisegolf:announcer-settings', { detail: this.getSettings() }));
       return this.getSettings();
     }
 
@@ -175,6 +212,23 @@
 
     escapeRegExp(value) { return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
+    speakerDisplayName(speaker) {
+      return this.settings?.[speaker]?.name || this.personas?.[speaker]?.identity?.name || (speaker === 'informant' ? 'Álex Prisma' : 'Rafa Voltio');
+    }
+
+    notifySpeechLine(item, text, state = 'start') {
+      const detail = {
+        state,
+        speaker: item?.speaker === 'informant' ? 'informant' : 'commentator',
+        speakerName: this.speakerDisplayName(item?.speaker),
+        text: String(text || ''),
+        eventKey: String(item?.eventKey || ''),
+        eventLabel: String(item?.eventLabel || item?.eventKey || ''),
+        at: Date.now(),
+      };
+      window.dispatchEvent(new CustomEvent('noisegolf:announcer-line', { detail }));
+    }
+
     setLocalPlayerName(name) { this.localPlayerName = String(name || 'Jugador').trim() || 'Jugador'; }
 
     attachSession(session) {
@@ -183,18 +237,73 @@
       if (!session) return;
       this.sessionUnsub.push(session.on('announcercue', (cue) => this.handleNetworkCue(cue)));
       this.sessionUnsub.push(session.on('announcerbundle', (packet) => this.receiveNetworkBundle(packet)));
+      this.sessionUnsub.push(session.on('announceractivity', (activity) => this.handleNetworkActivity(activity)));
+      this.sessionUnsub.push(session.on('matchover', (info) => this.enterPostMatch({ ...info, source: 'online-matchover' })));
+    }
+
+    setNarrativePhase(phase, reason = '') {
+      const next = ['inactive', 'gameplay', 'informative', 'postmatch'].includes(phase) ? phase : 'gameplay';
+      if (next === this.narrativePhase) return;
+      this.narrativePhase = next;
+      window.dispatchEvent(new CustomEvent('noisegolf:announcer-phase', { detail: { phase: next, reason } }));
+    }
+
+    markGameplayActivity(reason = 'gameplay', playerKey = '') {
+      const now = Date.now();
+      this.lastMeaningfulAt = now;
+      if (playerKey && this.activeAims.has(String(playerKey)) && /shot|hole|water|out|reset|collision|penalty/i.test(reason)) {
+        this.activeAims.delete(String(playerKey));
+      }
+      if (this.narrativePhase !== 'postmatch') this.setNarrativePhase('gameplay', reason);
+    }
+
+    setAimActivity(playerKey, active, power = 0) {
+      const key = String(playerKey || this.localPlayerName || 'local');
+      if (active) {
+        const lease = Math.max(5000, Number(this.runtimeConfig.stateMachine?.aimLeaseMs || 60000));
+        this.activeAims.set(key, { until: Date.now() + lease, power: clamp(power, 0, 1) });
+        this.markGameplayActivity('aim-start', key);
+      } else {
+        this.activeAims.delete(key);
+        this.markGameplayActivity('aim-end', key);
+      }
+    }
+
+    hasActiveAim() {
+      const now = Date.now();
+      for (const [key, state] of this.activeAims.entries()) {
+        if (!state || Number(state.until) <= now) this.activeAims.delete(key);
+      }
+      return this.activeAims.size > 0;
+    }
+
+    hasLiveGameplayActivity() {
+      if (this.hasActiveAim()) return true;
+      const online = !!this.session?.getStatus?.().online;
+      if (online) {
+        if (this.session?.anyBallRolling?.()) return true;
+        const status = this.session?.getStatus?.() || {};
+        if (Number(status.rollingBalls) > 0) return true;
+        if (Number(this.session?.transitionTimer) > 0 || Number(this.session?.transitionHold) > 0) return true;
+        return false;
+      }
+      return Boolean(this.game?.dragging || this.game?.ball?.moving || this.game?.isIntroPlaying?.());
     }
 
     setMatchActive(active) {
       const next = !!active;
       if (next === this.matchActive) return;
       this.matchActive = next;
+      window.dispatchEvent(new CustomEvent('noisegolf:announcer-matchactive', { detail: { active: next } }));
       if (!next) {
+        this.setNarrativePhase('inactive', 'left-match');
+        this.activeAims.clear();
         this.cancelPendingTimers();
         this.director?.stop();
         return;
       }
       this.resetNarrativeState();
+      this.setNarrativePhase('gameplay', 'entered-match');
       const online = !!this.session?.getStatus?.().online;
       if (!online) {
         this.announceEvent('MATCH_START', { playerName: this.localPlayerName, source: 'offline-match' });
@@ -214,6 +323,11 @@
       this.lastFillerAt = 0;
       this.lastByPlayerEvent.clear();
       this.lastHoleSignature = '';
+      this.activeAims.clear();
+      this.postMatchInfo = null;
+      this.postMatchSummaryCount = 0;
+      this.lastPostMatchSummaryAt = 0;
+      this.informativeSequence = 0;
       this.composer?.reset();
       this.director?.stop();
     }
@@ -237,12 +351,27 @@
     }
 
     onAimStart(power = 0) {
-      if (!this.matchActive || this.session?.getStatus?.().online) return;
+      if (!this.matchActive || this.narrativePhase === 'postmatch') return;
+      const online = !!this.session?.getStatus?.().online;
+      if (online) {
+        this.session?.reportAnnouncerActivity?.('aim-start', { power: clamp(power, 0, 1) });
+        return;
+      }
+      this.setAimActivity('offline', true, power);
       this.announceEvent(power > 0.82 ? 'RISKY_AIM' : 'AIMING', { playerName: this.localPlayerName, power, source: 'offline-aim' });
+    }
+
+    onAimEnd() {
+      if (!this.matchActive) return;
+      const online = !!this.session?.getStatus?.().online;
+      if (online) this.session?.reportAnnouncerActivity?.('aim-end');
+      else this.setAimActivity('offline', false, 0);
     }
 
     onShot(payload = {}) {
       if (!this.matchActive || this.session?.getStatus?.().online) return;
+      this.activeAims.delete('offline');
+      this.markGameplayActivity('shot', 'offline');
       const power = clamp(payload.power ?? 0, 0, 1);
       const cfg = this.runtimeConfig.gameplay || {};
       let eventKey = 'SHOT_TAKEN';
@@ -270,19 +399,59 @@
       this.announceEvent(eventKey, { ...cue, eventKey, source: cue.source || 'host-authority' });
     }
 
+    handleNetworkActivity(activity) {
+      if (!activity || this.session?.role !== 'host' || this.narrativePhase === 'postmatch') return;
+      const key = String(activity.playerKey || activity.playerName || 'player');
+      if (activity.kind === 'aim-start') {
+        this.setAimActivity(key, true, activity.power);
+        // El host es quien convierte el gesto en narrativa: todos oyen el
+        // mismo comentario y ningún cliente inventa un AIMING por su cuenta.
+        this.announceEvent(Number(activity.power) > 0.82 ? 'RISKY_AIM' : 'AIMING', { ...activity, source: 'host-aim-state' });
+      } else if (activity.kind === 'aim-end') this.setAimActivity(key, false, 0);
+      else this.markGameplayActivity(activity.kind || 'network-activity', key);
+    }
+
     receiveNetworkBundle(packet) {
       if (!packet?.bundle || this.session?.role === 'host') return;
       this.scheduleBundle(packet.bundle, Number(packet.startAtNetTime));
+    }
+
+    enterPostMatch(info = {}) {
+      if (!this.matchActive) return;
+      this.activeAims.clear();
+      this.postMatchInfo = { ...(info || {}), at: Date.now() };
+      this.postMatchSummaryCount = 0;
+      this.lastPostMatchSummaryAt = 0;
+      this.lastMeaningfulAt = Date.now();
+      this.setNarrativePhase('postmatch', info.source || 'match-over');
+      this.director?.discardNonGuaranteedPending?.([...POST_MATCH_ALLOWED_EVENTS]);
+    }
+
+    onOfflineMatchEnd(info = {}) {
+      if (!this.matchActive || this.session?.getStatus?.().online) return;
+      this.enterPostMatch({ ...info, source: 'offline-matchover' });
+    }
+
+    onOfflineNewCourse() {
+      if (!this.matchActive || this.session?.getStatus?.().online) return;
+      this.resetNarrativeState();
+      this.setNarrativePhase('gameplay', 'offline-new-course');
+      this.announceEvent('MATCH_START', { playerName: this.localPlayerName, source: 'offline-new-course' });
     }
 
     announceEvent(eventKey, payload = {}) {
       if (!this.ready || !this.enabled || !eventKey) return { accepted: false, reason: 'not-ready' };
       const online = !!this.session?.getStatus?.().online;
       if (online && this.session?.role === 'client') return { accepted: false, reason: 'client-not-authority' };
+      if (this.narrativePhase === 'postmatch' && !POST_MATCH_ALLOWED_EVENTS.has(eventKey)) {
+        return { accepted: false, reason: 'postmatch-gameplay-suppressed' };
+      }
 
       const playerKey = String(payload.playerKey || payload.playerName || this.localPlayerName || 'local');
       const policy = this.composer.policy(eventKey);
+      const guaranteed = (this.runtimeConfig.stateMachine?.guaranteedEvents || [...GUARANTEED_EVENTS]).includes(eventKey);
       const now = Date.now();
+      this.markGameplayActivity(eventKey, playerKey);
       const dedupeKey = `${playerKey}:${eventKey}`;
       const last = this.lastByPlayerEvent.get(dedupeKey) || 0;
       const dedupeMs = Math.max(0, Number(policy.dedupeMs || 0));
@@ -294,12 +463,24 @@
         this.lastMeaningfulAt = now;
         return { accepted: true, reason: 'trace-folded' };
       }
-      if ((policy.mode === 'opportunistic' || policy.mode === 'filler') && this.director?.isBusy()) {
+      if (!guaranteed && (policy.mode === 'opportunistic' || policy.mode === 'filler') && this.director?.isBusy()) {
         return { accepted: false, reason: 'mic-busy' };
       }
 
       const effective = this.socializeEvent(eventKey, context, payload);
       const bundle = this.composer.buildBundle(effective.primary, clone(context), payload.source || 'game');
+      if (guaranteed) {
+        const holeToken = online
+          ? `${Number(this.session?.courseRound) || 0}:${Number(this.game?.holeIndex) || 0}:${payload.finishOrder ?? ''}`
+          : this.offlineHoleSignature();
+        bundle.policy = {
+          ...bundle.policy, class: 'supercritical', priority: 1000, mode: 'guaranteed',
+          guaranteed: true, persistentUntilSpoken: true, preempt: 'none',
+        };
+        bundle.guaranteeKey = `${eventKey}:${playerKey}:${holeToken}`;
+        bundle.expiresAt = Number.MAX_SAFE_INTEGER;
+        bundle.conversationExpiresAt = Number.MAX_SAFE_INTEGER;
+      }
       if (effective.extra && chance(this.runtimeConfig.gameplay?.favoriteExtraLineChance ?? 0.42)) {
         bundle.items.push(this.composer.buildExtraItem(effective.extra, clone(context), effective.extraSpeaker || 'commentator'));
         bundle.conversationExpiresAt += 1800;
@@ -460,6 +641,115 @@
       return changed;
     }
 
+    runtimeBundle(eventKey, items, policy = {}, source = 'runtime') {
+      const now = Date.now();
+      const normalized = (items || []).filter((item) => item?.text).map((item) => ({
+        speaker: item.speaker === 'informant' ? 'informant' : 'commentator',
+        text: String(item.text),
+        eventKey,
+        eventLabel: item.eventLabel || (eventKey === 'POST_MATCH_SUMMARY' ? 'Resumen de partida' : 'Estado informativo'),
+        tone: item.tone || 'informative',
+      }));
+      const finalPolicy = {
+        class: 'ambient', priority: 12, ttlMs: 1800, mode: 'filler', dedupeMs: 0,
+        preempt: 'none', nearEndMs: 0, maxWords: 36, partnerChance: 0, cooldownMs: 0,
+        ...policy,
+      };
+      return {
+        id: `ann-runtime-${now}-${Math.random().toString(36).slice(2)}`,
+        eventKey, eventAt: now, expiresAt: now + Number(finalPolicy.ttlMs || 1800),
+        conversationExpiresAt: now + Math.max(Number(finalPolicy.ttlMs || 1800) + 2600, 4200),
+        player: '', source, policy: finalPolicy, context: {}, items: normalized,
+      };
+    }
+
+    liveInformation() {
+      const online = !!this.session?.getStatus?.().online;
+      const hole = this.game?.hole;
+      const holeNumber = Math.max(1, Number(this.game?.holeIndex || 0) + 1);
+      const holeCount = Math.max(holeNumber, Number(this.game?.holes?.length || 1));
+      const par = Math.max(1, Number(hole?.par || 0));
+      if (online) {
+        const standings = this.session?.getStandings?.() || [];
+        const leader = standings[0];
+        const active = standings.filter((entry) => entry.role === 'player' && !entry.finished);
+        const status = this.session?.getStatus?.() || {};
+        const mode = this.session?.settings?.mode === 'battle' ? 'Battle Royale' : 'por turnos';
+        const timer = Number.isFinite(Number(status.timerRemaining)) ? ` Quedan ${Math.ceil(Number(status.timerRemaining))} segundos en el reloj actual.` : '';
+        const leaderText = leader ? `${leader.username} lidera con ${Math.round(Number(leader.points) || 0)} puntos.` : 'El marcador todavía no tiene líder definido.';
+        return {
+          first: `Pausa informativa. Hoyo ${holeNumber} de ${holeCount}, par ${par}, modo ${mode}. ${leaderText}${timer}`,
+          second: active.length
+            ? `Siguen activos ${active.length} jugadores: ${active.slice(0, 4).map((entry) => entry.username).join(', ')}${active.length > 4 ? ' y compañía' : ''}. En cuanto vuelva la acción, regresamos a la jugada.`
+            : 'No hay bolas activas resolviendo una jugada. La cabina queda en modo de análisis hasta el siguiente estado del host.',
+        };
+      }
+
+      const ball = this.game?.ball;
+      const strokes = Math.max(0, Number(this.game?.strokes || 0));
+      const distance = ball && hole?.cup
+        ? Math.hypot(hole.cup.x - ball.x, hole.cup.y - ball.y) * Number(NG.CONFIG?.course?.metersPerPixel || 1)
+        : 0;
+      const difficulty = hole?.difficultyLabel || hole?.archetypeLabel || 'procedural';
+      return {
+        first: `Pausa informativa. Hoyo ${holeNumber} de ${holeCount}, par ${par}, dificultad ${difficulty}. Van ${strokes} golpes y quedan aproximadamente ${distance < 10 ? distance.toFixed(1) : Math.round(distance)} metros hasta la copa.`,
+        second: `El mapa está estable y no hay una acción en curso. Cuando vuelvas a apuntar o la bola entre en movimiento, la narración retorna inmediatamente al juego.`,
+      };
+    }
+
+    buildInformativeBundle() {
+      const info = this.liveInformation();
+      const alternate = (this.informativeSequence++ % 2) === 1;
+      const items = alternate
+        ? [{ speaker: 'commentator', text: info.second }, { speaker: 'informant', text: info.first }]
+        : [{ speaker: 'informant', text: info.first }, { speaker: 'commentator', text: info.second }];
+      return this.runtimeBundle('INFORMATIVE_STATE', items, { class: 'ambient', priority: 12, ttlMs: 2200 }, 'idle-information');
+    }
+
+    buildPostMatchSummaryBundle() {
+      const online = !!this.session?.getStatus?.().online;
+      const secondPass = this.postMatchSummaryCount > 0;
+      let first = '';
+      let second = '';
+      if (online) {
+        const standings = this.session?.getStandings?.() || this.postMatchInfo?.standings || [];
+        const winnerKey = this.postMatchInfo?.winnerPlayerKey || this.session?.winnerPlayerKey;
+        const winner = standings.find((entry) => entry.playerKey === winnerKey) || standings[0];
+        const podium = standings.slice(0, 3).map((entry) => `${entry.rank}. ${entry.username} (${Math.round(Number(entry.points) || 0)} pts)`).join(', ');
+        const totalPlayers = standings.filter((entry) => entry.role === 'player').length;
+        if (!secondPass) {
+          first = winner
+            ? `Cierre de partida. ${winner.username} termina al frente con ${Math.round(Number(winner.points) || 0)} puntos. Marcador definitivo confirmado por el host.`
+            : 'Cierre de partida confirmado por el host. Ya no quedan acciones de juego pendientes.';
+          second = podium
+            ? `Resumen final: ${podium}. La partida queda cerrada; a partir de aquí solo analizamos el resultado.`
+            : 'La fase de juego terminó. La cabina pasa a resumen y no volverá a describir tiros inexistentes.';
+        } else {
+          first = winner
+            ? `Segundo análisis de cierre: ${winner.username} conserva la victoria; el resultado ya es definitivo y no existe una jugada pendiente capaz de cambiarlo.`
+            : 'Segundo análisis de cierre: el estado final sigue congelado y no existen acciones pendientes.';
+          second = `Participaron ${totalPlayers || standings.length} jugadores. La narración queda ahora en silencio hasta una nueva partida o un nuevo estado real del juego.`;
+        }
+      } else {
+        const holes = Math.max(1, Number(this.game?.holes?.length || 1));
+        const totalScore = Number(this.game?.totalScore || 0);
+        const scoreText = totalScore === 0 ? 'par' : (totalScore > 0 ? `más ${totalScore}` : `menos ${Math.abs(totalScore)}`);
+        const points = Math.round(Number(this.game?.arcadePoints || 0));
+        const strokes = Math.round(Number(this.postMatchInfo?.strokes ?? this.game?.strokes) || 0);
+        if (!secondPass) {
+          first = `Recorrido completado. ${this.localPlayerName} termina ${holes} hoyos con score ${scoreText} y ${points} puntos acumulados.`;
+          second = `Último hoyo resuelto en ${strokes} golpes. El juego ya está en post-partida: ahora toca resumen, no comentarios de una jugada que ya terminó.`;
+        } else {
+          first = `Balance final: ${holes} hoyos cerrados, score ${scoreText} y ${points} puntos. No queda ninguna bola resolviendo una acción.`;
+          second = `La cabina cierra el análisis de ${this.localPlayerName}. Desde este momento no habrá más narración de gameplay hasta iniciar otro recorrido.`;
+        }
+      }
+      return this.runtimeBundle('POST_MATCH_SUMMARY', [
+        { speaker: 'commentator', text: first, eventLabel: 'Resumen de partida' },
+        { speaker: 'informant', text: second, eventLabel: 'Análisis final' },
+      ], { class: 'important', priority: 88, ttlMs: 7000, mode: 'opportunistic' }, 'postmatch-summary');
+    }
+
     deliverBundle(bundle) {
       const online = !!this.session?.getStatus?.().online;
       if (!online) return this.director.submitBundle(bundle);
@@ -478,8 +768,11 @@
       // cambiar la prioridad relativa ni permitir interrupciones.
       const allowance = Math.ceil(lead * 1000) + Math.max(500, Number(this.runtimeConfig.sync?.lateGraceMs || 900));
       const packetBundle = clone(bundle);
-      packetBundle.expiresAt = Number(packetBundle.expiresAt || Date.now()) + allowance;
-      packetBundle.conversationExpiresAt = Number(packetBundle.conversationExpiresAt || packetBundle.expiresAt) + allowance;
+      const guaranteed = packetBundle.policy?.guaranteed === true || packetBundle.policy?.class === 'supercritical';
+      if (!guaranteed) {
+        packetBundle.expiresAt = Number(packetBundle.expiresAt || Date.now()) + allowance;
+        packetBundle.conversationExpiresAt = Number(packetBundle.conversationExpiresAt || packetBundle.expiresAt) + allowance;
+      }
       this.session.broadcastAnnouncerBundle?.(packetBundle, startAt);
       this.scheduleBundle(packetBundle, startAt);
       return { accepted: true, reason: 'broadcast' };
@@ -491,16 +784,26 @@
       return Number(this.session.hostClock?.now?.()) || Number(this.session.netTime) || 0;
     }
 
+    postMatchAllowsBundle(bundle) {
+      if (this.narrativePhase !== 'postmatch') return true;
+      if (!bundle) return false;
+      if (bundle.policy?.guaranteed === true || bundle.policy?.class === 'supercritical') return true;
+      if (bundle.source === 'postmatch-summary' || bundle.eventKey === 'POST_MATCH_SUMMARY') return true;
+      return POST_MATCH_ALLOWED_EVENTS.has(String(bundle.eventKey || ''));
+    }
+
     scheduleBundle(bundle, startAtNetTime) {
+      if (!this.postMatchAllowsBundle(bundle)) return { accepted: false, reason: 'postmatch-stale-bundle' };
       const now = this.authoritativeTime();
       const deltaMs = Number.isFinite(startAtNetTime) ? (startAtNetTime - now) * 1000 : 0;
       const grace = Math.max(0, Number(this.runtimeConfig.sync?.lateGraceMs || 900));
-      if (Number.isFinite(startAtNetTime) && deltaMs < -grace) return { accepted: false, reason: 'too-late' };
-      const delay = Math.max(0, deltaMs);
+      const guaranteed = bundle?.policy?.guaranteed === true || bundle?.policy?.class === 'supercritical';
+      if (!guaranteed && Number.isFinite(startAtNetTime) && deltaMs < -grace) return { accepted: false, reason: 'too-late' };
+      const delay = guaranteed && deltaMs < 0 ? 0 : Math.max(0, deltaMs);
       if (delay < 18) return this.director.submitBundle(bundle);
       const timer = window.setTimeout(() => {
         this.pendingTimers.delete(timer);
-        if (this.matchActive) this.director.submitBundle(bundle);
+        if (this.matchActive && this.postMatchAllowsBundle(bundle)) this.director.submitBundle(bundle);
       }, delay);
       this.pendingTimers.add(timer);
       return { accepted: true, reason: 'scheduled' };
@@ -508,21 +811,41 @@
 
     maybeFillSilence() {
       if (!this.ready || !this.matchActive || !this.enabled || this.runtimeConfig.dialogue?.allowQuietFiller === false) return;
-      if (this.director?.isBusy()) return;
       const online = !!this.session?.getStatus?.().online;
       if (online && this.session?.role !== 'host') return;
+      if (this.director?.isBusy()) return;
       const now = Date.now();
-      const quiet = Number(this.runtimeConfig.dialogue?.quietBeforeFillerMs || 6200);
-      const cooldown = Number(this.runtimeConfig.dialogue?.fillerCooldownMs || 9000);
+      const stateCfg = this.runtimeConfig.stateMachine || {};
+
+      if (this.narrativePhase === 'postmatch') {
+        const delay = Math.max(0, Number(stateCfg.postMatchSummaryDelayMs || 1400));
+        const cooldown = Math.max(delay, Number(stateCfg.postMatchSummaryCooldownMs || 10000));
+        const max = Math.max(0, Math.floor(Number(stateCfg.postMatchSummaryMax ?? 2)));
+        if (this.postMatchSummaryCount >= max) return;
+        if (now - this.lastMeaningfulAt < delay) return;
+        if (this.lastPostMatchSummaryAt && now - this.lastPostMatchSummaryAt < cooldown) return;
+        const result = this.deliverBundle(this.buildPostMatchSummaryBundle());
+        if (result?.accepted) {
+          this.postMatchSummaryCount += 1;
+          this.lastPostMatchSummaryAt = now;
+        }
+        return;
+      }
+
+      // Mientras alguien mantiene el apuntado, la partida NO está inactiva.
+      // El host conoce este estado también para clientes remotos mediante
+      // reportAnnouncerActivity(), así que ningún peer entra solo en filler.
+      if (this.hasLiveGameplayActivity()) {
+        this.lastMeaningfulAt = now;
+        this.setNarrativePhase('gameplay', 'live-map-activity');
+        return;
+      }
+
+      const quiet = Math.max(1000, Number(stateCfg.idleAfterMs || this.runtimeConfig.dialogue?.quietBeforeFillerMs || 6200));
+      const cooldown = Math.max(1000, Number(stateCfg.informativeCooldownMs || this.runtimeConfig.dialogue?.fillerCooldownMs || 9000));
       if (now - this.lastMeaningfulAt < quiet || now - this.lastFillerAt < cooldown) return;
-      const cameraKey = this.session?.getCameraPlayerKey?.() || this.session?.localPlayerKey || this.localPlayerName;
-      const context = this.contexts.get(String(cameraKey)) || this.contexts.values().next().value;
-      if (!context) return;
-      const eventKey = context.goodStreak >= 2 ? 'STREAK_GOOD' : context.badStreak >= 2 ? 'STREAK_BAD' : 'SCORE_UPDATE';
-      const bundle = this.composer.buildBundle(eventKey, clone(context), 'quiet-filler');
-      bundle.policy = { ...bundle.policy, class: 'ambient', priority: 10, ttlMs: 850, nearEndMs: 0 };
-      bundle.expiresAt = now + 850;
-      const result = this.deliverBundle(bundle);
+      this.setNarrativePhase('informative', 'no-gameplay-activity');
+      const result = this.deliverBundle(this.buildInformativeBundle());
       if (result?.accepted) this.lastFillerAt = now;
     }
   }

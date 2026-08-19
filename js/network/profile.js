@@ -20,6 +20,9 @@
   function safeStorageRemove(key) {
     try { if (window.localStorage) window.localStorage.removeItem(key); } catch (_) { /* noop */ }
   }
+  function clone(value) {
+    try { return JSON.parse(JSON.stringify(value)); } catch (_) { return null; }
+  }
 
   class PlayerProfile {
     constructor() { this.data = this.load(); }
@@ -30,10 +33,16 @@
       const playerKey = parsed && typeof parsed.playerKey === 'string' && parsed.playerKey.length >= 12
         ? parsed.playerKey : randomId('player');
       const username = parsed && typeof parsed.username === 'string' ? this.sanitizeName(parsed.username) : '';
-      const value = { playerKey, username };
+      // Las preferencias locales del locutor forman parte del perfil del usuario.
+      // No son estado de partida ni configuración del servidor y nunca se sincronizan.
+      const announcer = parsed && parsed.announcer && typeof parsed.announcer === 'object' && !Array.isArray(parsed.announcer)
+        ? clone(parsed.announcer) : null;
+      const value = { playerKey, username, announcer };
       safeStorageSet(STORAGE_PROFILE, JSON.stringify(value));
       return value;
     }
+
+    persist() { return safeStorageSet(STORAGE_PROFILE, JSON.stringify(this.data)); }
 
     sanitizeName(value) {
       return String(value || '').replace(/[<>\u0000-\u001f]/g, '').replace(/\s+/g, ' ').trim().slice(0, NG.NET_CONFIG.maxNameLength);
@@ -45,8 +54,19 @@
       const username = this.sanitizeName(value);
       if (username.length < 2) throw new Error('El nombre debe tener al menos 2 caracteres.');
       this.data.username = username;
-      safeStorageSet(STORAGE_PROFILE, JSON.stringify(this.data));
+      this.persist();
       return username;
+    }
+
+    getAnnouncerSettings() {
+      return this.data.announcer && typeof this.data.announcer === 'object' ? clone(this.data.announcer) : null;
+    }
+
+    setAnnouncerSettings(value) {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) return this.getAnnouncerSettings();
+      this.data.announcer = clone(value) || {};
+      this.persist();
+      return this.getAnnouncerSettings();
     }
 
     getRelayUrl() { return String(NG.ClientEnv?.config?.relayUrl || NG.NET_CONFIG.defaultRelayUrl || '').trim(); }

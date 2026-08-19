@@ -1,31 +1,39 @@
 {
-  "version":"1.0.3",
+  "version": "1.0.3",
   "_readme": "Noise Golf 2D - Cliente/Host web. ESTE ARCHIVO ES PUBLICO: el navegador lo descarga. NO pongas contraseñas privadas, tokens ni secretos aquí. Consulta config.example.json para la descripción de cada campo.",
-
   "onlineEnabled": true,
   "maxPlayers": 16,
-
   "relayUrl": "wss://golf-relay.klys.dev",
   "relayConnectTimeoutMs": 6500,
   "preflightTimeoutMs": 6500,
-
   "publicIceServers": [],
-
   "snapshotHz": 20,
   "reliablePingSeconds": 2,
   "requestTimeoutMs": 6500,
   "webRtcConnectTimeoutMs": 14000,
-
   "simulationHz": 60,
-
   "interpolationMs": 70,
   "maxExtrapolationMs": 125,
   "correctionHalfLifeMs": 105,
   "predictionEnabled": true,
   "smoothingResponsiveness": 18,
   "snapDistance": 210,
-
   "playerGraceSeconds": 180,
-
-  "mapVoteTimeoutSeconds": 30
+  "mapVoteTimeoutSeconds": 30,
+  "announcerUserDefaults": {
+    "sharedVolume": 0.9,
+    "captionsCollapsed": false,
+    "commentator": {
+      "name": "Rafa Voltio",
+      "voiceURI": "Microsoft Pablo - Spanish (Spain)",
+      "rate": 1.75,
+      "pitch": 1.46
+    },
+    "informant": {
+      "name": "Álex Prisma",
+      "voiceURI": "Cleveland",
+      "rate": 1.71,
+      "pitch": 1.51
+    }
+  }
 }

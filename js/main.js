@@ -44,7 +44,7 @@
       // como tiro, así que el juego suelta cualquier apunte en curso.
       if (zoomGuard) zoomGuard.onChange = (blocked) => { if (blocked) game.cancelDrag(); };
       const profile = new NG.PlayerProfile();
-      const announcer = NG.AnnouncerSystem ? new NG.AnnouncerSystem(game) : null;
+      const announcer = NG.AnnouncerSystem ? new NG.AnnouncerSystem(game, profile) : null;
       if (announcer) {
         await announcer.init();
         announcer.setLocalPlayerName(profile.username || 'Jugador');

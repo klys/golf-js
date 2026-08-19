@@ -224,6 +224,24 @@
         <footer class="net-foot"><span id="netFootHint">El host es la autoridad de física</span></footer>
       </aside>
 
+      <!-- Locución en vivo: historial local de las líneas que realmente se reproducen. -->
+      <aside id="announcerLivePanel" class="announcer-live-panel hidden" data-collapsed="false" data-speaking="false" aria-label="Locución en vivo">
+        <header class="announcer-live-head">
+          <span class="announcer-live-status" aria-hidden="true"><i></i></span>
+          <div class="announcer-live-title">
+            <strong>LOCUCIÓN EN VIVO</strong>
+            <small id="announcerLivePreview">Esperando la primera intervención…</small>
+          </div>
+          <button id="announcerLiveToggle" class="announcer-live-toggle" type="button" aria-expanded="true" aria-label="Plegar locución en vivo" title="Plegar locución">
+            <svg class="ico" aria-hidden="true"><use href="#i-chevron"></use></svg>
+          </button>
+        </header>
+        <div class="announcer-live-body" aria-live="polite" aria-atomic="false">
+          <p id="announcerLiveEmpty" class="announcer-live-empty">Las frases de los locutores aparecerán aquí cuando empiece la narración.</p>
+          <div id="announcerLiveLines" class="announcer-live-lines"></div>
+        </div>
+      </aside>
+
       <!-- Panel de métricas técnicas (F3) -->
       <section id="metricsPanel" class="metrics-panel hidden" aria-label="Métricas técnicas">
         <header><svg class="ico" aria-hidden="true"><use href="#i-chart"></use></svg><strong>MÉTRICAS</strong><button id="metricsClose" class="icon-button ghost" type="button" aria-label="Cerrar métricas"><svg class="ico" aria-hidden="true"><use href="#i-close"></use></svg></button></header>
@@ -589,7 +607,7 @@
               <input id="announcerSharedVolume" type="range" min="0" max="100" step="1" value="90" />
               <b id="announcerSharedVolumeValue" class="announcer-slider-value">90%</b>
             </section>
-            <p class="announcer-note">La selección de voz depende de las voces TTS instaladas o expuestas por el navegador. La narrativa, prioridades y bancos internos se cargan desde la carpeta dedicada <code>announcer/</code>.</p>
+            <p class="announcer-note">La selección de voz depende de las voces TTS instaladas o expuestas por el navegador. Estos ajustes se guardan en tu perfil local; sus valores iniciales se leen de <code>config.json</code>. La narrativa y los bancos internos permanecen en <code>announcer/</code>.</p>
           </div>
         </section>
 

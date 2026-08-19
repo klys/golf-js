@@ -1,14 +1,14 @@
 window.NOISE_GOLF_ANNOUNCER_CONFIG = {
   schema: 'noise-golf-announcer-runtime-v1',
-  version: '1.0.0',
+  version: '1.1.0',
   enabled: true,
   language: 'es-ES',
   sync: { leadSeconds: 0.32, maxLeadSeconds: 1.1, jitterMarginSeconds: 0.16, lateGraceMs: 900 },
   dialogue: { exchangeChance: 0.58, allowQuietFiller: true, quietBeforeFillerMs: 6200, fillerCooldownMs: 9000 },
-  defaults: {
-    sharedVolume: 0.9,
-    commentator: { name: 'Rafa Voltio', voiceURI: '', rate: 1.08, pitch: 1.08 },
-    informant: { name: 'Álex Prisma', voiceURI: '', rate: 0.92, pitch: 0.92 }
+  stateMachine: {
+    idleAfterMs: 6200, informativeCooldownMs: 9000, aimLeaseMs: 60000,
+    postMatchSummaryDelayMs: 1400, postMatchSummaryCooldownMs: 10000, postMatchSummaryMax: 2,
+    guaranteedEvents: ['HOLE', 'HOLE_IN_ONE']
   },
   gameplay: {
     shotWeakPower: 0.34, shotStrongPower: 0.84, shotPerfectMinPower: 0.62, shotPerfectMaxPower: 0.78,

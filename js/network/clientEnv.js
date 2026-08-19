@@ -21,6 +21,12 @@
     correctionHalfLifeMs: 105,
     predictionEnabled: true,
     playerGraceSeconds: 180,
+    announcerUserDefaults: {
+      sharedVolume: 0.9,
+      captionsCollapsed: false,
+      commentator: { name: 'Rafa Voltio', voiceURI: 'Microsoft Pablo - Spanish (Spain)', rate: 1.75, pitch: 1.46 },
+      informant: { name: 'Álex Prisma', voiceURI: 'Cleveland', rate: 1.71, pitch: 1.51 },
+    },
   });
 
   function parseBoolean(value, fallback) {
@@ -33,6 +39,11 @@
     if (value == null || value === '') return fallback;
     const n = Number(value);
     return Number.isFinite(n) ? n : fallback;
+  }
+
+  function parseObject(value, fallback) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return fallback;
+    return value;
   }
 
   function parseList(value, fallback) {
@@ -68,6 +79,7 @@
       correctionHalfLifeMs: parseNumber(raw.correctionHalfLifeMs, defaults.correctionHalfLifeMs),
       predictionEnabled: parseBoolean(raw.predictionEnabled, defaults.predictionEnabled),
       playerGraceSeconds: parseNumber(raw.playerGraceSeconds, defaults.playerGraceSeconds),
+      announcerUserDefaults: parseObject(raw.announcerUserDefaults, defaults.announcerUserDefaults),
     };
   }
 

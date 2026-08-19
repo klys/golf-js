@@ -120,7 +120,9 @@
     }
 
     cancelDrag() {
+      const wasDragging = this.dragging;
       this.dragging = false;
+      if (wasDragging) this.announcer?.onAimEnd?.();
     }
 
     resize() {
@@ -147,6 +149,7 @@
       this.hud.hideResult();
       this.pausedForResult = false;
       this.loadHole(0);
+      this.announcer?.onOfflineNewCourse?.();
       if (!options.quiet) this.hud.flashStatus('Nuevo campo procedural', 'good', 1.25);
     }
 
@@ -317,6 +320,7 @@
       this.pointer = this.screenToWorld(e.clientX, e.clientY);
       const velocity = this.computeLaunchVelocity();
       this.dragging = false;
+      this.announcer?.onAimEnd?.();
       const speed = Math.hypot(velocity.x, velocity.y);
       if (speed < CONFIG.shot.minLaunchSpeed) return;
       const shotPower = clamp(speed / CONFIG.ball.maxSpeed, 0, 1);
@@ -827,6 +831,13 @@
           this.arcadePoints += holePoints;
           const final = this.holeIndex === this.holes.length - 1;
           this.hud.showResult(this.strokes, this.hole.par, final, this.totalScore, this.arcadePoints, holePoints, scoreMultiplier);
+          if (final) this.announcer?.onOfflineMatchEnd?.({
+            strokes: this.strokes,
+            par: this.hole.par,
+            totalScore: this.totalScore,
+            arcadePoints: this.arcadePoints,
+            holePoints,
+          });
         }
       }
 

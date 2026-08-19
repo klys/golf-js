@@ -1,7 +1,7 @@
 (function (NG) {
   'use strict';
 
-  const CLASS_RANK = Object.freeze({ ambient: 1, progressive: 2, important: 3, critical: 4, manual: 0 });
+  const CLASS_RANK = Object.freeze({ ambient: 1, progressive: 2, important: 3, critical: 4, supercritical: 5, manual: 0 });
   const clamp = (v, min, max) => Math.min(max, Math.max(min, Number(v) || 0));
   const chance = (p) => Math.random() < clamp(p, 0, 1);
   const pick = (arr) => Array.isArray(arr) && arr.length ? arr[Math.floor(Math.random() * arr.length)] : '';
@@ -371,6 +371,9 @@
       this.currentBundle = null;
       this.current = null;
       this.hotSlot = null;
+      this.guaranteedQueue = [];
+      this.guaranteedKeys = new Set();
+      this.yieldInformativeAfterLine = false;
       this.session = 0;
       this.estimatedBundleEndAt = 0;
       this.stats = { spoken: 0, expired: 0, replaced: 0, folded: 0 };
@@ -384,21 +387,45 @@
 
     submitBundle(bundle) {
       if (!bundle?.items?.length || !this.system.enabled) return { accepted: false, reason: 'disabled-or-empty' };
+      const policy = bundle.policy || {};
+      const guaranteed = policy.guaranteed === true || policy.class === 'supercritical';
       const now = Date.now();
-      if (now > Number(bundle.expiresAt || Infinity)) return this.drop(bundle, 'expired');
+      if (!guaranteed && now > Number(bundle.expiresAt || Infinity)) return this.drop(bundle, 'expired');
+      if (guaranteed) return this.enqueueGuaranteed(bundle);
       if (!this.currentBundle) {
         this.startBundle(bundle);
         return { accepted: true, reason: 'idle' };
       }
-      const policy = bundle.policy || {};
+      const rank = CLASS_RANK[policy.class] || 0;
+      if (this.currentBundle?.source === 'idle-information' && rank >= CLASS_RANK.important) {
+        // La información de pausa cede el turno al terminar la frase actual.
+        // El evento real no caduca mientras espera ese cierre natural.
+        this.yieldInformativeAfterLine = true;
+        bundle.expiresAt = Math.max(Number(bundle.expiresAt || 0), now + 4500);
+        this.setHot(bundle);
+        return { accepted: true, reason: 'gameplay-after-informative' };
+      }
       if (policy.class === 'ambient') return this.drop(bundle, 'busy-filler');
       const remaining = Math.max(0, this.estimatedBundleEndAt - now);
-      const rank = CLASS_RANK[policy.class] || 0;
       if (now + remaining <= Number(bundle.expiresAt || 0) && rank >= CLASS_RANK.important) {
         this.setHot(bundle);
         return { accepted: true, reason: 'hot-slot' };
       }
       return this.drop(bundle, 'expired-before-mic');
+    }
+
+    enqueueGuaranteed(bundle) {
+      const key = String(bundle.guaranteeKey || bundle.id || '');
+      if (key && this.guaranteedKeys.has(key)) return { accepted: false, reason: 'guaranteed-dedupe' };
+      if (key) this.guaranteedKeys.add(key);
+      // Nunca interrumpe una frase ya empezada: espera a que termine el bloque
+      // actual y después toma el micrófono antes que cualquier hot-slot normal.
+      if (!this.currentBundle) {
+        this.startBundle(bundle);
+        return { accepted: true, reason: 'guaranteed-idle' };
+      }
+      this.guaranteedQueue.push(bundle);
+      return { accepted: true, reason: 'guaranteed-queued' };
     }
 
     setHot(bundle) {
@@ -419,7 +446,7 @@
 
     startBundle(bundle) {
       if (!bundle) return;
-      if (Date.now() > Number(bundle.expiresAt || Infinity)) return this.startNextAvailable();
+      if (bundle.policy?.guaranteed !== true && bundle.policy?.class !== 'supercritical' && Date.now() > Number(bundle.expiresAt || Infinity)) return this.startNextAvailable();
       this.session += 1;
       const token = this.session;
       this.currentBundle = bundle;
@@ -439,6 +466,10 @@
         if (token !== this.session) return;
         this.stats.spoken += 1;
         this.current = null;
+        if (this.yieldInformativeAfterLine && bundle.source === 'idle-information') {
+          this.yieldInformativeAfterLine = false;
+          break;
+        }
         if (index + 1 < bundle.items.length) await sleep(110);
       }
       if (token !== this.session) return;
@@ -449,6 +480,13 @@
     }
 
     startNextAvailable() {
+      while (this.guaranteedQueue.length) {
+        const next = this.guaranteedQueue.shift();
+        if (next) {
+          this.startBundle(next);
+          return;
+        }
+      }
       const hot = this.hotSlot;
       this.hotSlot = null;
       if (hot && Date.now() <= Number(hot.expiresAt || 0)) this.startBundle(hot);
@@ -457,15 +495,22 @@
     async speakItem(item, token) {
       const text = this.system.personalizeText(item.text);
       if (!text) return;
-      const supported = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
-      const settings = this.system.getSpeakerSettings(item.speaker);
-      if (!supported || Number(settings.volume) <= 0) {
-        await sleep(Math.min(1200, Math.max(180, text.length * 7)));
-        return;
-      }
-      for (const chunk of speechChunks(text, 230)) {
-        if (token !== this.session) return;
-        await this.speakChunk(chunk, item, token);
+      this.system.notifySpeechLine?.(item, text, 'start');
+      try {
+        const supported = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+        const settings = this.system.getSpeakerSettings(item.speaker);
+        if (!supported || Number(settings.volume) <= 0) {
+          // Los subtítulos siguen mostrando la narración aunque el usuario
+          // silencie TTS: la línea existe, solo cambia la salida de audio.
+          await sleep(Math.min(1200, Math.max(180, text.length * 7)));
+          return;
+        }
+        for (const chunk of speechChunks(text, 230)) {
+          if (token !== this.session) return;
+          await this.speakChunk(chunk, item, token);
+        }
+      } finally {
+        this.system.notifySpeechLine?.(item, text, 'end');
       }
     }
 
@@ -505,15 +550,24 @@
     stop() {
       this.session += 1;
       this.hotSlot = null;
+      this.guaranteedQueue.length = 0;
+      this.guaranteedKeys.clear();
+      this.yieldInformativeAfterLine = false;
       this.currentBundle = null;
       this.current = null;
       this.estimatedBundleEndAt = 0;
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     }
 
+    discardNonGuaranteedPending(keepEventKeys = []) {
+      const keep = new Set(Array.isArray(keepEventKeys) ? keepEventKeys : []);
+      if (this.hotSlot && !keep.has(String(this.hotSlot.eventKey || ''))) this.hotSlot = null;
+      if (this.currentBundle?.source === 'idle-information') this.yieldInformativeAfterLine = true;
+    }
+
     pause() { if ('speechSynthesis' in window) window.speechSynthesis.pause(); }
     resume() { if ('speechSynthesis' in window) window.speechSynthesis.resume(); }
-    isBusy() { return Boolean(this.currentBundle || this.current || this.hotSlot); }
+    isBusy() { return Boolean(this.currentBundle || this.current || this.hotSlot || this.guaranteedQueue.length); }
   }
 
   NG.AnnouncerPersonaEngine = PersonaEngine;

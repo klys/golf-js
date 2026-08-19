@@ -36,3 +36,16 @@
 - Parseo JSON para `config.json`, `commentator.json`, `informant.json`.
 - Suite original: validate, coherence, priority, turn-lock, battle-royale y DOM.
 - Validador de integración comprueba IDs del menú, orden de scripts, canal `announcer:bundle`, hooks autoritativos y carpeta dedicada.
+
+## CP-0006 · Estados / persistencia crítica
+
+- [x] `HOLE` y `HOLE_IN_ONE` pasan a cola `supercritical` persistente hasta ser pronunciados.
+- [x] La cola garantizada espera el final de la intervención actual y tiene prioridad sobre hot-slots normales.
+- [x] Un bundle supercrítico llegado tarde por red no se descarta por `lateGraceMs`.
+- [x] Estado `postmatch`: invalida tiros/fillers programados que ya no representan el juego.
+- [x] Estado `informative`: solo entra cuando no hay apuntado, bola rodando, intro o transición activa.
+- [x] Una acción real hace ceder una conversación informativa al terminar la frase actual y recupera el micrófono.
+- [x] `aim-start/aim-end` de clientes se reporta al host y nunca genera narrativa independiente en cada peer.
+- [x] Offline final entra en post-partida sin cancelar el HOLE/HIO pendiente.
+- [x] Al iniciar otro campo offline se reinicia la máquina narrativa a `gameplay`.
+- [x] Prueba automática `announcer/tools/test_state_machine.js` valida los cuatro invariantes principales.

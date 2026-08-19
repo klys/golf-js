@@ -1,34 +1,25 @@
 {
   "_readme": "Noise Golf 2D - Cliente/Host web. ESTE ARCHIVO ES PUBLICO: el navegador lo descarga. NO pongas contraseñas privadas, tokens ni secretos aquí. Copia este archivo como config.json y ajusta los valores.",
-
   "onlineEnabled": true,
   "maxPlayers": 16,
-
   "relayUrl": "ws://127.0.0.1:8787",
   "relayConnectTimeoutMs": 6500,
   "preflightTimeoutMs": 6500,
-
   "publicIceServers": [],
-
   "snapshotHz": 20,
   "reliablePingSeconds": 2,
   "requestTimeoutMs": 6500,
   "webRtcConnectTimeoutMs": 14000,
-
   "simulationHz": 60,
-
   "interpolationMs": 70,
   "maxExtrapolationMs": 125,
   "correctionHalfLifeMs": 105,
   "predictionEnabled": true,
   "smoothingResponsiveness": 18,
   "snapDistance": 210,
-
   "playerGraceSeconds": 180,
   "worldGraceSeconds": 12,
-
   "mapVoteTimeoutSeconds": 30,
-
   "_docs": {
     "onlineEnabled": "Activa o desactiva el modo Online. Con false solo queda Offline.",
     "maxPlayers": "Jugadores máximos por partida.",
@@ -49,6 +40,23 @@
     "snapDistance": "Distancia a partir de la cual el cliente salta a la posición del host en vez de suavizar.",
     "playerGraceSeconds": "Reconexión: el host reserva la plaza del jugador caído este tiempo y, al agotarse, lo elimina por completo de la partida. El relay debe conservar la reserva al menos igual de tiempo (PARTICIPANT_RESUME_SECONDS).",
     "worldGraceSeconds": "Prórroga al cerrarse el mundo (se acaba el reloj del hoyo o el contador que arranca cuando alguien emboca). Las bolas que ya estaban rodando terminan su tiro y el hoyo no cambia hasta que la última se para; este valor es solo el tope, por si alguna se queda atrapada. 0 = cierre inmediato.",
-    "mapVoteTimeoutSeconds": "Votación de mapa. El cambio tiene un enfriamiento fijo de 60 segundos."
+    "mapVoteTimeoutSeconds": "Votación de mapa. El cambio tiene un enfriamiento fijo de 60 segundos.",
+    "announcerUserDefaults": "Valores iniciales de locución para usuarios nuevos: volumen compartido, estado plegado de la ventana de texto y nombre/voz/velocidad/tono de cada locutor. Cada navegador guarda después sus cambios dentro del perfil local del usuario."
+  },
+  "announcerUserDefaults": {
+    "sharedVolume": 0.9,
+    "captionsCollapsed": false,
+    "commentator": {
+      "name": "Rafa Voltio",
+      "voiceURI": "Microsoft Pablo - Spanish (Spain)",
+      "rate": 1.75,
+      "pitch": 1.46
+    },
+    "informant": {
+      "name": "Álex Prisma",
+      "voiceURI": "Cleveland",
+      "rate": 1.71,
+      "pitch": 1.51
+    }
   }
 }

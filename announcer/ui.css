@@ -35,3 +35,82 @@
   .announcer-master { grid-template-columns: 1fr 52px; }
   .announcer-master > div { grid-column: 1 / -1; }
 }
+
+/* ═══ Ventana plegable de locución en partida ═════════════════════════════ */
+.announcer-live-panel {
+  position: absolute;
+  right: 14px;
+  bottom: 16px;
+  z-index: 34;
+  width: min(410px, calc(100vw - 28px));
+  border: 1px solid rgba(143, 197, 255, .16);
+  border-radius: 15px;
+  overflow: hidden;
+  pointer-events: auto;
+  color: var(--ink, #eef8ff);
+  background: linear-gradient(180deg, rgba(7, 25, 38, .94), rgba(3, 13, 22, .94));
+  box-shadow: 0 14px 42px rgba(0, 0, 0, .24), inset 0 1px 0 rgba(255, 255, 255, .035);
+  backdrop-filter: blur(16px) saturate(125%);
+  -webkit-backdrop-filter: blur(16px) saturate(125%);
+  transition: width .18s ease, opacity .2s ease, transform .2s ease;
+}
+.announcer-live-panel[data-collapsed="true"] { width: min(330px, calc(100vw - 28px)); }
+.announcer-live-head {
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) 32px;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 9px 8px 12px;
+  background: rgba(8, 29, 43, .84);
+  border-bottom: 1px solid rgba(143, 197, 255, .10);
+}
+.announcer-live-panel[data-collapsed="true"] .announcer-live-head { border-bottom-color: transparent; }
+.announcer-live-status { width: 8px; height: 8px; display: grid; place-items: center; }
+.announcer-live-status i {
+  width: 7px; height: 7px; border-radius: 50%; display: block;
+  background: rgba(151, 181, 198, .55);
+  transition: background .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+.announcer-live-panel[data-speaking="true"] .announcer-live-status i {
+  background: var(--mint, #72dcff);
+  box-shadow: 0 0 10px rgba(114, 220, 255, .58);
+  transform: scale(1.16);
+}
+.announcer-live-title { min-width: 0; }
+.announcer-live-title strong { display: block; font-size: 10px; letter-spacing: .12em; font-weight: 900; }
+.announcer-live-title small {
+  display: none; margin-top: 2px; color: var(--ink-3, #8299aa); font-size: 9px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.announcer-live-panel[data-collapsed="true"] .announcer-live-title small { display: block; }
+.announcer-live-toggle {
+  width: 30px; height: 30px; border: 1px solid rgba(143, 197, 255, .13); border-radius: 9px;
+  display: grid; place-items: center; padding: 0; cursor: pointer;
+  color: var(--ink-2, #c5d9e5); background: rgba(255, 255, 255, .045);
+}
+.announcer-live-toggle:hover { background: rgba(255, 255, 255, .09); border-color: rgba(143, 197, 255, .25); }
+.announcer-live-toggle .ico { width: 14px; height: 14px; transform: rotate(90deg); transition: transform .18s ease; }
+.announcer-live-panel[data-collapsed="true"] .announcer-live-toggle .ico { transform: rotate(-90deg); }
+.announcer-live-body { padding: 8px 10px 10px; }
+.announcer-live-panel[data-collapsed="true"] .announcer-live-body { display: none; }
+.announcer-live-empty { margin: 6px 4px; color: var(--ink-4, #718697); font-size: 10px; line-height: 1.45; }
+.announcer-live-lines { display: grid; gap: 6px; max-height: 250px; overflow: auto; scrollbar-width: thin; }
+.announcer-live-line {
+  display: grid; gap: 4px; padding: 8px 9px; border-radius: 10px;
+  border: 1px solid rgba(143, 197, 255, .08); background: rgba(255, 255, 255, .025);
+}
+.announcer-live-line:first-child { border-color: rgba(114, 220, 255, .18); background: rgba(114, 220, 255, .045); }
+.announcer-live-meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; }
+.announcer-live-meta strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; letter-spacing: .055em; }
+.announcer-live-meta small { flex: none; color: var(--ink-4, #718697); font-size: 8px; letter-spacing: .08em; }
+.announcer-live-line[data-speaker="commentator"] .announcer-live-meta strong { color: var(--mint, #7ffbe0); }
+.announcer-live-line[data-speaker="informant"] .announcer-live-meta strong { color: var(--azure, #6bb8ff); }
+.announcer-live-line p { margin: 0; color: var(--ink-2, #c5d9e5); font-size: 11px; line-height: 1.42; }
+body[data-focus="aim"] .announcer-live-panel,
+body[data-focus="motion"] .announcer-live-panel { opacity: .78; }
+@media (max-width: 760px) {
+  .announcer-live-panel { right: 10px; bottom: 86px; width: min(360px, calc(100vw - 20px)); }
+  .announcer-live-panel[data-collapsed="true"] { width: min(300px, calc(100vw - 20px)); }
+  .announcer-live-lines { max-height: 190px; }
+}
