@@ -1,5 +1,5 @@
 {
-  "version":"1.0.1",
+  "version":"1.0.2",
   "_readme": "Noise Golf 2D - Cliente/Host web. ESTE ARCHIVO ES PUBLICO: el navegador lo descarga. NO pongas contraseñas privadas, tokens ni secretos aquí. Consulta config.example.json para la descripción de cada campo.",
 
   "onlineEnabled": true,
