@@ -33,6 +33,7 @@ try:
     state_cfg = cfg.get("stateMachine") or {}
     require(state_cfg.get("guaranteedEvents") == ["HOLE", "HOLE_IN_ONE"], "Eventos supercríticos inesperados")
     require(int(state_cfg.get("idleAfterMs", 0)) >= 1000, "idleAfterMs inválido")
+    require("informativeCooldownMs" not in state_cfg, "La pausa informativa no debe usar cooldown periódico")
     require(int(state_cfg.get("postMatchSummaryMax", -1)) >= 1, "Falta resumen post-partida")
     require(isinstance(client_cfg.get("announcerUserDefaults"), dict), "Falta announcerUserDefaults en config.json general")
     require(isinstance(client_example.get("announcerUserDefaults"), dict), "Falta announcerUserDefaults en config.example.json")
@@ -108,6 +109,10 @@ require("setAnnouncerSettings" in profile and "getAnnouncerSettings" in profile,
 require("new NG.AnnouncerSystem(game, profile)" in main, "AnnouncerSystem no recibe PlayerProfile")
 require("setAnnouncer" in game and "onOfflineEvent" in game, "GolfGame no está conectado al locutor")
 require("onAimEnd" in game and "onOfflineMatchEnd" in game and "onOfflineNewCourse" in game, "GolfGame no reporta estados narrativos nuevos")
+require("typeof this.renderer?.spawnShockwave === 'function'" in game, "spawnShockwave no está protegido contra API renderer antigua")
+require("typeof this.renderer?.spawnWaterRipple === 'function'" in game, "spawnWaterRipple no está protegido contra API renderer antigua")
+require("informativeDelivered" in manager, "Falta latch one-shot de pausa informativa")
+require("fillerCooldownMs" not in manager and "informativeCooldownMs" not in manager, "Manager conserva bucle/cooldown de filler")
 require("announcers:'screenAnnouncers'" in menu.replace(" ", ""), "MenuController no registra pantalla announcers")
 
 js_files = [
@@ -146,7 +151,8 @@ print(" - Preferencias TTS: dentro de PlayerProfile + defaults en config.json ge
 print(" - Migración: noiseGolf.announcer.v1 -> noiseGolf.profile.v1/announcer")
 print(" - Ventana de locución: plegable + historial de líneas realmente reproducidas")
 print(" - Online: host-authority + announcer:bundle + startAtNetTime + aim state")
-print(" - Máquina narrativa: gameplay / informative / postmatch")
+print(" - Máquina narrativa: gameplay / informative one-shot / postmatch")
+print(" - Renderer: guards defensivos para shockwave/water ripple + cache-bust en HTML")
 print(" - Supercrítico: HOLE + HOLE_IN_ONE persistentes hasta reproducción")
 print(" - Offline/Battle hooks: presentes")
 print(" - JS/JSON: válidos")

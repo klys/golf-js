@@ -58,10 +58,19 @@ Para defaults de usuario editar el `config.json` general (`announcerUserDefaults
 La narración ya no depende únicamente de eventos aislados. El host mantiene una fase narrativa coherente:
 
 - `gameplay`: existe actividad real (apuntado, bola en movimiento, obstáculos, tiros o eventos de mapa).
-- `informative`: no hay acciones activas durante el umbral configurado; la cabina emite información factual de hoyo/partida y vuelve a `gameplay` en cuanto aparece una acción.
+- `informative`: tras el umbral sin acciones, la cabina emite **una sola** pausa factual y queda en silencio. No vuelve a informar hasta que ocurra una acción real y después exista otra pausa.
 - `postmatch`: la partida terminó; se descartan comentarios de gameplay que hubieran quedado programados y solo se permiten cierre, resultado y análisis final.
 - `inactive`: fuera de una partida.
 
 `HOLE` y `HOLE_IN_ONE` son eventos **supercríticos garantizados**. No expiran mientras esperan el micrófono, no cortan una frase ya iniciada y se consumen exactamente una vez al reproducirse. En online el host conserva esa garantía dentro del `announcer:bundle`, por lo que un cliente que llegue tarde al `startAtNetTime` lo reproduce inmediatamente en vez de descartarlo por TTL.
 
 El apuntado online también forma parte del estado autoritativo: el cliente informa `aim-start/aim-end` al host y solamente el host decide si ese estado produce narración. Esto evita entrar en modo informativo mientras alguien sigue preparando un tiro.
+
+
+## PATCH 0007 · pausa informativa one-shot y compatibilidad de renderer
+
+- La pausa informativa dejó de ser periódica: se reproduce una vez por ciclo de inactividad.
+- Una acción real (apuntado, tiro, bola en movimiento o evento del host) rearma una futura pausa.
+- Se eliminaron las frases meta repetitivas sobre “mapa estable” o “sin acción en curso”.
+- `game.js` protege `spawnShockwave()` y `spawnWaterRipple()` para que una caché de renderer antigua no rompa el bucle principal.
+- `index.html` fuerza una versión nueva de los scripts críticos del renderer/juego/manager para evitar mezclas de caché.

@@ -1,6 +1,6 @@
 {
   "schema": "noise-golf-announcer-runtime-v1",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "enabled": true,
   "language": "es-ES",
   "sync": {
@@ -12,8 +12,7 @@
   "dialogue": {
     "exchangeChance": 0.58,
     "allowQuietFiller": true,
-    "quietBeforeFillerMs": 6200,
-    "fillerCooldownMs": 9000
+    "quietBeforeFillerMs": 6200
   },
   "gameplay": {
     "shotWeakPower": 0.34,
@@ -40,7 +39,6 @@
   },
   "stateMachine": {
     "idleAfterMs": 6200,
-    "informativeCooldownMs": 9000,
     "aimLeaseMs": 60000,
     "postMatchSummaryDelayMs": 1400,
     "postMatchSummaryCooldownMs": 10000,

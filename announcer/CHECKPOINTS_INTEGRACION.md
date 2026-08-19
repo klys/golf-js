@@ -49,3 +49,16 @@
 - [x] Offline final entra en post-partida sin cancelar el HOLE/HIO pendiente.
 - [x] Al iniciar otro campo offline se reinicia la máquina narrativa a `gameplay`.
 - [x] Prueba automática `announcer/tools/test_state_machine.js` valida los cuatro invariantes principales.
+
+
+## CP-0007 · FIX HOYO + PAUSA INFORMATIVA ONE-SHOT
+
+**Objetivo:** eliminar el crash visual al embocar y detener el bucle de información durante inactividad.
+
+- [x] `spawnShockwave` protegido por detección de API antes de llamarse.
+- [x] `spawnWaterRipple` protegido por la misma causa de compatibilidad.
+- [x] cache-bust de `worldRenderer.js`, `game.js`, `config-data.js` y `manager.js`.
+- [x] pausa informativa bloqueada después de una reproducción.
+- [x] solo una acción real rearma otra futura pausa.
+- [x] eliminadas frases meta de mapa estable/sin acción.
+- [x] test de one-shot y guardas visuales añadido.

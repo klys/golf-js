@@ -59,7 +59,6 @@
       this.lastFavoriteSwitchAt = { commentator: 0, informant: 0 };
       this.rivalries = new Map();
       this.lastMeaningfulAt = Date.now();
-      this.lastFillerAt = 0;
       this.voices = [];
       this.settings = null;
       this.fillerTimer = 0;
@@ -71,7 +70,7 @@
       this.postMatchInfo = null;
       this.postMatchSummaryCount = 0;
       this.lastPostMatchSummaryAt = 0;
-      this.informativeSequence = 0;
+      this.informativeDelivered = false;
     }
 
     async init() {
@@ -254,7 +253,12 @@
       if (playerKey && this.activeAims.has(String(playerKey)) && /shot|hole|water|out|reset|collision|penalty/i.test(reason)) {
         this.activeAims.delete(String(playerKey));
       }
-      if (this.narrativePhase !== 'postmatch') this.setNarrativePhase('gameplay', reason);
+      if (this.narrativePhase !== 'postmatch') {
+        // Una acción real vuelve a armar UNA futura pausa informativa.
+        // Sin acción nueva no se permite otro bloque informativo.
+        this.informativeDelivered = false;
+        this.setNarrativePhase('gameplay', reason);
+      }
     }
 
     setAimActivity(playerKey, active, power = 0) {
@@ -320,14 +324,13 @@
       this.lastFavoriteSwitchAt = { commentator: 0, informant: 0 };
       this.rivalries.clear();
       this.lastMeaningfulAt = Date.now();
-      this.lastFillerAt = 0;
       this.lastByPlayerEvent.clear();
       this.lastHoleSignature = '';
       this.activeAims.clear();
       this.postMatchInfo = null;
       this.postMatchSummaryCount = 0;
       this.lastPostMatchSummaryAt = 0;
-      this.informativeSequence = 0;
+      this.informativeDelivered = false;
       this.composer?.reset();
       this.director?.stop();
     }
@@ -675,14 +678,16 @@
         const active = standings.filter((entry) => entry.role === 'player' && !entry.finished);
         const status = this.session?.getStatus?.() || {};
         const mode = this.session?.settings?.mode === 'battle' ? 'Battle Royale' : 'por turnos';
-        const timer = Number.isFinite(Number(status.timerRemaining)) ? ` Quedan ${Math.ceil(Number(status.timerRemaining))} segundos en el reloj actual.` : '';
-        const leaderText = leader ? `${leader.username} lidera con ${Math.round(Number(leader.points) || 0)} puntos.` : 'El marcador todavía no tiene líder definido.';
-        return {
-          first: `Pausa informativa. Hoyo ${holeNumber} de ${holeCount}, par ${par}, modo ${mode}. ${leaderText}${timer}`,
-          second: active.length
-            ? `Siguen activos ${active.length} jugadores: ${active.slice(0, 4).map((entry) => entry.username).join(', ')}${active.length > 4 ? ' y compañía' : ''}. En cuanto vuelva la acción, regresamos a la jugada.`
-            : 'No hay bolas activas resolviendo una jugada. La cabina queda en modo de análisis hasta el siguiente estado del host.',
-        };
+        const timer = Number.isFinite(Number(status.timerRemaining))
+          ? ` Quedan ${Math.ceil(Number(status.timerRemaining))} segundos en el reloj actual.`
+          : '';
+        const leaderText = leader
+          ? `${leader.username} lidera con ${Math.round(Number(leader.points) || 0)} puntos.`
+          : 'El marcador todavía no tiene líder definido.';
+        const activeText = active.length
+          ? ` Siguen ${active.length} jugadores activos${active.length <= 4 ? `: ${active.map((entry) => entry.username).join(', ')}` : ''}.`
+          : '';
+        return `Pausa informativa. Hoyo ${holeNumber} de ${holeCount}, par ${par}, modo ${mode}. ${leaderText}${activeText}${timer}`;
       }
 
       const ball = this.game?.ball;
@@ -691,19 +696,16 @@
         ? Math.hypot(hole.cup.x - ball.x, hole.cup.y - ball.y) * Number(NG.CONFIG?.course?.metersPerPixel || 1)
         : 0;
       const difficulty = hole?.difficultyLabel || hole?.archetypeLabel || 'procedural';
-      return {
-        first: `Pausa informativa. Hoyo ${holeNumber} de ${holeCount}, par ${par}, dificultad ${difficulty}. Van ${strokes} golpes y quedan aproximadamente ${distance < 10 ? distance.toFixed(1) : Math.round(distance)} metros hasta la copa.`,
-        second: `El mapa está estable y no hay una acción en curso. Cuando vuelvas a apuntar o la bola entre en movimiento, la narración retorna inmediatamente al juego.`,
-      };
+      return `Pausa informativa. Hoyo ${holeNumber} de ${holeCount}, par ${par}, dificultad ${difficulty}. Van ${strokes} golpes y quedan aproximadamente ${distance < 10 ? distance.toFixed(1) : Math.round(distance)} metros hasta la copa.`;
     }
 
     buildInformativeBundle() {
-      const info = this.liveInformation();
-      const alternate = (this.informativeSequence++ % 2) === 1;
-      const items = alternate
-        ? [{ speaker: 'commentator', text: info.second }, { speaker: 'informant', text: info.first }]
-        : [{ speaker: 'informant', text: info.first }, { speaker: 'commentator', text: info.second }];
-      return this.runtimeBundle('INFORMATIVE_STATE', items, { class: 'ambient', priority: 12, ttlMs: 2200 }, 'idle-information');
+      return this.runtimeBundle(
+        'INFORMATIVE_STATE',
+        [{ speaker: 'informant', text: this.liveInformation() }],
+        { class: 'ambient', priority: 12, ttlMs: 2200 },
+        'idle-information',
+      );
     }
 
     buildPostMatchSummaryBundle() {
@@ -837,16 +839,20 @@
       // reportAnnouncerActivity(), así que ningún peer entra solo en filler.
       if (this.hasLiveGameplayActivity()) {
         this.lastMeaningfulAt = now;
+        this.informativeDelivered = false;
         this.setNarrativePhase('gameplay', 'live-map-activity');
         return;
       }
 
+      // Una sola pausa informativa por periodo de inactividad.
+      // Después de pronunciarla, la cabina espera una acción REAL antes de
+      // poder armar otra. No existe bucle por cooldown ni comentario periódico.
+      if (this.informativeDelivered) return;
       const quiet = Math.max(1000, Number(stateCfg.idleAfterMs || this.runtimeConfig.dialogue?.quietBeforeFillerMs || 6200));
-      const cooldown = Math.max(1000, Number(stateCfg.informativeCooldownMs || this.runtimeConfig.dialogue?.fillerCooldownMs || 9000));
-      if (now - this.lastMeaningfulAt < quiet || now - this.lastFillerAt < cooldown) return;
+      if (now - this.lastMeaningfulAt < quiet) return;
       this.setNarrativePhase('informative', 'no-gameplay-activity');
       const result = this.deliverBundle(this.buildInformativeBundle());
-      if (result?.accepted) this.lastFillerAt = now;
+      if (result?.accepted) this.informativeDelivered = true;
     }
   }
 

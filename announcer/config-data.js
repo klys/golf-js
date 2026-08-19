@@ -4,9 +4,9 @@ window.NOISE_GOLF_ANNOUNCER_CONFIG = {
   enabled: true,
   language: 'es-ES',
   sync: { leadSeconds: 0.32, maxLeadSeconds: 1.1, jitterMarginSeconds: 0.16, lateGraceMs: 900 },
-  dialogue: { exchangeChance: 0.58, allowQuietFiller: true, quietBeforeFillerMs: 6200, fillerCooldownMs: 9000 },
+  dialogue: { exchangeChance: 0.58, allowQuietFiller: true, quietBeforeFillerMs: 6200 },
   stateMachine: {
-    idleAfterMs: 6200, informativeCooldownMs: 9000, aimLeaseMs: 60000,
+    idleAfterMs: 6200, aimLeaseMs: 60000,
     postMatchSummaryDelayMs: 1400, postMatchSummaryCooldownMs: 10000, postMatchSummaryMax: 2,
     guaranteedEvents: ['HOLE', 'HOLE_IN_ONE']
   },

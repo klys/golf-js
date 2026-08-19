@@ -692,7 +692,9 @@
         const skipX = Number.isFinite(ball.lastWaterSkipX) ? ball.lastWaterSkipX : ball.x;
         const skipY = Number.isFinite(ball.lastWaterSkipY) ? ball.lastWaterSkipY : ball.y;
         const chained = (ball.waterSkips || 1) > 1;
-        this.renderer.spawnWaterRipple(skipX, skipY, this.hole.theme.water);
+        if (typeof this.renderer?.spawnWaterRipple === 'function') {
+          this.renderer.spawnWaterRipple(skipX, skipY, this.hole.theme.water);
+        }
         this.hud.flashStatus(chained ? '¡DOBLE REBOTE EN EL AGUA!' : '¡Rebote en el agua!', 'boost', chained ? 1.1 : 0.8);
         this.announcer?.onOfflineEvent?.(chained ? 'MULTI_BOUNCE' : 'BOUNCE', { bounces: ball.waterSkips || 1 });
         this.camera.addShake(chained ? 4.2 : 2.8);
@@ -752,7 +754,12 @@
         const seen = this.handledShockSerials.get(key) || 0;
         this.handledShockSerials.set(key, serial);
         if (!known || serial <= seen) continue;
-        this.renderer.spawnShockwave(this.hole.cup.x, this.hole.cup.y, item.color || this.hole.theme.accent);
+        // Compatibilidad defensiva: una caché antigua del renderer no debe
+        // romper el game loop justo al embocar. Si la API visual no existe,
+        // se omite únicamente el anillo; la lógica del hoyo sigue intacta.
+        if (typeof this.renderer?.spawnShockwave === 'function') {
+          this.renderer.spawnShockwave(this.hole.cup.x, this.hole.cup.y, item.color || this.hole.theme.accent);
+        }
         this.camera.addShake(5.5);
       }
     }

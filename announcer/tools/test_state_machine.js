@@ -117,9 +117,47 @@ function fakeSystem() {
   assert(!ann.hasLiveGameplayActivity(), 'Aim-end no liberó el estado activo');
 }
 
+// CP-6 · La pausa informativa se emite una sola vez hasta que aparece una acción real.
+{
+  const game = {
+    holeIndex: 0, holes: [{ par: 4, cup: { x: 100, y: 0 } }],
+    hole: { par: 4, cup: { x: 100, y: 0 }, difficultyLabel: 'Media' },
+    ball: { x: 20, y: 0, moving: false }, strokes: 2, isIntroPlaying: () => false,
+  };
+  const ann = new NG.AnnouncerSystem(game, null);
+  ann.ready = true;
+  ann.enabled = true;
+  ann.matchActive = true;
+  ann.narrativePhase = 'gameplay';
+  ann.runtimeConfig = { dialogue: { allowQuietFiller: true, quietBeforeFillerMs: 1000 }, stateMachine: { idleAfterMs: 1000 } };
+  ann.director = { isBusy: () => false };
+  let delivered = 0;
+  ann.deliverBundle = () => { delivered += 1; return { accepted: true }; };
+  ann.lastMeaningfulAt = Date.now() - 5000;
+  ann.maybeFillSilence();
+  ann.maybeFillSilence();
+  ann.maybeFillSilence();
+  assert(delivered === 1, 'La pausa informativa se repitió sin una acción nueva');
+  assert(ann.informativeDelivered === true, 'No quedó bloqueada la pausa después de reproducirse');
+  ann.markGameplayActivity('shot', 'p1');
+  assert(ann.informativeDelivered === false, 'Una acción real no volvió a armar la pausa informativa');
+  ann.lastMeaningfulAt = Date.now() - 5000;
+  ann.maybeFillSilence();
+  assert(delivered === 2, 'No se permitió una nueva pausa después de una acción real');
+}
+
+// CP-7 · Las APIs visuales opcionales no pueden romper el game loop por una caché antigua.
+{
+  const gameSource = fs.readFileSync(path.join(ROOT, 'js/core/game.js'), 'utf8');
+  assert(/typeof this\.renderer\?\.spawnShockwave === 'function'/.test(gameSource), 'spawnShockwave no está protegido');
+  assert(/typeof this\.renderer\?\.spawnWaterRipple === 'function'/.test(gameSource), 'spawnWaterRipple no está protegido');
+}
+
 console.log('ANNOUNCER STATE MACHINE TEST OK');
 console.log(' - supercritical HOLE/HIO persistent queue');
 console.log(' - informative -> gameplay handoff');
 console.log(' - postmatch stale gameplay suppression');
 console.log(' - late network guarantee');
 console.log(' - aiming/moving activity gate');
+console.log(' - informative one-shot until real action');
+console.log(' - renderer optional API guards');
