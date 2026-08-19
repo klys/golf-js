@@ -121,6 +121,21 @@
       flightZoom: 0.80,
       aimZoom: 0.90,
     }),
+    // Presentación del hoyo: la cámara enseña la bandera y recorre el campo
+    // hasta la salida antes de dar el control. Es solo cámara —no toca física
+    // ni red— y se salta con cualquier tecla o clic.
+    holeIntro: Object.freeze({
+      enabled: true,
+      // Quieto sobre la copa.
+      holdSeconds: 0.85,
+      // Barrido de la copa a la salida.
+      travelSeconds: 1.75,
+      // Aterrizaje en el encuadre de juego.
+      settleSeconds: 0.55,
+      cupZoom: 1.02,
+      travelZoom: 0.72,
+    }),
+
     gameplay: Object.freeze({
       waterPenaltyStroke: 1,
       outOfBoundsPenaltyStroke: 1,

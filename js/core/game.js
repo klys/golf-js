@@ -18,6 +18,7 @@
       this.camera = new Camera2D();
       this.particles = new ParticleSystem();
       this.renderer = new WorldRenderer();
+      this.holeIntro = NG.HoleIntro ? new NG.HoleIntro() : null;
       this.seed = this.makeSeed();
       this.holeIndex = 0;
       this.holes = [];
@@ -80,6 +81,12 @@
         const target = e.target;
         if (target && (target.isContentEditable || /^(input|textarea|select)$/i.test(target.tagName || ''))) return;
         const key = String(e.key || '');
+        // Cualquier tecla corta la presentación del hoyo: nadie debería tener
+        // que esperar a una animación que ya ha visto.
+        if (this.isIntroPlaying() && key !== 'Shift' && key !== 'Control' && key !== 'Alt' && key !== 'Meta') {
+          this.skipHoleIntro();
+          return;
+        }
         if (key.toLowerCase() === 'r' && !this.pausedForResult && !this.inputLocked) {
           this.returnToShotOrigin();
           return;
@@ -192,7 +199,37 @@
       this.fixedStep.reset();
       this.simPrev = { x: this.ball.x, y: this.ball.y, valid: false };
       this.renderBall = this.ball;
-      this.hud.flashStatus(`${this.hole.archetypeLabel} · ${this.hole.mapSize}`, 'neutral', 1.4);
+      const intro = this.startHoleIntro();
+      const label = `${this.hole.archetypeLabel} · ${this.hole.mapSize}`;
+      this.hud.flashStatus(intro ? `${label} · pulsa para saltar` : label, 'neutral', intro ? 1.9 : 1.4);
+    }
+
+    /**
+     * Presentación del hoyo: bandera primero, recorrido del campo después y
+     * control al jugador al aterrizar en la salida.
+     * Es solo cámara. La física, el reloj de la sala y la autoridad de red
+     * siguen su curso, así que saltarla no cambia el estado de la partida.
+     */
+    startHoleIntro() {
+      if (!this.holeIntro || !this.hole || !this.ball) return false;
+      this.dragging = false;
+      return this.holeIntro.start(this.hole, () => this.onHoleIntroEnd());
+    }
+
+    onHoleIntroEnd() {
+      // Se salta a media panorámica: la cámara se planta en la bola de una vez
+      // en vez de barrer medio mapa a cámara lenta con el jugador esperando.
+      this.camera.snapTo(this.ball, this.hole, this.viewport());
+      this.hud.flashStatus('¡Adelante!', 'good', 0.75);
+    }
+
+    isIntroPlaying() {
+      return !!this.holeIntro?.isActive();
+    }
+
+    /** Corta la presentación. Devuelve true solo si de verdad había una. */
+    skipHoleIntro() {
+      return !!this.holeIntro?.skip();
     }
 
     screenToWorld(clientX, clientY) {
@@ -201,6 +238,8 @@
     }
 
     onPointerDown(e) {
+      // El primer clic salta la presentación; el siguiente ya apunta.
+      if (this.skipHoleIntro()) return;
       if (this.inputLocked || this.pausedForResult || !this.ball || this.ball.moving || this.ball.holed || this.ball.inWater) return;
       if (this.networkSession?.getStatus().online && !this.networkSession.canLocalShoot()) {
         const status = this.networkSession.getStatus();
@@ -616,20 +655,27 @@
         this.trail.shift();
       }
 
-      const cameraBall = online ? (this.networkSession?.getCameraBall?.() || view) : view;
-      const cameraAimPower = !online || this.networkSession?.isCameraFollowingLocal?.() ? this.aimPower() : 0;
-      this.camera.update(cameraBall, this.hole, this.viewport(), viewDt, cameraAimPower);
+      // Mientras dura la presentación manda el guion: la cámara va donde dice
+      // el recorrido, no donde esté la bola.
+      const introFrame = this.holeIntro?.isActive() ? this.holeIntro.update(viewDt) : null;
+      if (introFrame) {
+        this.camera.frame(introFrame, this.hole, this.viewport(), introFrame.zoom, introFrame.anchorX, introFrame.anchorY);
+      } else {
+        const cameraBall = online ? (this.networkSession?.getCameraBall?.() || view) : view;
+        const cameraAimPower = !online || this.networkSession?.isCameraFollowingLocal?.() ? this.aimPower() : 0;
+        this.camera.update(cameraBall, this.hole, this.viewport(), viewDt, cameraAimPower);
+      }
 
       // Telemetría del tiro y modo de foco del HUD: apuntando y en vuelo la
       // interfaz baja intensidad para dejar leer el terreno.
-      const aiming = this.dragging && !this.ball.moving && !this.inputLocked;
+      const aiming = this.dragging && !this.ball.moving && !this.inputLocked && !this.isIntroPlaying();
       const launch = aiming ? this.computeLaunchVelocity() : null;
       this.hud.setShot({
         active: aiming,
         power: aiming ? this.aimPower() : 0,
         angle: launch ? Math.atan2(launch.y, launch.x) : 0,
       });
-      this.hud.setFocus(this.inputLocked ? 'idle' : aiming ? 'aim' : this.ball.moving ? 'motion' : 'idle');
+      this.hud.setFocus(this.inputLocked || this.isIntroPlaying() ? 'idle' : aiming ? 'aim' : this.ball.moving ? 'motion' : 'idle');
       const wind = this.physics.currentWind(this.hole.windBase);
       const distanceMeters = Math.hypot(this.hole.cup.x - this.ball.x, this.hole.cup.y - this.ball.y) * CONFIG.course.metersPerPixel;
       this.hud.update({

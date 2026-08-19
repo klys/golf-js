@@ -75,6 +75,34 @@
     }
 
     /**
+     * Encuadre directo sobre un punto del mundo, sin muelle ni suavizado.
+     * Lo usa la presentación del hoyo: ahí manda el guion, no el seguimiento.
+     * Deja el estado del muelle a cero para que el traspaso a la cámara normal
+     * arranque limpio en vez de heredar una velocidad inventada.
+     */
+    frame(point, hole, viewport, zoom, anchorX, anchorY) {
+      if (!point || !hole || viewport.width <= 0 || viewport.height <= 0) return;
+      const cfg = CONFIG.camera;
+      this.zoom = clamp(Number(zoom) || cfg.restZoom, cfg.minZoom, cfg.maxZoom);
+      this.targetZoom = this.zoom;
+      const worldW = viewport.width / this.zoom;
+      const worldH = viewport.height / this.zoom;
+      this.x = point.x - worldW * (Number.isFinite(anchorX) ? anchorX : 0.5);
+      this.y = point.y - worldH * (Number.isFinite(anchorY) ? anchorY : 0.5);
+      this.velocity.x = 0;
+      this.velocity.y = 0;
+      this.aheadX = 0;
+      this.aheadY = 0;
+      this.trackedSpeed = 0;
+      // El foco queda registrado como el punto encuadrado: si no, el primer
+      // update() de juego mediría un salto enorme y lo tomaría por un corte.
+      this.lastFocusX = point.x;
+      this.lastFocusY = point.y;
+      this.clampToBounds(hole, viewport);
+      this.initialized = true;
+    }
+
+    /**
      * Impulso de sacudida direccional.
      * Un golpe flojo no reinicia una sacudida fuerte que ya está sonando: si
      * lo hiciera, una serie de botes pequeños mantendría la cámara vibrando.

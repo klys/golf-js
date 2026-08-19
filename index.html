@@ -682,6 +682,18 @@
         <small>Offline sigue disponible. Online necesita <code>config.json</code> accesible y un relay configurado.</small>
       </div>
     </section>
+    <!-- ═══ ZOOM BLOQUEADO ══════════════════════════════════════════════════ -->
+    <section id="zoomGuard" class="zoom-guard hidden" role="alertdialog" aria-modal="true" aria-labelledby="zoomGuardTitle" hidden>
+      <div class="zoom-guard-alert" role="alert">
+        <svg class="ico big" aria-hidden="true"><use href="#i-alert"></use></svg>
+        <strong>ZOOM INVÁLIDO</strong>
+      </div>
+      <h1 id="zoomGuardTitle" class="zoom-guard-title">VOLVER EL ZOOM AL 100%</h1>
+      <p class="zoom-guard-hint">Pulsa <kbd>Ctrl</kbd> + <kbd>0</kbd> (o <kbd>⌘</kbd> + <kbd>0</kbd>) para restablecerlo.</p>
+      <p class="zoom-guard-read">ESCALA DETECTADA <b id="zoomGuardValue">—</b></p>
+      <small class="zoom-guard-foot">Alejar el zoom enseña más mapa que al resto de la sala. La partida sigue su curso mientras tanto.</small>
+    </section>
+
     <noscript><section class="boot-error"><div class="boot-error-card"><strong>JavaScript está desactivado</strong><span>Actívalo para jugar.</span></div></section></noscript>
   </main>
 
@@ -693,6 +705,7 @@
   <script defer src="./js/core/physics.js" onerror="NoiseGolfBootError('js/core/physics.js')"></script>
   <script defer src="./js/engine/camera.js" onerror="NoiseGolfBootError('js/engine/camera.js')"></script>
   <script defer src="./js/engine/particles.js" onerror="NoiseGolfBootError('js/engine/particles.js')"></script>
+  <script defer src="./js/engine/holeIntro.js" onerror="NoiseGolfBootError('js/engine/holeIntro.js')"></script>
   <script defer src="./js/render/worldRenderer.js" onerror="NoiseGolfBootError('js/render/worldRenderer.js')"></script>
   <script defer src="./js/ui/hud.js" onerror="NoiseGolfBootError('js/ui/hud.js')"></script>
   <script defer src="./js/network/clientEnv.js" onerror="NoiseGolfBootError('js/network/clientEnv.js')"></script>
@@ -705,6 +718,7 @@
   <script defer src="./js/network/multiplayerSession.js" onerror="NoiseGolfBootError('js/network/multiplayerSession.js')"></script>
   <script defer src="./js/ui/metricsOverlay.js" onerror="NoiseGolfBootError('js/ui/metricsOverlay.js')"></script>
   <script defer src="./js/ui/networkHud.js" onerror="NoiseGolfBootError('js/ui/networkHud.js')"></script>
+  <script defer src="./js/ui/zoomGuard.js" onerror="NoiseGolfBootError('js/ui/zoomGuard.js')"></script>
   <script defer src="./js/ui/menu.js" onerror="NoiseGolfBootError('js/ui/menu.js')"></script>
   <script defer src="./js/core/game.js" onerror="NoiseGolfBootError('js/core/game.js')"></script>
   <script defer src="./js/main.js" onerror="NoiseGolfBootError('js/main.js')"></script>

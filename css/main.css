@@ -1275,6 +1275,42 @@ body[data-focus="aim"] #helpChip { opacity: 0; transform: translateY(6px); }
 .boot-progress i { display: block; height: 100%; width: 12%; border-radius: 999px; background: linear-gradient(90deg, var(--mint), var(--azure)); transition: width .3s var(--ease); }
 .boot-screen small { font-size: 10px; letter-spacing: .1em; color: var(--ink-3); }
 
+/* ═══ ZOOM BLOQUEADO ═══════════════════════════════════════════════════════
+   Negro opaco y por encima de todo, menú y arranque incluidos: si se deja ver
+   un solo píxel del canvas, alejar el zoom sigue enseñando mapa de más. */
+.zoom-guard {
+  position: absolute; inset: 0; z-index: 200;
+  display: grid; place-content: center; justify-items: center; gap: 14px;
+  padding: 24px; text-align: center;
+  background: #000;
+  animation: fadeIn .12s var(--ease);
+}
+.zoom-guard-alert {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 10px 18px; border-radius: 999px;
+  border: 1px solid rgba(255,127,112,.5); background: rgba(255,127,112,.12);
+  color: var(--coral);
+  font-size: 13px; font-weight: 950; letter-spacing: .18em;
+  animation: zoomAlertPulse 1.05s var(--ease) infinite;
+}
+.zoom-guard-alert .ico { width: 22px; height: 22px; }
+@keyframes zoomAlertPulse { 0%, 100% { opacity: .62; } 50% { opacity: 1; } }
+.zoom-guard-title {
+  margin: 6px 0 0; max-width: 18ch;
+  font-size: clamp(26px, 6vw, 58px); font-weight: 950; letter-spacing: .04em; line-height: 1.05;
+  color: #ffffff; text-shadow: 0 0 34px rgba(255,255,255,.18);
+}
+.zoom-guard-hint { font-size: 12.5px; color: var(--ink-3); }
+.zoom-guard-hint kbd { font-size: 11px; }
+.zoom-guard-read {
+  display: inline-flex; align-items: baseline; gap: 9px;
+  font-size: 8px; letter-spacing: .2em; font-weight: 900; color: var(--ink-4);
+}
+.zoom-guard-read b { font-family: var(--font-num); font-size: 17px; letter-spacing: .02em; color: var(--coral); }
+.zoom-guard-foot { max-width: 46ch; font-size: 10.5px; line-height: 1.6; color: var(--ink-4); }
+/* Sin cursor de puntería ni scroll mientras la pantalla está tapada. */
+body.zoom-blocked #game { cursor: default; }
+
 .boot-error { position: absolute; inset: 0; z-index: 130; display: grid; place-items: center; padding: 24px; background: rgba(4,12,19,.84); }
 .boot-error.hidden { display: none; }
 .boot-error-card {

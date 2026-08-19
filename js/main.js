@@ -30,12 +30,19 @@
       if (NG.ClientEnv?.ready) await NG.ClientEnv.ready;
       if (NG.ApplyClientEnvConfig) NG.ApplyClientEnvConfig();
 
+      // Antes que el juego: si se entra ya con zoom, la pantalla debe estar
+      // tapada desde el primer frame, no después de generar el campo.
+      const zoomGuard = NG.ZoomGuard ? new NG.ZoomGuard() : null;
+
       const canvas = document.querySelector('#game');
       if (!NG.GolfGame) throw new Error('GolfGame no se cargó. Revisa el orden de scripts.');
       if (!NG.PlayerProfile || !NG.MenuController || !NG.NetworkHUD) throw new Error('El frontend/networking no se cargó completamente.');
 
       bootProgress(1);
       const game = new NG.GolfGame(canvas);
+      // Tapar la pantalla no basta: un arrastre a ciegas seguiría contando
+      // como tiro, así que el juego suelta cualquier apunte en curso.
+      if (zoomGuard) zoomGuard.onChange = (blocked) => { if (blocked) game.cancelDrag(); };
       const profile = new NG.PlayerProfile();
 
       bootProgress(2);
@@ -55,6 +62,7 @@
       window.__noiseGolfProfile = profile;
       window.__noiseGolfMenu = menu;
       window.__noiseGolfMetrics = metrics;
+      window.__noiseGolfZoomGuard = zoomGuard;
       window.__noiseGolfReady = true;
     } catch (error) {
       console.error('[Noise Golf 2D] Error de arranque:', error);
