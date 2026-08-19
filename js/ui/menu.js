@@ -164,6 +164,14 @@
       $('#preflightOfflineBtn')?.addEventListener('click', () => this.playOffline());
       $('#preflightMenuBtn')?.addEventListener('click', () => this.showScreen('main'));
       $('#randomNameBtn')?.addEventListener('click', () => this.suggestName());
+      $('#musicVolume')?.addEventListener('input', (event) => {
+        this.game.music?.setVolume(Number(event.target.value) / 100);
+        this.renderAudioSettings();
+      });
+      $('#musicMuteBtn')?.addEventListener('click', () => {
+        this.game.music?.toggleMuted();
+        this.renderAudioSettings();
+      });
       this.matchConfigTrigger?.addEventListener('click', () => this.openMatchConfig());
       $('#closeMatchConfigBtn')?.addEventListener('click', () => this.closeMatchConfig());
       $('#saveMatchConfigBtn')?.addEventListener('click', () => this.saveMatchConfig());
@@ -457,6 +465,42 @@
       document.querySelector(`#${ids[target]}`)?.classList.add('active');
       if (target !== 'browser') this.stopAutoRefresh();
       if (target === 'profile') window.setTimeout(() => document.querySelector('#usernameInput')?.focus(), 30);
+    }
+
+    /**
+     * Refleja el estado real del reproductor en el control.
+     *
+     * El relleno del deslizador va por variable CSS porque WebKit no sabe
+     * pintar el tramo recorrido de un `input[type=range]` por su cuenta.
+     */
+    renderAudioSettings() {
+      const music = this.game.music;
+      if (!music) return;
+      const slider = document.querySelector('#musicVolume');
+      const value = document.querySelector('#musicVolumeValue');
+      const mute = document.querySelector('#musicMuteBtn');
+      const icon = document.querySelector('#musicMuteIcon');
+      const hint = document.querySelector('#musicStateHint');
+      const percent = Math.round(music.getVolume() * 100);
+      const muted = music.isMuted();
+      if (slider) {
+        if (document.activeElement !== slider) slider.value = String(percent);
+        slider.style.setProperty('--fill', `${percent}%`);
+        slider.closest('.audio-row')?.setAttribute('data-muted', muted ? 'true' : 'false');
+      }
+      if (value) value.textContent = muted ? 'OFF' : `${percent}%`;
+      if (mute) {
+        mute.setAttribute('aria-pressed', muted ? 'true' : 'false');
+        mute.setAttribute('aria-label', muted ? 'Activar música' : 'Silenciar música');
+      }
+      if (icon) icon.setAttribute('href', muted ? '#i-mute' : '#i-sound');
+      // Si el navegador bloqueó el audio, decirlo: si no, parece que el juego
+      // no tiene música y el jugador toquetea el volumen sin resultado.
+      if (hint) {
+        hint.textContent = music.isBlocked()
+          ? 'El navegador bloqueó el audio · toca la pantalla para activarlo.'
+          : 'Suena durante la partida y vuelve a empezar en cada mapa.';
+      }
     }
 
     showNotice(text, tone = 'neutral') {
@@ -1116,6 +1160,7 @@
         else home.lastChild.textContent = text;
       }
       this.updateMapVoteButton();
+      this.renderAudioSettings();
     }
 
     closeGameMenu() {
@@ -1270,6 +1315,13 @@
 
     /** Latido de interfaz a 4 Hz desde main.js. No toca el bucle de render. */
     update() {
+      // Estar en partida = tener el menú principal escondido. Se deduce aquí en
+      // vez de marcarlo en cada punto de entrada y salida —jugar offline,
+      // entrar online, volver al inicio, desconectar, reconectar— porque
+      // olvidarse de uno solo dejaría la música sonando encima del menú. El
+      // latido va a 4 Hz: nadie nota un cuarto de segundo en una entrada con
+      // fundido de más de un segundo.
+      this.game.setMatchActive(!!this.root?.classList.contains('hidden'));
       this.networkHud.update();
       this.metrics?.update();
       if (this.session?.getStatus().online) {

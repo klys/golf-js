@@ -55,6 +55,8 @@
       <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V9.5m5 10.5V4m5 16v-7.5M19 20V7.5" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/></symbol>
       <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.2 19.4 6v6c0 4.2-3 7.3-7.4 8.8C7.6 19.3 4.6 16.2 4.6 12V6z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
       <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h10m4 0h2M4 17h2m4 0h10M14 4v6M6 14v6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="16" cy="7" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="8" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+      <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.4h3.4L12 5.4v13.2l-4.6-4H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M15.6 9.2a4 4 0 0 1 0 5.6M18.2 6.6a7.6 7.6 0 0 1 0 10.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+      <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9.4h3.4L12 5.4v13.2l-4.6-4H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m16 9.5 5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
       <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5.4l3.7 2.1" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
       <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.6 12S6.4 5.8 12 5.8 21.4 12 21.4 12 17.6 18.2 12 18.2 2.6 12 2.6 12z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
       <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></symbol>
@@ -290,6 +292,23 @@
           <button id="requestMapVoteBtn" class="secondary-button hidden" type="button"><svg class="ico" aria-hidden="true"><use href="#i-map"></use></svg><span id="requestMapVoteLabel">VOTAR CAMBIO DE MAPA</span></button>
           <button id="returnHomeBtn" class="secondary-button danger-outline" type="button"><svg class="ico" aria-hidden="true"><use href="#i-exit"></use></svg><span>VOLVER AL INICIO</span></button>
         </div>
+
+        <!-- Ajustes de audio. Viven aquí y no en una pantalla aparte porque es
+             donde se buscan: sonando la música, a mitad de partida. -->
+        <section class="audio-settings" aria-labelledby="audioSettingsTitle">
+          <div class="audio-settings-head">
+            <span class="config-section-icon"><svg class="ico" aria-hidden="true"><use href="#i-sound"></use></svg></span>
+            <div><h3 id="audioSettingsTitle">Música</h3><p id="musicStateHint">Suena durante la partida y vuelve a empezar en cada mapa.</p></div>
+          </div>
+          <div class="audio-row">
+            <button id="musicMuteBtn" class="icon-button audio-mute" type="button" aria-pressed="false" aria-label="Silenciar música">
+              <svg class="ico" aria-hidden="true"><use id="musicMuteIcon" href="#i-sound"></use></svg>
+            </button>
+            <input id="musicVolume" class="audio-slider" type="range" min="0" max="100" step="1" value="45"
+                   aria-label="Volumen de la música" />
+            <b id="musicVolumeValue" class="audio-value">45%</b>
+          </div>
+        </section>
       </div>
     </section>
 
@@ -707,6 +726,7 @@
   <script defer src="./js/core/physics.js" onerror="NoiseGolfBootError('js/core/physics.js')"></script>
   <script defer src="./js/engine/camera.js" onerror="NoiseGolfBootError('js/engine/camera.js')"></script>
   <script defer src="./js/engine/particles.js" onerror="NoiseGolfBootError('js/engine/particles.js')"></script>
+  <script defer src="./js/engine/audio.js" onerror="NoiseGolfBootError('js/engine/audio.js')"></script>
   <script defer src="./js/engine/holeIntro.js" onerror="NoiseGolfBootError('js/engine/holeIntro.js')"></script>
   <script defer src="./js/render/worldRenderer.js" onerror="NoiseGolfBootError('js/render/worldRenderer.js')"></script>
   <script defer src="./js/ui/hud.js" onerror="NoiseGolfBootError('js/ui/hud.js')"></script>

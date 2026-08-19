@@ -178,6 +178,23 @@
       minDifficulty: 0.55,
     }),
 
+    // — Música —
+    // Una sola pista y suena solo dentro de la partida: el menú se queda en
+    // silencio a propósito, para que darle a JUGAR tenga entrada musical.
+    audio: Object.freeze({
+      musicTrack: './assets/music/INTERESTELLAR.mp3',
+      // Volumen la primera vez que se juega. A partir de ahí manda lo que el
+      // jugador deje en el control, que se guarda en su navegador.
+      defaultMusicVolume: 0.45,
+      // La pista se repite mientras dure el mapa; los hoyos duran más que ella.
+      loop: true,
+      // Fundidos. Cortar una pista en seco se oye como un fallo del juego, y
+      // aquí hay un corte cada vez que cambia el mapa. La salida es más rápida
+      // que la entrada porque al salir el jugador ya está mirando otra cosa.
+      fadeInSeconds: 1.2,
+      fadeOutSeconds: 0.5,
+    }),
+
     shot: Object.freeze({
       maxDrag: 220,
       powerScale: 6.15,

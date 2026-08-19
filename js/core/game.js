@@ -19,6 +19,10 @@
       this.particles = new ParticleSystem();
       this.renderer = new WorldRenderer();
       this.holeIntro = NG.HoleIntro ? new NG.HoleIntro() : null;
+      this.music = NG.MusicPlayer ? new NG.MusicPlayer() : null;
+      // "En partida" NO es lo mismo que "input desbloqueado": el menú de pausa
+      // bloquea el input y ahí la música tiene que seguir sonando.
+      this.matchActive = false;
       this.seed = this.makeSeed();
       this.holeIndex = 0;
       this.holes = [];
@@ -213,6 +217,7 @@
       this.fixedStep.reset();
       this.simPrev = { x: this.ball.x, y: this.ball.y, valid: false };
       this.renderBall = this.ball;
+      this.restartMusicForHole();
       const intro = this.startHoleIntro();
       const label = `${this.hole.archetypeLabel} · ${this.hole.mapSize}`;
       this.hud.flashStatus(intro ? `${label} · pulsa para saltar` : label, 'neutral', intro ? 1.9 : 1.4);
@@ -224,6 +229,15 @@
      * Es solo cámara. La física, el reloj de la sala y la autoridad de red
      * siguen su curso, así que saltarla no cambia el estado de la partida.
      */
+    /**
+     * Mapa nuevo, pista desde el principio. Solo si ya se está jugando: al
+     * arrancar el juego se genera un campo con el menú delante, y ahí no debe
+     * sonar nada.
+     */
+    restartMusicForHole() {
+      if (this.matchActive) this.music?.start();
+    }
+
     startHoleIntro() {
       if (!this.holeIntro || !this.hole || !this.ball) return false;
       this.dragging = false;
@@ -440,6 +454,22 @@
     setInputLocked(value) {
       this.inputLocked = !!value;
       if (this.inputLocked) this.cancelDrag();
+    }
+
+    /**
+     * Entrar o salir de una partida.
+     *
+     * Es el interruptor de la música, y por eso no puede colgarse de
+     * `setInputLocked`: el menú de pausa también bloquea el input, y con esa
+     * señal la pista se cortaría y volvería a empezar cada vez que alguien
+     * abre el menú a mitad de hoyo.
+     */
+    setMatchActive(active) {
+      const value = !!active;
+      if (value === this.matchActive) return;
+      this.matchActive = value;
+      if (value) this.music?.start();
+      else this.music?.stop();
     }
 
     setNetworkSession(session) {
@@ -684,6 +714,7 @@
       this.renderer.update(viewDt);
       this.particles.update(viewDt);
       this.hud.tick(viewDt);
+      this.music?.update(viewDt);
       if (this.ball.boosterPulse > 0) this.ball.boosterPulse = Math.max(0, this.ball.boosterPulse - viewDt * 3.4);
       if (this.ball.gravityPulse > 0) this.ball.gravityPulse = Math.max(0, this.ball.gravityPulse - viewDt * 2.2);
 
