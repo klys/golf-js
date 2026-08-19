@@ -550,6 +550,39 @@ body[data-focus="aim"] #helpChip { opacity: 0; transform: translateY(6px); }
 .turn-indicator[data-state="spectator"] { background: rgba(169,139,255,.11); color: #d0c2ff; border-color: rgba(169,139,255,.24); }
 .turn-indicator[data-state="over"] { background: rgba(255,212,121,.12); color: #ffe6ac; border-color: rgba(255,212,121,.28); }
 
+/* Cámara libre del jugador que ya ha terminado el hoyo */
+.spectate-bar {
+  margin-top: 8px; padding: 8px 9px 7px; border-radius: var(--r-xs);
+  background: rgba(169,139,255,.09); border: 1px solid rgba(169,139,255,.22);
+}
+.spectate-bar[hidden] { display: none; }
+.spectate-head { display: flex; align-items: center; gap: 5px; color: #cfc0ff; font-size: 7.5px; letter-spacing: .16em; font-weight: 900; }
+.spectate-head .ico { width: 12px; height: 12px; opacity: .85; }
+.spectate-head small { margin-left: auto; font-family: var(--font-num); font-size: 8.5px; letter-spacing: .04em; color: var(--ink-4); }
+.spectate-pick { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.spectate-nav {
+  flex: none; display: grid; place-items: center; width: 22px; height: 22px; padding: 0;
+  border-radius: 6px; border: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.05);
+  color: var(--ink-2); cursor: pointer; transition: background .16s var(--ease), color .16s var(--ease);
+}
+.spectate-nav:hover { background: rgba(169,139,255,.22); color: #ece4ff; }
+.spectate-nav .ico { width: 13px; height: 13px; }
+.spectate-name {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; justify-content: center;
+  font-size: 10.5px; font-weight: 850; color: var(--ink); overflow: hidden;
+}
+.spectate-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.spectate-hint { display: block; margin-top: 6px; text-align: center; font-size: 7.5px; color: var(--ink-4); letter-spacing: .04em; }
+.spectate-hint kbd {
+  display: inline-block; padding: 1px 4px; margin: 0 1px; border-radius: 4px;
+  background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.10); color: var(--ink-3); font-size: 7.5px;
+}
+
+/* Fila del marcador utilizable como selector de cámara */
+.scoreboard-rows.is-pickable .score-row[data-pickable="1"] { cursor: pointer; }
+.scoreboard-rows.is-pickable .score-row[data-pickable="1"]:hover { background: rgba(169,139,255,.14); }
+.score-row.is-spectated { border-color: rgba(169,139,255,.42); box-shadow: inset -2px 0 0 #a98bff; }
+
 .goal-bar { margin-top: 10px; }
 .goal-track { height: 5px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; }
 .goal-track i { display: block; height: 100%; width: 0%; border-radius: 999px; background: linear-gradient(90deg, var(--mint), var(--gold)); transition: width .4s var(--ease); }
@@ -612,6 +645,7 @@ body[data-focus="aim"] #helpChip { opacity: 0; transform: translateY(6px); }
 /* Estado plegado: el marcador se reduce a la cabecera */
 .network-hud.collapsed .net-meta,
 .network-hud.collapsed .turn-indicator,
+.network-hud.collapsed .spectate-bar,
 .network-hud.collapsed .goal-bar,
 .network-hud.collapsed .scoreboard,
 .network-hud.collapsed .net-foot { display: none; }

@@ -74,8 +74,19 @@
       window.addEventListener('pointercancel', () => this.cancelDrag());
       this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
       window.addEventListener('keydown', (e) => {
-        if (e.key.toLowerCase() === 'r' && !this.pausedForResult && !this.inputLocked) {
+        if (e.repeat || e.ctrlKey || e.altKey || e.metaKey) return;
+        // Escribiendo en el menú (nombre de sala, contraseña…) las teclas de
+        // juego no deben dispararse.
+        const target = e.target;
+        if (target && (target.isContentEditable || /^(input|textarea|select)$/i.test(target.tagName || ''))) return;
+        const key = String(e.key || '');
+        if (key.toLowerCase() === 'r' && !this.pausedForResult && !this.inputLocked) {
           this.returnToShotOrigin();
+          return;
+        }
+        // Cámara libre del que ya ha terminado: recorre a quien sigue jugando.
+        if (key === 'ArrowRight' || key === 'ArrowLeft' || key.toLowerCase() === 'c') {
+          if (this.cycleSpectateCamera(key === 'ArrowLeft' ? -1 : 1)) e.preventDefault();
         }
       });
 
@@ -347,6 +358,21 @@
         return;
       }
       this.renderBall = { ...ball, x: this.simPrev.x + dx * alpha, y: this.simPrev.y + dy * alpha };
+    }
+
+    /**
+     * Pasa la cámara al siguiente jugador observable.
+     * Solo hace algo cuando la sesión lo permite (has embocado, has agotado el
+     * tiempo o eres espectador y queda alguien jugando), así que las flechas
+     * no roban nada mientras estás jugando tu turno.
+     */
+    cycleSpectateCamera(direction) {
+      const session = this.networkSession;
+      if (!session?.getStatus().online || !session.canSpectate?.()) return false;
+      const target = session.cycleSpectate(direction);
+      if (!target) return false;
+      this.hud.flashStatus(target.local ? 'Cámara en tu bola' : `Siguiendo a ${target.username}`, 'neutral', 0.9);
+      return true;
     }
 
     setInputLocked(value) {

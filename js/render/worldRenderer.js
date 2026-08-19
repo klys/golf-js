@@ -43,7 +43,9 @@
       // - Por Turnos: el jugador con turno queda delante.
       // - Battle Royale: la bola LOCAL de cada cliente queda delante en ESE cliente.
       // Esto evita perder la propia bola cuando varios jugadores se amontonan.
-      const presentationPriority = (item) => item.battleLocal ? 4 : (item.turn ? 3 : (item.local ? 2 : 1));
+      // El jugador que sigue la cámara libre manda sobre todo lo demás: es
+      // literalmente lo que el espectador ha pedido mirar.
+      const presentationPriority = (item) => item.spectated ? 5 : (item.battleLocal ? 4 : (item.turn ? 3 : (item.local ? 2 : 1)));
       renderBalls.sort((a, b) => presentationPriority(a) - presentationPriority(b));
       for (const item of renderBalls) this.drawBall(ctx, item.ball, hole, game, item);
       if (game.dragging && !ball.moving) this.drawAim(ctx, game);
@@ -1125,6 +1127,21 @@
         ctx.beginPath();
         ctx.ellipse(shadow.x, shadow.y + 3, r * (0.72 + proximity * 0.33), r * (0.18 + proximity * 0.12), 0, 0, Math.PI * 2);
         ctx.fill();
+        ctx.restore();
+      }
+
+      // Anillo del jugador al que apunta la cámara libre: sin él, el que ya
+      // ha terminado no sabe a cuál de las bolas está siguiendo.
+      if (style?.spectated) {
+        ctx.save();
+        ctx.strokeStyle = style.color || '#a98bff';
+        ctx.globalAlpha = 0.75;
+        ctx.lineWidth = 1.6;
+        ctx.setLineDash([4, 4]);
+        ctx.lineDashOffset = -(this.time || 0) * 14;
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, r + 6.5, 0, Math.PI * 2);
+        ctx.stroke();
         ctx.restore();
       }
 

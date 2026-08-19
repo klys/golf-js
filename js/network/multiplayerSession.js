@@ -48,6 +48,10 @@
       this.matchOver = false;
       this.winnerPlayerKey = null;
       this.turnPlayerKey = null;
+      // Cámara libre de quien ya ha terminado el hoyo. `null` significa
+      // automática (el turno en POR TURNOS, la bola propia en Battle Royale);
+      // en cuanto el jugador elige a quién mirar, aquí queda su clave.
+      this.spectateKey = null;
       this.finishOrder = 0;
       this.snapshotAccumulator = 0;
       this.snapshotSeq = 0;
@@ -1891,7 +1895,11 @@
       this.applyLocalWorldPresentation();
       let player = this.players.get(this.localPlayerKey);
       if (!player || player.role === 'spectator' || !player.ball) {
-        player = [...this.players.values()].filter((p) => p.ball && p.role === 'player').sort((a, b) => b.points - a.points)[0] || null;
+        // Sin bola propia se toma prestada la de alguien: la que estás
+        // mirando si has elegido, y si no la del líder.
+        player = this.getSpectateTarget()
+          || [...this.players.values()].filter((p) => p.ball && p.role === 'player').sort((a, b) => b.points - a.points)[0]
+          || null;
       }
       if (!player?.ball) return;
       if (this.role === 'host') {
@@ -1939,6 +1947,7 @@
     getRenderBalls() {
       if (this.role === 'offline') return this.game.ball ? [{ playerKey: 'offline', username: '', color: '#f7fbff', ball: this.game.ball, local: true, turn: false, battleLocal: false }] : [];
       const mode = this.settings?.mode || this.lobby?.mode || 'turn';
+      const spectatedKey = this.getSpectateTarget()?.playerKey || null;
       return [...this.players.values()].filter((p) => p.ball && p.role === 'player').map((p) => {
         const local = p.playerKey === this.localPlayerKey;
         return {
@@ -1947,6 +1956,9 @@
           color: NG.NET_CONFIG.colors[p.colorIndex % NG.NET_CONFIG.colors.length],
           local,
           turn: this.turnPlayerKey === p.playerKey,
+          // Marca de presentación local: la bola que estás mirando con la
+          // cámara libre lleva anillo. No viaja por red ni toca autoridad.
+          spectated: !!spectatedKey && spectatedKey === p.playerKey && !local,
           // En Battle Royale cada navegador destaca exclusivamente SU propia bola.
           // Es una marca de presentación local; no se replica ni altera autoridad/snapshots.
           battleLocal: mode === 'battle' && local,
@@ -1955,19 +1967,140 @@
       });
     }
 
-    getCameraBall() {
-      if (this.role === 'offline') return this.game.ball;
+    /** Jugador que enfoca la cámara cuando nadie ha elegido a quién mirar. */
+    autoCameraPlayer() {
       const mode = this.settings?.mode || this.lobby?.mode || 'turn';
       let p = null;
       if (mode === 'turn' && this.turnPlayerKey) p = this.players.get(this.turnPlayerKey) || null;
       if (!p?.ball) p = this.players.get(this.localPlayerKey) || null;
       if (!p?.ball) p = [...this.players.values()].find((candidate) => candidate.role === 'player' && candidate.ball) || null;
+      return p?.ball ? p : null;
+    }
+
+    /**
+     * A quién puede apuntar la cámara quien ya ha terminado.
+     *
+     * Primero los que siguen jugando —son exactamente aquellos a los que se
+     * está esperando— y al final la bola propia, para poder volver a la vista
+     * de siempre sin tener que dar la vuelta entera a la lista.
+     */
+    getSpectateOptions() {
+      if (this.role === 'offline') return [];
+      const options = [];
+      for (const p of this.players.values()) {
+        if (p.role !== 'player' || !p.ball || p.finished || !p.connected) continue;
+        if (p.playerKey === this.localPlayerKey) continue;
+        options.push(p);
+      }
+      const local = this.players.get(this.localPlayerKey);
+      if (local?.ball && local.role === 'player') options.push(local);
+      return options;
+    }
+
+    /**
+     * Solo se abre la cámara libre a quien ya no tiene nada que jugar en este
+     * hoyo: el que embocó, el que agotó lanzamientos o tiempo, y el espectador
+     * que entró con la partida empezada. Mientras te toca jugar, la cámara
+     * sigue siendo la de siempre.
+     */
+    canSpectate() {
+      if (this.role === 'offline' || this.matchOver) return false;
+      const local = this.players.get(this.localPlayerKey);
+      if (!local) return false;
+      if (local.role === 'player' && !local.finished) return false;
+      return this.getSpectateOptions().some((p) => p.playerKey !== this.localPlayerKey);
+    }
+
+    /** Jugador elegido a mano, o null si la cámara sigue en automático. */
+    getSpectateTarget() {
+      if (!this.canSpectate()) {
+        // Al volver a jugar (hoyo nuevo, mapa nuevo) la elección se suelta:
+        // el siguiente hoyo debe empezar con la cámara en tu propia bola.
+        this.spectateKey = null;
+        return null;
+      }
+      const options = this.getSpectateOptions();
+      if (!this.spectateKey) {
+        // Sin elección todavía. En POR TURNOS el automático ya enfoca a quien
+        // está jugando, así que no hay nada que corregir; en Battle Royale
+        // enfocaría tu propia bola ya embocada, y ahí la cámara se pasa sola
+        // al primero que siga en juego en vez de mirar a un hoyo vacío.
+        const auto = this.autoCameraPlayer();
+        if (auto && auto.playerKey !== this.localPlayerKey) return null;
+        return options.find((p) => p.playerKey !== this.localPlayerKey) || null;
+      }
+      const current = options.find((p) => p.playerKey === this.spectateKey);
+      if (current) return current;
+      // El jugador al que mirabas ha embocado o se ha ido: se salta al
+      // siguiente que siga en juego en vez de devolver la cámara de golpe.
+      const next = options.find((p) => p.playerKey !== this.localPlayerKey) || null;
+      this.spectateKey = next?.playerKey || null;
+      return next;
+    }
+
+    describeSpectatePlayer(player) {
+      if (!player) return null;
+      return {
+        playerKey: player.playerKey,
+        username: player.username,
+        color: NG.NET_CONFIG.colors[player.colorIndex % NG.NET_CONFIG.colors.length],
+        local: player.playerKey === this.localPlayerKey,
+      };
+    }
+
+    /** Avanza (+1) o retrocede (-1) por la lista de jugadores observables. */
+    cycleSpectate(direction = 1) {
+      if (!this.canSpectate()) return null;
+      const options = this.getSpectateOptions();
+      if (!options.length) return null;
+      const step = direction < 0 ? -1 : 1;
+      const currentKey = (this.getSpectateTarget() || this.autoCameraPlayer())?.playerKey || null;
+      const index = options.findIndex((p) => p.playerKey === currentKey);
+      const nextIndex = index < 0
+        ? (step > 0 ? 0 : options.length - 1)
+        : (index + step + options.length) % options.length;
+      this.spectateKey = options[nextIndex].playerKey;
+      return this.describeSpectatePlayer(options[nextIndex]);
+    }
+
+    setSpectateTarget(playerKey) {
+      if (!this.canSpectate()) return null;
+      const target = this.getSpectateOptions().find((p) => p.playerKey === playerKey);
+      if (!target) return null;
+      this.spectateKey = target.playerKey;
+      return this.describeSpectatePlayer(target);
+    }
+
+    /** Todo lo que la interfaz necesita saber de la cámara libre. */
+    getSpectateStatus() {
+      const available = this.canSpectate();
+      if (!available) {
+        this.getSpectateTarget();
+        return { available: false, manual: false, count: 0, index: -1, options: [], following: null };
+      }
+      const options = this.getSpectateOptions();
+      const followed = this.getSpectateTarget() || this.autoCameraPlayer();
+      return {
+        available: true,
+        manual: !!this.spectateKey,
+        count: options.length,
+        index: followed ? options.findIndex((p) => p.playerKey === followed.playerKey) : -1,
+        options: options.map((p) => this.describeSpectatePlayer(p)),
+        following: this.describeSpectatePlayer(followed),
+      };
+    }
+
+    getCameraBall() {
+      if (this.role === 'offline') return this.game.ball;
+      const p = this.getSpectateTarget() || this.autoCameraPlayer();
       if (!p?.ball) return this.game.ball;
       return this.presentationOf(p) || p.ball;
     }
 
     isCameraFollowingLocal() {
       if (this.role === 'offline') return true;
+      const spectated = this.getSpectateTarget();
+      if (spectated) return spectated.playerKey === this.localPlayerKey;
       const mode = this.settings?.mode || this.lobby?.mode || 'turn';
       if (mode === 'battle') return true;
       return !this.turnPlayerKey || this.turnPlayerKey === this.localPlayerKey;

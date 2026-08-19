@@ -56,6 +56,7 @@
       <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.2 19.4 6v6c0 4.2-3 7.3-7.4 8.8C7.6 19.3 4.6 16.2 4.6 12V6z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
       <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h10m4 0h2M4 17h2m4 0h10M14 4v6M6 14v6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="16" cy="7" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="8" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
       <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5.4l3.7 2.1" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.6 12S6.4 5.8 12 5.8 21.4 12 21.4 12 17.6 18.2 12 18.2 2.6 12 2.6 12z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
       <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     </defs>
   </svg>
@@ -185,6 +186,25 @@
         </div>
 
         <div id="turnIndicator" class="turn-indicator" data-state="idle">Primer tiro inicia la partida</div>
+
+        <!-- Cámara libre: aparece solo cuando ya has terminado el hoyo -->
+        <div id="spectateBar" class="spectate-bar" hidden>
+          <div class="spectate-head">
+            <svg class="ico" aria-hidden="true"><use href="#i-eye"></use></svg>
+            <span>SIGUIENDO</span>
+            <small id="spectateCount">1/1</small>
+          </div>
+          <div class="spectate-pick">
+            <button id="spectatePrev" class="spectate-nav" type="button" title="Jugador anterior (←)" aria-label="Jugador anterior">
+              <svg class="ico" aria-hidden="true"><use href="#i-back"></use></svg>
+            </button>
+            <strong id="spectateName" class="spectate-name"><i id="spectateDot" class="player-color"></i><span id="spectateNameText">—</span></strong>
+            <button id="spectateNext" class="spectate-nav" type="button" title="Siguiente jugador (→)" aria-label="Siguiente jugador">
+              <svg class="ico" aria-hidden="true"><use href="#i-chevron"></use></svg>
+            </button>
+          </div>
+          <small class="spectate-hint"><kbd>←</kbd><kbd>→</kbd> o <kbd>C</kbd> · o pulsa un jugador del marcador</small>
+        </div>
 
         <div id="netGoalBar" class="goal-bar" hidden>
           <div class="goal-track"><i id="netGoalFill"></i></div>

@@ -1,0 +1,49 @@
+NOISE GOLF 2D WEB 0010 - CAMBIOS
+================================
+
+BASE: 0009 RELAY ONLY
+TIPO: consolidación completa para VPS
+
+✏️ js/network/clientEnv.js
+- El cliente ya no necesita tools/config-server.cjs.
+- Lee .env directamente desde el hosting estático por HTTP/HTTPS.
+- Si .env no puede cargarse, Online queda bloqueado y Offline permanece disponible.
+- Añadidas opciones de interpolación/extrapolación/suavizado.
+
+✏️ js/network/netConfig.js
+- Client version 0010.
+- Snapshot predeterminado 20 Hz.
+- Nuevos parámetros de presentación de red configurables desde .env.
+
+✏️ js/network/profile.js
+- Guarda de contenido mixto: una página HTTPS exige wss:// para el relay.
+
+✏️ js/network/multiplayerSession.js
+- Predicción visual corta del tiro local sin ceder autoridad al cliente.
+- Interpolación/extrapolación limitada según RTT.
+- Corrección adaptativa y snap para discrepancias grandes.
+- Estado visual de velocidad separado del estado host.
+- Cámara de Por Turnos obtiene la bola del jugador activo.
+- Battle Royale conserva cámara local.
+- getRenderBalls marca el jugador con turno.
+
+✏️ js/core/game.js
+- Cámara online usa el objetivo de cámara entregado por MultiplayerSession.
+
+✏️ js/render/worldRenderer.js
+- Jugador de turno se dibuja al final: nombre/bola siempre delante si hay superposición.
+- Etiqueta del turno recibe borde de color.
+- Indicador de objetivo usa la bola que está siguiendo la cámara.
+
+✏️ .env / .env.example
+- Configuración pública de cliente/host para VPS.
+- Nuevos parámetros de suavizado de red.
+
+🗑️ START_GAME_WINDOWS.bat
+🗑️ start_game.sh
+🗑️ tools/config-server.cjs
+🗑️ SHA256SUMS.txt
+🗑️ carpetas de tests/docs de desarrollo en el ZIP de despliegue
+
+🆕 INSTRUCCIONES_VPS_ES.txt
+- Manual completo de despliegue del cliente/host sin instalación.

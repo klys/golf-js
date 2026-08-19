@@ -50,6 +50,11 @@
       this.leave = $('#leaveOnlineBtn');
       this.collapseBtn = $('#scoreboardToggle');
 
+      this.spectateBar = $('#spectateBar');
+      this.spectateCount = $('#spectateCount');
+      this.spectateDot = $('#spectateDot');
+      this.spectateNameText = $('#spectateNameText');
+
       this.matchOverPanel = $('#matchOverPanel');
       this.matchOverTitle = $('#matchOverTitle');
       this.matchOverSub = $('#matchOverSub');
@@ -72,6 +77,8 @@
         this.metricHead.style.cursor = 'pointer';
         this.metricHead.title = 'Alternar entre golpes y ping';
       }
+      $('#spectatePrev')?.addEventListener('click', () => this.moveSpectate(-1));
+      $('#spectateNext')?.addEventListener('click', () => this.moveSpectate(1));
       $('#matchOverStay')?.addEventListener('click', () => this.matchOverPanel?.classList.add('hidden'));
       $('#matchOverHome')?.addEventListener('click', () => { this.matchOverPanel?.classList.add('hidden'); this.onLeave?.(); });
     }
@@ -102,6 +109,7 @@
       if (this.matchOverRows) this.matchOverRows.textContent = '';
       this.matchOverShown = false;
       this.root?.classList.add('hidden');
+      if (this.spectateBar) this.spectateBar.hidden = true;
       this.matchOverPanel?.classList.add('hidden');
       this.hud?.setRuntime('offline');
       this.hud?.setNetChip({ ping: '—', bars: 0, role: 'OFFLINE', quality: 'offline' });
@@ -227,6 +235,18 @@
           scoreboardText: 'ESPECTADOR · JUEGAS EN EL PRÓXIMO HOYO',
         };
       }
+      // Ya has terminado y el mundo sigue: lo único accionable que te queda es
+      // elegir a quién mirar, así que la barra lo dice en vez de repetir turno.
+      if (local?.finished && this.session?.canSpectate?.()) {
+        const following = this.session.getSpectateStatus?.().following;
+        const watching = following ? (following.local ? 'tu bola' : following.username) : 'la partida';
+        return {
+          tone: 'spectator',
+          title: local.finishReason === 'holed' ? 'Hoyo completado' : 'Sin más lanzamientos',
+          hint: `Viendo ${watching} · ← → o C para cambiar de jugador`,
+          scoreboardText: `ESPERANDO · VIENDO A ${String(following?.username || '—').toUpperCase()}`,
+        };
+      }
       if (mode === 'battle') {
         const started = status.matchStarted;
         return {
@@ -255,10 +275,52 @@
       };
     }
 
+    /** Botones ‹ › de la barra de cámara libre. */
+    moveSpectate(direction) {
+      this.announceSpectate(this.session?.cycleSpectate?.(direction));
+    }
+
+    /** Clic en una fila del marcador: la cámara salta a ese jugador. */
+    pickSpectate(playerKey) {
+      this.announceSpectate(this.session?.setSpectateTarget?.(playerKey));
+    }
+
+    announceSpectate(target) {
+      if (!target) return;
+      this.hud?.flashStatus(target.local ? 'Cámara en tu bola' : `Siguiendo a ${target.username}`, 'neutral', 0.9);
+      this.renderSpectate();
+    }
+
+    /**
+     * Barra de cámara libre. Solo existe mientras la sesión la ofrece: has
+     * terminado el hoyo (o eres espectador) y aún queda alguien jugando.
+     */
+    renderSpectate() {
+      const spectate = this.session?.getSpectateStatus?.() || { available: false, options: [], following: null, count: 0, index: -1 };
+      this.spectate = spectate;
+      if (!this.spectateBar) return spectate;
+      this.spectateBar.hidden = !spectate.available;
+      if (!spectate.available) return spectate;
+      const following = spectate.following;
+      if (this.spectateNameText) {
+        this.spectateNameText.textContent = following
+          ? (following.local ? `${following.username} · tu bola` : following.username)
+          : '—';
+      }
+      if (this.spectateDot) {
+        this.spectateDot.style.background = following?.color || 'transparent';
+        this.spectateDot.style.color = following?.color || 'transparent';
+      }
+      if (this.spectateCount) this.spectateCount.textContent = `${Math.max(1, spectate.index + 1)}/${spectate.count}`;
+      return spectate;
+    }
+
     renderRows(rows) {
       if (!this.table || !this.session) return;
       const status = this.session.getStatus();
       const mode = (status.settings || {}).mode === 'battle' ? 'battle' : 'turn';
+      const spectate = this.renderSpectate();
+      this.table.classList.toggle('is-pickable', !!spectate.available);
       const limit = Math.min(rows.length, NG.NET_CONFIG.maxPlayers);
       const seen = new Set();
 
@@ -270,7 +332,7 @@
           node = this.createRow();
           this.rowNodes.set(row.playerKey, node);
         }
-        this.paintRow(node, row, mode);
+        this.paintRow(node, row, mode, spectate);
         if (this.table.children[index] !== node.el) this.table.insertBefore(node.el, this.table.children[index] || null);
       }
 
@@ -296,10 +358,16 @@
       const progress = document.createElement('div'); progress.className = 'row-progress'; progress.hidden = true;
       const progressFill = document.createElement('i'); progress.appendChild(progressFill);
       el.append(rank, id, metric, points, progress);
-      return { el, rank, dot, name, tag, ping, metric, points, progress, progressFill };
+      const node = { el, rank, dot, name, tag, ping, metric, points, progress, progressFill, key: null };
+      // La fila solo actúa como selector de cámara cuando la sesión lo marca
+      // como observable; el resto del tiempo es un marcador y nada más.
+      el.addEventListener('click', () => {
+        if (el.dataset.pickable === '1' && node.key) this.pickSpectate(node.key);
+      });
+      return node;
     }
 
-    paintRow(node, row, mode) {
+    paintRow(node, row, mode, spectate = { available: false, options: [], following: null }) {
       const q = quality(row.ping);
       const classes = ['score-row'];
       if (row.local) classes.push('is-local');
@@ -307,8 +375,18 @@
       if (!row.connected) classes.push('is-offline');
       if (row.finished) classes.push('is-finished');
       if (row.rank <= 3) classes.push(`is-podium-${row.rank}`);
+      const pickable = !!spectate.available && spectate.options.some((o) => o.playerKey === row.playerKey);
+      if (spectate.available && spectate.following?.playerKey === row.playerKey) classes.push('is-spectated');
       const className = classes.join(' ');
       if (node.el.className !== className) node.el.className = className;
+      node.key = row.playerKey;
+      if (pickable) {
+        node.el.dataset.pickable = '1';
+        node.el.title = `Ver la cámara desde ${row.username}`;
+      } else {
+        delete node.el.dataset.pickable;
+        node.el.removeAttribute('title');
+      }
 
       node.rank.textContent = String(row.rank);
       node.dot.style.background = row.color;
