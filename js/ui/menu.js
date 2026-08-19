@@ -99,6 +99,7 @@
       this.updateOnlineConfigStatus();
       this.updateReconnectButton();
       this.updateCreateSummary();
+      this.renderAudioSettings();
       this.game.setInputLocked(true);
       this.setOfflineHud();
 
@@ -170,6 +171,10 @@
         this.renderAudioSettings();
       });
       $('#musicMuteBtn')?.addEventListener('click', () => {
+        this.game.music?.toggleMuted();
+        this.renderAudioSettings();
+      });
+      $('#mainMusicToggleBtn')?.addEventListener('click', () => {
         this.game.music?.toggleMuted();
         this.renderAudioSettings();
       });
@@ -483,6 +488,9 @@
       const mute = document.querySelector('#musicMuteBtn');
       const icon = document.querySelector('#musicMuteIcon');
       const hint = document.querySelector('#musicStateHint');
+      const mainToggle = document.querySelector('#mainMusicToggleBtn');
+      const mainToggleIcon = document.querySelector('#mainMusicToggleIcon');
+      const mainToggleState = document.querySelector('#mainMusicToggleState');
       const percent = Math.round(music.getVolume() * 100);
       const muted = music.isMuted();
       if (slider) {
@@ -496,6 +504,14 @@
         mute.setAttribute('aria-label', muted ? 'Activar música' : 'Silenciar música');
       }
       if (icon) icon.setAttribute('href', muted ? '#i-mute' : '#i-sound');
+      if (mainToggle) {
+        mainToggle.setAttribute('aria-pressed', muted ? 'false' : 'true');
+        mainToggle.setAttribute('aria-label', muted ? 'Activar música de partida' : 'Desactivar música de partida');
+      }
+      if (mainToggleIcon) mainToggleIcon.setAttribute('href', muted ? '#i-mute' : '#i-sound');
+      if (mainToggleState) mainToggleState.textContent = muted
+        ? `Desactivada · volumen preparado ${percent}%`
+        : `Activada · volumen ${percent}%`;
       // Si el navegador bloqueó el audio, decirlo: si no, parece que el juego
       // no tiene música y el jugador toquetea el volumen sin resultado.
       if (hint) {

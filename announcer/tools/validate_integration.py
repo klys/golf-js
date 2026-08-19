@@ -33,10 +33,10 @@ try:
     require("defaults" not in cfg, "Los defaults de usuario no deben permanecer en announcer/config.json")
     state_cfg = cfg.get("stateMachine") or {}
     require(state_cfg.get("guaranteedEvents") == ["HOLE", "HOLE_IN_ONE"], "Eventos supercríticos inesperados")
-    require(int(state_cfg.get("idleAfterMs", 0)) >= 1000, "idleAfterMs inválido")
-    require("informativeCooldownMs" not in state_cfg, "La pausa informativa no debe usar cooldown periódico")
+    require("idleAfterMs" not in state_cfg, "La pausa informativa eliminada no debe conservar idleAfterMs")
+    require("informativeCooldownMs" not in state_cfg, "No debe existir informativeCooldownMs")
     require(int(state_cfg.get("postMatchSummaryMax", -1)) >= 1, "Falta resumen post-partida")
-    require(state_cfg.get("informativeAfterPostMatch") is False, "Postmatch no debe abrir pausa informativa")
+    require("informativeAfterPostMatch" not in state_cfg, "No debe existir informativeAfterPostMatch")
     map_cfg = cfg.get("mapPresentation") or {}
     require(map_cfg.get("enabled") is True, "Presentación de mapa desactivada")
     require(map_cfg.get("silencePreFirstTouch") is True, "Debe silenciarse AIM/TURN antes del primer toque")
@@ -108,8 +108,8 @@ for token in [
 for token in [
     "startAtNetTime", "lastByPlayerEvent", "trace-folded",
     "favoriteScores", "receiveNetworkBundle", "notifySpeechLine",
-    "supercritical", "guaranteed", "postmatch", "INFORMATIVE_STATE",
-    "POST_MATCH_SUMMARY", "hasLiveGameplayActivity", "onOfflineMatchEnd",
+    "supercritical", "guaranteed", "postmatch",
+    "POST_MATCH_SUMMARY", "onOfflineMatchEnd",
     "MAP_PRESENTATION", "MAP_FIRST_TOUCH", "buildMapPresentationBundle", "buildMapFirstTouchBundle",
     "firstTouchArmed", "getAnnouncerSettings", "announcerUserDefaults",
 ]:
@@ -127,9 +127,14 @@ require("setAnnouncer" in game and "onOfflineEvent" in game, "GolfGame no está 
 require("onAimEnd" in game and "onOfflineMatchEnd" in game and "onOfflineNewCourse" in game, "GolfGame no reporta estados narrativos nuevos")
 require("typeof this.renderer?.spawnShockwave === 'function'" in game, "spawnShockwave no está protegido contra API renderer antigua")
 require("typeof this.renderer?.spawnWaterRipple === 'function'" in game, "spawnWaterRipple no está protegido contra API renderer antigua")
-require("informativeDelivered" in manager, "Falta latch one-shot de pausa informativa")
-require("fillerCooldownMs" not in manager and "informativeCooldownMs" not in manager, "Manager conserva bucle/cooldown de filler")
+require("INFORMATIVE_STATE" not in manager and "idle-information" not in manager, "Manager conserva pausa informativa")
+require("informativeDelivered" not in manager and "maybeFillSilence" not in manager, "Manager conserva estado/ciclo de pausa informativa")
+require("idle-information" not in engine and "yieldInformativeAfterLine" not in engine, "Director conserva arbitraje especial de pausa informativa")
+require("maybeRunPostMatchSummary" in manager, "Falta scheduler exclusivo de resumen post-partida")
 require("announcers:'screenAnnouncers'" in menu.replace(" ", ""), "MenuController no registra pantalla announcers")
+require("mainMusicToggleBtn" in html and "mainMusicToggleState" in html, "Falta control de música en menú principal")
+require("defaultMusicMuted: true" in (ROOT / "js/config.js").read_text(encoding="utf-8"), "La música no arranca desactivada por defecto")
+require("CONFIG.audio.defaultMusicMuted !== false" in (ROOT / "js/engine/audio.js").read_text(encoding="utf-8"), "MusicPlayer no respeta el default desactivado")
 
 js_files = [
     ANN / "engine.js", ANN / "manager.js", ANN / "ui.js",
@@ -167,8 +172,9 @@ print(" - Preferencias TTS: dentro de PlayerProfile + defaults en config.json ge
 print(" - Migración: noiseGolf.announcer.v1 -> noiseGolf.profile.v1/announcer")
 print(" - Ventana de locución: plegable + historial de líneas realmente reproducidas")
 print(" - Online: host-authority + announcer:bundle + startAtNetTime + aim state")
-print(" - Máquina narrativa: gameplay / informative one-shot / postmatch sin pausa informativa")
+print(" - Máquina narrativa: gameplay / postmatch; pausa informativa eliminada por completo")
 print(" - Presentación de mapa: líder/favoritos/rivalidad + primer toque contextual mustSpeak")
+print(" - Música: OFF por defecto + toggle persistente desde menú principal")
 print(f" - Frases dedicadas mapa/primer toque: {count_strings(map_intro.get('presentation', {})) + count_strings(map_intro.get('firstTouch', {}))}")
 print(" - Renderer: guards defensivos para shockwave/water ripple + cache-bust en HTML")
 print(" - Supercrítico: HOLE + HOLE_IN_ONE persistentes hasta reproducción")

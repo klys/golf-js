@@ -560,6 +560,11 @@
               <span class="action-text"><strong>LOCUTORES</strong><small>Voz, nombre, tono, velocidad y volumen compartido</small></span>
               <span class="action-arrow" aria-hidden="true">→</span>
             </button>
+            <button id="mainMusicToggleBtn" class="menu-action" type="button" aria-pressed="false">
+              <span class="action-icon"><svg class="ico" aria-hidden="true"><use id="mainMusicToggleIcon" href="#i-mute"></use></svg></span>
+              <span class="action-text"><strong>MÚSICA</strong><small id="mainMusicToggleState">Desactivada · pulsa para activarla</small></span>
+              <span class="action-arrow" aria-hidden="true">→</span>
+            </button>
             <button id="reconnectBtn" class="menu-action reconnect hidden" type="button">
               <span class="action-icon"><svg class="ico" aria-hidden="true"><use href="#i-refresh"></use></svg></span>
               <span class="action-text"><strong>RECONECTAR</strong><small id="reconnectLabel">Última partida</small></span>
@@ -786,21 +791,21 @@
 
   <!-- Runtime clásico: sin ES modules. En VPS/hosting estático, clientEnv.js lee config.json desde el mismo directorio. -->
   <script defer src="./js/utils/math.js" onerror="NoiseGolfBootError('js/utils/math.js')"></script>
-  <script defer src="./js/config.js" onerror="NoiseGolfBootError('js/config.js')"></script>
+  <script defer src="./js/config.js?v=0012p0009" onerror="NoiseGolfBootError('js/config.js')"></script>
   <script defer src="./js/core/noise.js" onerror="NoiseGolfBootError('js/core/noise.js')"></script>
   <script defer src="./js/core/terrain.js" onerror="NoiseGolfBootError('js/core/terrain.js')"></script>
   <script defer src="./js/core/physics.js" onerror="NoiseGolfBootError('js/core/physics.js')"></script>
   <script defer src="./js/engine/camera.js" onerror="NoiseGolfBootError('js/engine/camera.js')"></script>
   <script defer src="./js/engine/particles.js" onerror="NoiseGolfBootError('js/engine/particles.js')"></script>
-  <script defer src="./js/engine/audio.js" onerror="NoiseGolfBootError('js/engine/audio.js')"></script>
+  <script defer src="./js/engine/audio.js?v=0012p0009" onerror="NoiseGolfBootError('js/engine/audio.js')"></script>
   <script defer src="./js/engine/holeIntro.js" onerror="NoiseGolfBootError('js/engine/holeIntro.js')"></script>
   <script defer src="./js/render/worldRenderer.js?v=0012p0007" onerror="NoiseGolfBootError('js/render/worldRenderer.js')"></script>
   <script defer src="./js/ui/hud.js" onerror="NoiseGolfBootError('js/ui/hud.js')"></script>
   <script defer src="./announcer/persona-data.js" onerror="NoiseGolfBootError('announcer/persona-data.js')"></script>
-  <script defer src="./announcer/config-data.js?v=0012p0008" onerror="NoiseGolfBootError('announcer/config-data.js')"></script>
+  <script defer src="./announcer/config-data.js?v=0012p0009" onerror="NoiseGolfBootError('announcer/config-data.js')"></script>
   <script defer src="./announcer/map-intro-data.js?v=0012p0008" onerror="NoiseGolfBootError('announcer/map-intro-data.js')"></script>
-  <script defer src="./announcer/engine.js?v=0012p0008" onerror="NoiseGolfBootError('announcer/engine.js')"></script>
-  <script defer src="./announcer/manager.js?v=0012p0008" onerror="NoiseGolfBootError('announcer/manager.js')"></script>
+  <script defer src="./announcer/engine.js?v=0012p0009" onerror="NoiseGolfBootError('announcer/engine.js')"></script>
+  <script defer src="./announcer/manager.js?v=0012p0009" onerror="NoiseGolfBootError('announcer/manager.js')"></script>
   <script defer src="./announcer/ui.js" onerror="NoiseGolfBootError('announcer/ui.js')"></script>
   <script defer src="./js/network/clientEnv.js" onerror="NoiseGolfBootError('js/network/clientEnv.js')"></script>
   <script defer src="./js/network/netConfig.js" onerror="NoiseGolfBootError('js/network/netConfig.js')"></script>
@@ -813,7 +818,7 @@
   <script defer src="./js/ui/metricsOverlay.js" onerror="NoiseGolfBootError('js/ui/metricsOverlay.js')"></script>
   <script defer src="./js/ui/networkHud.js" onerror="NoiseGolfBootError('js/ui/networkHud.js')"></script>
   <script defer src="./js/ui/zoomGuard.js" onerror="NoiseGolfBootError('js/ui/zoomGuard.js')"></script>
-  <script defer src="./js/ui/menu.js" onerror="NoiseGolfBootError('js/ui/menu.js')"></script>
+  <script defer src="./js/ui/menu.js?v=0012p0009" onerror="NoiseGolfBootError('js/ui/menu.js')"></script>
   <script defer src="./js/core/game.js?v=0012p0007" onerror="NoiseGolfBootError('js/core/game.js')"></script>
   <script defer src="./js/main.js" onerror="NoiseGolfBootError('js/main.js')"></script>
 </body>

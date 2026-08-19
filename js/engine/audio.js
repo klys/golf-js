@@ -126,7 +126,10 @@
       try { parsed = JSON.parse(safeGet(STORAGE_KEY) || 'null'); } catch (_) { parsed = null; }
       const fallback = CONFIG.audio.defaultMusicVolume;
       const volume = parsed && Number.isFinite(Number(parsed.volume)) ? clamp(Number(parsed.volume), 0, 1) : fallback;
-      return { volume, muted: !!(parsed && parsed.muted) };
+      const muted = parsed && typeof parsed.muted === 'boolean'
+        ? parsed.muted
+        : CONFIG.audio.defaultMusicMuted !== false;
+      return { volume, muted };
     }
 
     save() {
@@ -269,6 +272,13 @@
     start() {
       const cfg = CONFIG.audio;
       this.wanted = true;
+      // Música desactivada significa desactivada de verdad: no descargamos ni
+      // arrancamos la pista hasta que el jugador la habilite explícitamente.
+      if (this.muted) {
+        this.gain = 0;
+        this.fade = null;
+        return;
+      }
       const el = this.ensureAudio();
       try { el.currentTime = 0; } catch (_) { /* aún sin metadatos */ }
       this.gain = 0;
@@ -445,16 +455,20 @@
 
     setVolume(value) {
       this.volume = clamp(Number(value) || 0, 0, 1);
+      const wasMuted = this.muted;
       // Mover el control por encima de cero es una forma de decir "quiero oírlo".
       if (this.volume > 0) this.muted = false;
-      this.apply();
+      if (wasMuted && !this.muted && this.wanted && (!this.audio || this.audio.paused)) this.start();
+      else this.apply();
       this.save();
       return this.volume;
     }
 
     setMuted(value) {
+      const wasMuted = this.muted;
       this.muted = !!value;
-      this.apply();
+      if (wasMuted && !this.muted && this.wanted && (!this.audio || this.audio.paused)) this.start();
+      else this.apply();
       this.save();
       return this.muted;
     }

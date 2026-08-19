@@ -1,12 +1,12 @@
 window.NOISE_GOLF_ANNOUNCER_CONFIG = {
   schema: 'noise-golf-announcer-runtime-v1',
-  version: '1.3.0',
+  version: '1.4.0',
   enabled: true,
   language: 'es-ES',
   sync: { leadSeconds: 0.32, maxLeadSeconds: 1.1, jitterMarginSeconds: 0.16, lateGraceMs: 900 },
-  dialogue: { exchangeChance: 0.58, allowQuietFiller: true, quietBeforeFillerMs: 6200 },
+  dialogue: { exchangeChance: 0.58 },
   stateMachine: {
-    idleAfterMs: 6200, aimLeaseMs: 60000, informativeAfterPostMatch: false,
+    aimLeaseMs: 60000,
     postMatchSummaryDelayMs: 1400, postMatchSummaryCooldownMs: 10000, postMatchSummaryMax: 2,
     guaranteedEvents: ['HOLE', 'HOLE_IN_ONE']
   },

@@ -51,7 +51,7 @@
 - [x] Prueba automática `announcer/tools/test_state_machine.js` valida los cuatro invariantes principales.
 
 
-## CP-0007 · FIX HOYO + PAUSA INFORMATIVA ONE-SHOT
+## CP-0007 · HISTÓRICO · FIX HOYO + PAUSA INFORMATIVA ONE-SHOT
 
 **Objetivo:** eliminar el crash visual al embocar y detener el bucle de información durante inactividad.
 
@@ -118,3 +118,33 @@ Después: `firstTouchArmed=false`, `stage=consumed`.
 
 ### CP-0008-07 · Corte limpio entre mapas
 Al cargar un mapa o entrar en postmatch, una conversación vieja no supercrítica termina la **línea ya iniciada** y cede el micrófono antes de continuar con líneas secundarias. `HOLE`/`HOLE_IN_ONE` en curso nunca se truncan.
+
+
+---
+
+## PATCH 0009 · Música OFF + eliminación total de pausa informativa
+
+### CP-0009-01 · Música desactivada por defecto
+- [x] `CONFIG.audio.defaultMusicMuted = true`.
+- [x] Una instalación sin preferencia previa entra con música OFF.
+- [x] Una preferencia existente sigue respetándose; no se pisa la elección del usuario.
+- [x] Si está OFF al comenzar la partida, la pista ni siquiera se descarga/arranca.
+
+### CP-0009-02 · Activación desde menú principal
+- [x] `mainMusicToggleBtn` visible en `screenMain`.
+- [x] Estado textual e icono reflejan ON/OFF y volumen preparado.
+- [x] El mismo `MusicPlayer` persiste el cambio en `noiseGolf.audio.v1`.
+- [x] El control de música dentro del menú de partida sigue funcionando.
+
+### CP-0009-03 · Pausa informativa eliminada
+- [x] eliminados `INFORMATIVE_STATE` e `idle-information`.
+- [x] eliminados `informativeDelivered`, `idleAfterMs` e `informativeAfterPostMatch`.
+- [x] eliminado el arbitraje `yieldInformativeAfterLine` del director TTS.
+- [x] `gameplay` en reposo no genera ninguna locución automática.
+- [x] `postmatch` conserva únicamente su scheduler de resúmenes explícitos.
+- [x] `HOLE` / `HOLE_IN_ONE` y presentación/primer toque permanecen intactos.
+
+### CP-0009-04 · Validación
+- [x] test automático prueba que diez minutos de reposo en `gameplay` siguen produciendo 0 bundles.
+- [x] validación exige ausencia de todo el runtime de pausa informativa.
+- [x] validación exige música OFF por defecto y control en menú principal.

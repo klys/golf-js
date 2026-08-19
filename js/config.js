@@ -183,9 +183,10 @@
     // silencio a propósito, para que darle a JUGAR tenga entrada musical.
     audio: Object.freeze({
       musicTrack: './assets/music/INTERESTELLAR.mp3',
-      // Volumen la primera vez que se juega. A partir de ahí manda lo que el
-      // jugador deje en el control, que se guarda en su navegador.
+      // Volumen preparado para cuando el jugador active la música. La primera
+      // instalación arranca silenciada; después manda la preferencia guardada.
       defaultMusicVolume: 0.45,
+      defaultMusicMuted: true,
       // La pista se repite mientras dure el mapa; los hoyos duran más que ella.
       loop: true,
       // Fundidos. Cortar una pista en seco se oye como un fallo del juego, y

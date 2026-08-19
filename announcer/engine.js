@@ -373,7 +373,6 @@
       this.hotSlot = null;
       this.guaranteedQueue = [];
       this.guaranteedKeys = new Set();
-      this.yieldInformativeAfterLine = false;
       this.yieldCurrentAfterLine = false;
       this.session = 0;
       this.estimatedBundleEndAt = 0;
@@ -399,14 +398,6 @@
         return { accepted: true, reason: 'idle' };
       }
       const rank = CLASS_RANK[policy.class] || 0;
-      if (this.currentBundle?.source === 'idle-information' && rank >= CLASS_RANK.important) {
-        // La información de pausa cede el turno al terminar la frase actual.
-        // El evento real no caduca mientras espera ese cierre natural.
-        this.yieldInformativeAfterLine = true;
-        bundle.expiresAt = Math.max(Number(bundle.expiresAt || 0), now + 4500);
-        this.setHot(bundle);
-        return { accepted: true, reason: 'gameplay-after-informative' };
-      }
       if (policy.class === 'ambient') return this.drop(bundle, 'busy-filler');
       const remaining = Math.max(0, this.estimatedBundleEndAt - now);
       if (now + remaining <= Number(bundle.expiresAt || 0) && rank >= CLASS_RANK.important) {
@@ -477,12 +468,7 @@
         this.current = null;
         if (this.yieldCurrentAfterLine) {
           this.yieldCurrentAfterLine = false;
-          this.yieldInformativeAfterLine = false;
-          break;
-        }
-        if (this.yieldInformativeAfterLine && bundle.source === 'idle-information') {
-          this.yieldInformativeAfterLine = false;
-          break;
+              break;
         }
         if (index + 1 < bundle.items.length) await sleep(110);
       }
@@ -566,7 +552,6 @@
       this.hotSlot = null;
       this.guaranteedQueue.length = 0;
       this.guaranteedKeys.clear();
-      this.yieldInformativeAfterLine = false;
       this.yieldCurrentAfterLine = false;
       this.currentBundle = null;
       this.current = null;
@@ -589,7 +574,6 @@
         if (currentKey) retainedKeys.push(currentKey);
       }
       this.guaranteedKeys = new Set(retainedKeys);
-      if (this.currentBundle?.source === 'idle-information') this.yieldInformativeAfterLine = true;
       const currentEvent = String(this.currentBundle?.eventKey || '');
       const currentProtected = this.currentBundle?.policy?.guaranteed === true
         || this.currentBundle?.policy?.class === 'supercritical' || keep.has(currentEvent);

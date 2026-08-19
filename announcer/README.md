@@ -53,24 +53,24 @@ Durante una partida aparece un panel plegable en el HUD con el historial recient
 
 Para defaults de usuario editar el `config.json` general (`announcerUserDefaults`). Para lógica narrativa editar `announcer/config.json` y mantener `announcer/config-data.js` equivalente. Los bancos `data/*.json` siguen siendo internos.
 
-## PATCH 0006 · Máquina de estados narrativa
+## Máquina de estados narrativa actual
 
-La narración ya no depende únicamente de eventos aislados. El host mantiene una fase narrativa coherente:
+La cabina trabaja actualmente con tres fases reales:
 
-- `gameplay`: existe actividad real (apuntado, bola en movimiento, obstáculos, tiros o eventos de mapa).
-- `informative`: tras el umbral sin acciones, la cabina emite **una sola** pausa factual y queda en silencio. No vuelve a informar hasta que ocurra una acción real y después exista otra pausa.
-- `postmatch`: la partida terminó; se descartan comentarios de gameplay que hubieran quedado programados y solo se permiten cierre, resultado y análisis final.
+- `gameplay`: partida activa; solo hablan eventos reales, presentación de mapa, primer toque y narrativa competitiva.
+- `postmatch`: la partida terminó; se descartan comentarios viejos de gameplay y solo sobreviven `HOLE`/`HOLE_IN_ONE`, cierre/victoria y los resúmenes post-partida explícitos.
 - `inactive`: fuera de una partida.
 
-`HOLE` y `HOLE_IN_ONE` son eventos **supercríticos garantizados**. No expiran mientras esperan el micrófono, no cortan una frase ya iniciada y se consumen exactamente una vez al reproducirse. En online el host conserva esa garantía dentro del `announcer:bundle`, por lo que un cliente que llegue tarde al `startAtNetTime` lo reproduce inmediatamente en vez de descartarlo por TTL.
+La antigua fase de pausa `informative` fue **eliminada en PATCH 0009**. No existe temporizador de inactividad, filler periódico ni comentario automático porque el jugador esté esperando. Si no ocurre una acción real, la cabina permanece en silencio.
 
-El apuntado online también forma parte del estado autoritativo: el cliente informa `aim-start/aim-end` al host y solamente el host decide si ese estado produce narración. Esto evita entrar en modo informativo mientras alguien sigue preparando un tiro.
+`HOLE` y `HOLE_IN_ONE` siguen siendo eventos **supercríticos garantizados**. No expiran mientras esperan el micrófono, no cortan una frase ya iniciada y se consumen exactamente una vez al reproducirse. En online el host conserva esa garantía dentro del `announcer:bundle`.
+
+El apuntado online sigue reportándose `aim-start/aim-end` al host para mantener el contexto autoritativo y la coherencia de presentación/primer toque, pero ya no se utiliza para disparar ninguna pausa de inactividad.
 
 
-## PATCH 0007 · pausa informativa one-shot y compatibilidad de renderer
+## PATCH 0007 · histórico: pausa one-shot y compatibilidad de renderer
 
-- La pausa informativa dejó de ser periódica: se reproduce una vez por ciclo de inactividad.
-- Una acción real (apuntado, tiro, bola en movimiento o evento del host) rearma una futura pausa.
+- En ese parche la pausa pasó temporalmente a one-shot. **PATCH 0009 elimina esa función por completo.**
 - Se eliminaron las frases meta repetitivas sobre “mapa estable” o “sin acción en curso”.
 - `game.js` protege `spawnShockwave()` y `spawnWaterRipple()` para que una caché de renderer antigua no rompa el bucle principal.
 - `index.html` fuerza una versión nueva de los scripts críticos del renderer/juego/manager para evitar mezclas de caché.
@@ -85,6 +85,16 @@ La locución de cada mapa/hoyo tiene ahora una sección propia, separada del com
 4. Después de la presentación queda armado **MAP_FIRST_TOUCH**. `TURN_START`, `AIMING` y `RISKY_AIM` actualizan el estado, pero no hablan antes del primer tiro del mapa.
 5. El primer tiro se comenta una sola vez según la posición del jugador: líder, último, favorito del comentarista, favorito del informante o apertura general. Después el estado pasa a `consumed` y el resto del mapa vuelve a la narrativa normal.
 6. En online el host decide presentación, favorito, posición, texto y `startAtNetTime`; los clientes solo reproducen el bundle. Un `MAP_PRESENTATION` nuevo también saca a los clientes de `postmatch`.
-7. En `postmatch` no se vuelve a abrir una pausa informativa. Solo sobreviven `HOLE`/`HOLE_IN_ONE`, victoria/cierre y los resúmenes post-partida explícitos.
+7. En `postmatch` solo sobreviven `HOLE`/`HOLE_IN_ONE`, victoria/cierre y los resúmenes post-partida explícitos. La pausa informativa ya no existe en ninguna fase.
 
 Los textos exclusivos de esta sección viven en `announcer/data/map-intro.json` y su fallback `announcer/map-intro-data.js`. El banco incorpora 257 frases/fragmentos dedicados a bienvenida, líder, favoritos, rivalidad y primer toque, sin modificar los 74 eventos originales de `commentator.json` / `informant.json`.
+
+
+## PATCH 0009 · Música OFF por defecto + silencio real en inactividad
+
+- La música arranca **desactivada por defecto** para perfiles/navegadores sin preferencia previa.
+- El menú principal incluye un control **MÚSICA** para activarla/desactivarla antes de entrar a una partida; la preferencia se guarda en `noiseGolf.audio.v1`.
+- Si está desactivada, `MusicPlayer.start()` no descarga ni reproduce la pista. Al activarla durante una partida empieza normalmente.
+- Se mantiene el control de volumen/mute del menú de pausa.
+- La pausa informativa fue eliminada del runtime: no hay `INFORMATIVE_STATE`, `idle-information`, `idleAfterMs`, latch one-shot ni arbitraje especial asociado.
+- El temporizador interno del locutor solo sirve ya para los resúmenes explícitos de `postmatch`; durante `gameplay` el silencio permanece silencio hasta un evento real.

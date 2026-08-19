@@ -63,7 +63,7 @@
       this.lastMeaningfulAt = Date.now();
       this.voices = [];
       this.settings = null;
-      this.fillerTimer = 0;
+      this.postMatchTimer = 0;
       this.pendingTimers = new Set();
       this.lastByPlayerEvent = new Map();
       this.lastHoleSignature = '';
@@ -72,7 +72,6 @@
       this.postMatchInfo = null;
       this.postMatchSummaryCount = 0;
       this.lastPostMatchSummaryAt = 0;
-      this.informativeDelivered = false;
       this.mapIntroData = null;
       this.mapIntroState = { stage: 'idle', signature: '', introDelivered: false, firstTouchArmed: false, firstTouchConsumed: false };
       this.mapIntroRecent = new Map();
@@ -103,7 +102,7 @@
           window.dispatchEvent(new CustomEvent('noisegolf:announcer-voices'));
         });
       }
-      this.fillerTimer = window.setInterval(() => this.maybeFillSilence(), 1000);
+      this.postMatchTimer = window.setInterval(() => this.maybeRunPostMatchSummary(), 1000);
       this.ready = true;
       return this;
     }
@@ -249,7 +248,7 @@
     }
 
     setNarrativePhase(phase, reason = '') {
-      const next = ['inactive', 'gameplay', 'informative', 'postmatch'].includes(phase) ? phase : 'gameplay';
+      const next = ['inactive', 'gameplay', 'postmatch'].includes(phase) ? phase : 'gameplay';
       if (next === this.narrativePhase) return;
       this.narrativePhase = next;
       window.dispatchEvent(new CustomEvent('noisegolf:announcer-phase', { detail: { phase: next, reason } }));
@@ -261,12 +260,7 @@
       if (playerKey && this.activeAims.has(String(playerKey)) && /shot|hole|water|out|reset|collision|penalty/i.test(reason)) {
         this.activeAims.delete(String(playerKey));
       }
-      if (this.narrativePhase !== 'postmatch') {
-        // Una acción real vuelve a armar UNA futura pausa informativa.
-        // Sin acción nueva no se permite otro bloque informativo.
-        this.informativeDelivered = false;
-        this.setNarrativePhase('gameplay', reason);
-      }
+      if (this.narrativePhase !== 'postmatch') this.setNarrativePhase('gameplay', reason);
     }
 
     setAimActivity(playerKey, active, power = 0) {
@@ -287,19 +281,6 @@
         if (!state || Number(state.until) <= now) this.activeAims.delete(key);
       }
       return this.activeAims.size > 0;
-    }
-
-    hasLiveGameplayActivity() {
-      if (this.hasActiveAim()) return true;
-      const online = !!this.session?.getStatus?.().online;
-      if (online) {
-        if (this.session?.anyBallRolling?.()) return true;
-        const status = this.session?.getStatus?.() || {};
-        if (Number(status.rollingBalls) > 0) return true;
-        if (Number(this.session?.transitionTimer) > 0 || Number(this.session?.transitionHold) > 0) return true;
-        return false;
-      }
-      return Boolean(this.game?.dragging || this.game?.ball?.moving || this.game?.isIntroPlaying?.());
     }
 
     setMatchActive(active) {
@@ -341,7 +322,6 @@
       this.postMatchInfo = null;
       this.postMatchSummaryCount = 0;
       this.lastPostMatchSummaryAt = 0;
-      this.informativeDelivered = false;
       this.mapIntroState = { stage: 'idle', signature: '', introDelivered: false, firstTouchArmed: false, firstTouchConsumed: false };
       this.mapIntroRecent.clear();
       this.composer?.reset();
@@ -437,8 +417,7 @@
         this.postMatchInfo = null;
         this.postMatchSummaryCount = 0;
         this.lastPostMatchSummaryAt = 0;
-        this.informativeDelivered = false;
-        this.mapIntroState = {
+          this.mapIntroState = {
           stage: 'awaiting-first-touch', signature: String(bundle.mapSignature || ''), introDelivered: true,
           firstTouchArmed: true, firstTouchConsumed: false,
         };
@@ -461,9 +440,6 @@
       this.postMatchSummaryCount = 0;
       this.lastPostMatchSummaryAt = 0;
       this.lastMeaningfulAt = Date.now();
-      // Nunca se abre una pausa informativa después del cierre. Solo quedan
-      // HOLE/HIO pendientes y los resúmenes post-partida explícitos.
-      this.informativeDelivered = true;
       this.mapIntroState.stage = 'closed';
       this.mapIntroState.firstTouchArmed = false;
       this.setNarrativePhase('postmatch', info.source || 'match-over');
@@ -941,7 +917,6 @@
       this.postMatchInfo = null;
       this.postMatchSummaryCount = 0;
       this.lastPostMatchSummaryAt = 0;
-      this.informativeDelivered = false;
       this.setNarrativePhase('gameplay', payload.source || 'map-presentation');
       this.markGameplayActivity('map-presentation');
       this.mapIntroState = { stage: 'awaiting-first-touch', signature, introDelivered: true, firstTouchArmed: true, firstTouchConsumed: false };
@@ -981,48 +956,6 @@
       };
     }
 
-    liveInformation() {
-      const online = !!this.session?.getStatus?.().online;
-      const hole = this.game?.hole;
-      const holeNumber = Math.max(1, Number(this.game?.holeIndex || 0) + 1);
-      const holeCount = Math.max(holeNumber, Number(this.game?.holes?.length || 1));
-      const par = Math.max(1, Number(hole?.par || 0));
-      if (online) {
-        const standings = this.session?.getStandings?.() || [];
-        const leader = standings[0];
-        const active = standings.filter((entry) => entry.role === 'player' && !entry.finished);
-        const status = this.session?.getStatus?.() || {};
-        const mode = this.session?.settings?.mode === 'battle' ? 'Battle Royale' : 'por turnos';
-        const timer = Number.isFinite(Number(status.timerRemaining))
-          ? ` Quedan ${Math.ceil(Number(status.timerRemaining))} segundos en el reloj actual.`
-          : '';
-        const leaderText = leader
-          ? `${leader.username} lidera con ${Math.round(Number(leader.points) || 0)} puntos.`
-          : 'El marcador todavía no tiene líder definido.';
-        const activeText = active.length
-          ? ` Siguen ${active.length} jugadores activos${active.length <= 4 ? `: ${active.map((entry) => entry.username).join(', ')}` : ''}.`
-          : '';
-        return `Pausa informativa. Hoyo ${holeNumber} de ${holeCount}, par ${par}, modo ${mode}. ${leaderText}${activeText}${timer}`;
-      }
-
-      const ball = this.game?.ball;
-      const strokes = Math.max(0, Number(this.game?.strokes || 0));
-      const distance = ball && hole?.cup
-        ? Math.hypot(hole.cup.x - ball.x, hole.cup.y - ball.y) * Number(NG.CONFIG?.course?.metersPerPixel || 1)
-        : 0;
-      const difficulty = hole?.difficultyLabel || hole?.archetypeLabel || 'procedural';
-      return `Pausa informativa. Hoyo ${holeNumber} de ${holeCount}, par ${par}, dificultad ${difficulty}. Van ${strokes} golpes y quedan aproximadamente ${distance < 10 ? distance.toFixed(1) : Math.round(distance)} metros hasta la copa.`;
-    }
-
-    buildInformativeBundle() {
-      return this.runtimeBundle(
-        'INFORMATIVE_STATE',
-        [{ speaker: 'informant', text: this.liveInformation() }],
-        { class: 'ambient', priority: 12, ttlMs: 2200 },
-        'idle-information',
-      );
-    }
-
     buildPostMatchSummaryBundle() {
       const online = !!this.session?.getStatus?.().online;
       const secondPass = this.postMatchSummaryCount > 0;
@@ -1039,13 +972,13 @@
             ? `Cierre de partida. ${winner.username} termina al frente con ${Math.round(Number(winner.points) || 0)} puntos. Marcador definitivo confirmado por el host.`
             : 'Cierre de partida confirmado por el host. Ya no quedan acciones de juego pendientes.';
           second = podium
-            ? `Resumen final: ${podium}. La partida queda cerrada; a partir de aquí solo analizamos el resultado.`
-            : 'La fase de juego terminó. La cabina pasa a resumen y no volverá a describir tiros inexistentes.';
+            ? `Resumen final: ${podium}. La partida queda cerrada y el marcador final queda confirmado.`
+            : 'La fase de juego terminó. La cabina cierra con el resultado definitivo.';
         } else {
           first = winner
             ? `Segundo análisis de cierre: ${winner.username} conserva la victoria; el resultado ya es definitivo y no existe una jugada pendiente capaz de cambiarlo.`
-            : 'Segundo análisis de cierre: el estado final sigue congelado y no existen acciones pendientes.';
-          second = `Participaron ${totalPlayers || standings.length} jugadores. La narración queda ahora en silencio hasta una nueva partida o un nuevo estado real del juego.`;
+            : 'Segundo análisis de cierre: el resultado final permanece confirmado.';
+          second = `Participaron ${totalPlayers || standings.length} jugadores. La narración queda ahora en silencio hasta una nueva partida.`;
         }
       } else {
         const holes = Math.max(1, Number(this.game?.holes?.length || 1));
@@ -1055,10 +988,10 @@
         const strokes = Math.round(Number(this.postMatchInfo?.strokes ?? this.game?.strokes) || 0);
         if (!secondPass) {
           first = `Recorrido completado. ${this.localPlayerName} termina ${holes} hoyos con score ${scoreText} y ${points} puntos acumulados.`;
-          second = `Último hoyo resuelto en ${strokes} golpes. El juego ya está en post-partida: ahora toca resumen, no comentarios de una jugada que ya terminó.`;
+          second = `Último hoyo resuelto en ${strokes} golpes. El último hoyo queda registrado y el recorrido está oficialmente cerrado.`;
         } else {
-          first = `Balance final: ${holes} hoyos cerrados, score ${scoreText} y ${points} puntos. No queda ninguna bola resolviendo una acción.`;
-          second = `La cabina cierra el análisis de ${this.localPlayerName}. Desde este momento no habrá más narración de gameplay hasta iniciar otro recorrido.`;
+          first = `Balance final: ${holes} hoyos cerrados, score ${scoreText} y ${points} puntos. El resultado del recorrido queda confirmado.`;
+          second = `La cabina cierra el análisis de ${this.localPlayerName}. Desde este momento la cabina queda en silencio hasta iniciar otro recorrido.`;
         }
       }
       return this.runtimeBundle('POST_MATCH_SUMMARY', [
@@ -1126,48 +1059,27 @@
       return { accepted: true, reason: 'scheduled' };
     }
 
-    maybeFillSilence() {
-      if (!this.ready || !this.matchActive || !this.enabled || this.runtimeConfig.dialogue?.allowQuietFiller === false) return;
+    maybeRunPostMatchSummary() {
+      if (!this.ready || !this.matchActive || !this.enabled) return;
+      if (this.narrativePhase !== 'postmatch') return;
       const online = !!this.session?.getStatus?.().online;
       if (online && this.session?.role !== 'host') return;
       if (this.director?.isBusy()) return;
+
       const now = Date.now();
       const stateCfg = this.runtimeConfig.stateMachine || {};
+      const delay = Math.max(0, Number(stateCfg.postMatchSummaryDelayMs || 1400));
+      const cooldown = Math.max(delay, Number(stateCfg.postMatchSummaryCooldownMs || 10000));
+      const max = Math.max(0, Math.floor(Number(stateCfg.postMatchSummaryMax ?? 2)));
+      if (this.postMatchSummaryCount >= max) return;
+      if (now - this.lastMeaningfulAt < delay) return;
+      if (this.lastPostMatchSummaryAt && now - this.lastPostMatchSummaryAt < cooldown) return;
 
-      if (this.narrativePhase === 'postmatch') {
-        const delay = Math.max(0, Number(stateCfg.postMatchSummaryDelayMs || 1400));
-        const cooldown = Math.max(delay, Number(stateCfg.postMatchSummaryCooldownMs || 10000));
-        const max = Math.max(0, Math.floor(Number(stateCfg.postMatchSummaryMax ?? 2)));
-        if (this.postMatchSummaryCount >= max) return;
-        if (now - this.lastMeaningfulAt < delay) return;
-        if (this.lastPostMatchSummaryAt && now - this.lastPostMatchSummaryAt < cooldown) return;
-        const result = this.deliverBundle(this.buildPostMatchSummaryBundle());
-        if (result?.accepted) {
-          this.postMatchSummaryCount += 1;
-          this.lastPostMatchSummaryAt = now;
-        }
-        return;
+      const result = this.deliverBundle(this.buildPostMatchSummaryBundle());
+      if (result?.accepted) {
+        this.postMatchSummaryCount += 1;
+        this.lastPostMatchSummaryAt = now;
       }
-
-      // Mientras alguien mantiene el apuntado, la partida NO está inactiva.
-      // El host conoce este estado también para clientes remotos mediante
-      // reportAnnouncerActivity(), así que ningún peer entra solo en filler.
-      if (this.hasLiveGameplayActivity()) {
-        this.lastMeaningfulAt = now;
-        this.informativeDelivered = false;
-        this.setNarrativePhase('gameplay', 'live-map-activity');
-        return;
-      }
-
-      // Una sola pausa informativa por periodo de inactividad.
-      // Después de pronunciarla, la cabina espera una acción REAL antes de
-      // poder armar otra. No existe bucle por cooldown ni comentario periódico.
-      if (this.informativeDelivered) return;
-      const quiet = Math.max(1000, Number(stateCfg.idleAfterMs || this.runtimeConfig.dialogue?.quietBeforeFillerMs || 6200));
-      if (now - this.lastMeaningfulAt < quiet) return;
-      this.setNarrativePhase('informative', 'no-gameplay-activity');
-      const result = this.deliverBundle(this.buildInformativeBundle());
-      if (result?.accepted) this.informativeDelivered = true;
     }
   }
 
