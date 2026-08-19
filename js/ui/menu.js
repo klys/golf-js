@@ -94,6 +94,7 @@
       this.relayPillText = $('#relayPillText');
 
       this.bind();
+      this.game.announcer?.bindMenu?.(this);
       this.refreshProfileUI();
       this.updateOnlineConfigStatus();
       this.updateReconnectButton();
@@ -302,6 +303,7 @@
       const createName = document.querySelector('#createName');
       if (createName && !createName.value) createName.value = `${username} · Campo`;
       this.renderProfilePreview(this.profile.username || '');
+      this.game.announcer?.setLocalPlayerName?.(this.profile.username || 'Jugador');
       this.updateCreateSummary();
     }
 
@@ -456,7 +458,7 @@
     showScreen(name) {
       const ids = {
         preflight: 'screenPreflight', main: 'screenMain', online: 'screenOnline', create: 'screenCreate',
-        browser: 'screenBrowser', profile: 'screenProfile', joining: 'screenJoining',
+        browser: 'screenBrowser', profile: 'screenProfile', joining: 'screenJoining', announcers: 'screenAnnouncers',
       };
       const target = ids[name] ? name : 'main';
       if (target !== 'create') this.closeMatchConfig({ restoreFocus: false });

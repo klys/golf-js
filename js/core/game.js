@@ -20,6 +20,7 @@
       this.renderer = new WorldRenderer();
       this.holeIntro = NG.HoleIntro ? new NG.HoleIntro() : null;
       this.music = NG.MusicPlayer ? new NG.MusicPlayer() : null;
+      this.announcer = null;
       // "En partida" NO es lo mismo que "input desbloqueado": el menú de pausa
       // bloquea el input y ahí la música tiene que seguir sonando.
       this.matchActive = false;
@@ -221,6 +222,7 @@
       const intro = this.startHoleIntro();
       const label = `${this.hole.archetypeLabel} · ${this.hole.mapSize}`;
       this.hud.flashStatus(intro ? `${label} · pulsa para saltar` : label, 'neutral', intro ? 1.9 : 1.4);
+      if (!intro) this.announcer?.onHoleLoaded?.();
     }
 
     /**
@@ -271,6 +273,7 @@
       // en vez de barrer medio mapa a cámara lenta con el jugador esperando.
       this.camera.snapTo(this.ball, this.hole, this.viewport());
       this.hud.flashStatus('¡Adelante!', 'good', 0.75);
+      this.announcer?.onHoleLoaded?.();
     }
 
     isIntroPlaying() {
@@ -300,6 +303,7 @@
       if (distance(p, this.ball) > 58 / Math.max(0.75, this.camera.zoom)) return;
       this.dragging = true;
       this.pointer = p;
+      this.announcer?.onAimStart?.(this.aimPower());
       this.canvas.setPointerCapture?.(e.pointerId);
     }
 
@@ -315,6 +319,8 @@
       this.dragging = false;
       const speed = Math.hypot(velocity.x, velocity.y);
       if (speed < CONFIG.shot.minLaunchSpeed) return;
+      const shotPower = clamp(speed / CONFIG.ball.maxSpeed, 0, 1);
+      const shotSpeedKmh = speed * CONFIG.course.metersPerPixel * 3.6;
       if (this.networkSession?.getStatus().online) {
         if (!this.networkSession.submitShot(velocity)) {
           this.hud.flashStatus('El host rechazó ese tiro', 'neutral', 0.9);
@@ -336,6 +342,9 @@
         this.ball.waterSkipZone = null;
         this.ball.reverseCannonSpent = false;
         this.strokes += 1;
+      }
+      if (!this.networkSession?.getStatus().online) {
+        this.announcer?.onShot?.({ power: shotPower, speedKmh: shotSpeedKmh, strokes: this.strokes });
       }
       this.trail.length = 0;
       const direction = Math.atan2(-velocity.y, -velocity.x);
@@ -390,6 +399,7 @@
       } else {
         this.resetBall(true, 'shot');
         this.hud.flashStatus('Vuelta al punto del tiro · +1 golpe', 'penalty');
+        this.announcer?.onOfflineEvent?.('RESET', { strokes: this.strokes, reason: 'Vuelta al punto del tiro' });
       }
       return true;
     }
@@ -490,10 +500,17 @@
       this.matchActive = value;
       if (value) this.music?.start();
       else this.music?.stop();
+      this.announcer?.setMatchActive?.(value);
+    }
+
+    setAnnouncer(announcer) {
+      this.announcer = announcer || null;
+      this.announcer?.attachSession?.(this.networkSession);
     }
 
     setNetworkSession(session) {
       this.networkSession = session || null;
+      this.announcer?.attachSession?.(this.networkSession);
     }
 
     continueAfterResult() {
@@ -522,6 +539,7 @@
         // del tiro tenían suelo de sacudida y mantenían la cámara vibrando
         // justo cuando el jugador intenta leer dónde va a parar la bola.
         this.camera.addShake(clamp((impactSpeed - 270) / 520, 0, 1) * 9);
+        this.announcer?.onOfflineEvent?.('BOUNCE', { speedKmh: impactSpeed * CONFIG.course.metersPerPixel * 3.6 });
         this.particles.emitBurst(ball.x, ball.y + CONFIG.ball.radius * 0.65, {
           count: Math.round(5 + impact * 9),
           angle: -Math.PI / 2,
@@ -541,6 +559,7 @@
         this.handledBoosterSerial = ball.boosterSerial;
         this.camera.addShake(5.5);
         this.hud.flashStatus('¡ACELERADOR!', 'boost', 0.7);
+        this.announcer?.onOfflineEvent?.('BOOSTER', { speedKmh: Math.hypot(ball.vx, ball.vy) * CONFIG.course.metersPerPixel * 3.6 });
         this.particles.emitBurst(ball.x, ball.y, {
           count: 18,
           angle: Math.atan2(-ball.vy, -ball.vx),
@@ -561,6 +580,7 @@
       if ((ball.portalSerial || 0) > this.handledPortalSerial) {
         this.handledPortalSerial = ball.portalSerial;
         this.hud.flashStatus('Portal activado', 'neutral', 0.9);
+        this.announcer?.onOfflineEvent?.('PORTAL_ENTER', {});
         this.camera.addShake(3.2);
         this.particles.emitBurst(ball.x, ball.y, {
           count: 22,
@@ -579,6 +599,7 @@
       if ((ball.cannonSerial || 0) > this.handledCannonSerial) {
         this.handledCannonSerial = ball.cannonSerial;
         this.hud.flashStatus('Cañón!', 'boost', 0.8);
+        this.announcer?.onOfflineEvent?.('BALL_FAST', { speedKmh: Math.hypot(ball.vx, ball.vy) * CONFIG.course.metersPerPixel * 3.6 });
         this.camera.addShake(6.5);
         this.particles.emitBurst(ball.x, ball.y, {
           count: 18,
@@ -602,6 +623,7 @@
       if ((ball.reverseSerial || 0) > this.handledReverseSerial) {
         this.handledReverseSerial = ball.reverseSerial;
         this.hud.flashStatus('¡RETROCESO!', 'penalty', 1.25);
+        this.announcer?.onOfflineEvent?.('UNLUCKY_SHOT', {});
         this.camera.addShake(9);
         this.particles.emitBurst(ball.x, ball.y, {
           count: 26,
@@ -623,6 +645,7 @@
       if ((ball.multiplierSerial || 0) > this.handledMultiplierSerial) {
         this.handledMultiplierSerial = ball.multiplierSerial;
         this.hud.flashStatus(`¡MULTIPLICADOR x${CONFIG.gameplay.scoreMultiplier}!`, 'good', 1.35);
+        this.announcer?.onOfflineEvent?.('LUCKY_SHOT', {});
         this.camera.addShake(3.8);
         this.particles.emitBurst(ball.x, ball.y - 10, {
           count: 28,
@@ -642,11 +665,13 @@
       if ((ball.caveSerial || 0) > this.handledCaveSerial) {
         this.handledCaveSerial = ball.caveSerial;
         this.hud.flashStatus('¡Ruta secreta descubierta!', 'neutral', 1.15);
+        this.announcer?.onOfflineEvent?.('TUNNEL_ENTER', {});
         this.camera.addShake(2.4);
       }
 
       if ((ball.caveExitSerial || 0) > this.handledCaveExitSerial) {
         this.handledCaveExitSerial = ball.caveExitSerial;
+        this.announcer?.onOfflineEvent?.('TUNNEL_EXIT', {});
         this.particles.emitBurst(ball.x, ball.y, {
           count: 18, angle: Math.atan2(-ball.vy, -ball.vx), spread: 1.0,
           speedMin: 55, speedMax: 185, gravity: 80,
@@ -665,6 +690,7 @@
         const chained = (ball.waterSkips || 1) > 1;
         this.renderer.spawnWaterRipple(skipX, skipY, this.hole.theme.water);
         this.hud.flashStatus(chained ? '¡DOBLE REBOTE EN EL AGUA!' : '¡Rebote en el agua!', 'boost', chained ? 1.1 : 0.8);
+        this.announcer?.onOfflineEvent?.(chained ? 'MULTI_BOUNCE' : 'BOUNCE', { bounces: ball.waterSkips || 1 });
         this.camera.addShake(chained ? 4.2 : 2.8);
         this.particles.emitBurst(skipX, skipY, {
           count: chained ? 22 : 16,
@@ -697,6 +723,7 @@
           glow: 6,
         });
         this.camera.addShake(4);
+        this.announcer?.onOfflineEvent?.(this.strokes === 1 ? 'HOLE_IN_ONE' : 'HOLE', { strokes: this.strokes, distanceMeters: 0 });
       }
     }
 
@@ -728,6 +755,8 @@
 
     update(dt) {
       if (!this.ball || !this.hole) return;
+      const wasMoving = !!this.ball.moving;
+      const shotOriginBeforeStep = this.ball.shotOrigin ? { ...this.ball.shotOrigin } : null;
       // Presentación: un frame perdido no debe teletransportar la cámara ni
       // matar de golpe todas las partículas.
       const viewDt = Math.min(dt, 1 / 15);
@@ -759,6 +788,7 @@
         if (this.ball.crushed) {
           this.strokes += CONFIG.gameplay.crushPenaltyStroke;
           this.hud.flashStatus(`Aplastado · +${CONFIG.gameplay.crushPenaltyStroke}`, 'penalty', 1.05);
+          this.announcer?.onOfflineEvent?.('HARD_LANDING', { strokes: this.strokes });
           this.resetBall(false);
         } else if (this.ball.inWater) {
           this.particles.emitBurst(this.ball.x, this.ball.y, {
@@ -777,11 +807,13 @@
           this.strokes += CONFIG.gameplay.waterPenaltyStroke;
           this.music?.hit('water');
           this.hud.flashStatus(`Agua · +${CONFIG.gameplay.waterPenaltyStroke}`, 'penalty', 1.0);
+          this.announcer?.onOfflineEvent?.('WATER', { strokes: this.strokes });
           this.resetBall(false);
         } else if (this.isOutOfWorld(this.ball)) {
           this.strokes += CONFIG.gameplay.outOfBoundsPenaltyStroke;
           this.music?.hit('lost');
           this.hud.flashStatus(`Fuera del mapa · +${CONFIG.gameplay.outOfBoundsPenaltyStroke}`, 'penalty', 1.05);
+          this.announcer?.onOfflineEvent?.('OUT_OF_BOUNDS', { strokes: this.strokes });
           this.resetBall(false);
         }
 
@@ -796,6 +828,17 @@
           const final = this.holeIndex === this.holes.length - 1;
           this.hud.showResult(this.strokes, this.hole.par, final, this.totalScore, this.arcadePoints, holePoints, scoreMultiplier);
         }
+      }
+
+      if (!online && wasMoving && !this.ball.moving && !this.ball.holed && !this.ball.inWater && !this.pausedForResult) {
+        const distanceMeters = Math.hypot(this.hole.cup.x - this.ball.x, this.hole.cup.y - this.ball.y) * CONFIG.course.metersPerPixel;
+        const travelMeters = shotOriginBeforeStep
+          ? Math.hypot(this.ball.x - shotOriginBeforeStep.x, this.ball.y - shotOriginBeforeStep.y) * CONFIG.course.metersPerPixel
+          : 0;
+        const near = Number(this.announcer?.runtimeConfig?.gameplay?.nearMissMeters || 2.2);
+        const long = Number(this.announcer?.runtimeConfig?.gameplay?.longShotMeters || 95);
+        if (distanceMeters <= near) this.announcer?.onOfflineEvent?.('NEAR_MISS', { distanceMeters, strokes: this.strokes });
+        else if (travelMeters >= long) this.announcer?.onOfflineEvent?.('LONG_SHOT', { distanceMeters: travelMeters, strokes: this.strokes });
       }
 
       // La estela sigue a la bola visible, no a la simulada: si no, se separa

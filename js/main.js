@@ -44,6 +44,12 @@
       // como tiro, así que el juego suelta cualquier apunte en curso.
       if (zoomGuard) zoomGuard.onChange = (blocked) => { if (blocked) game.cancelDrag(); };
       const profile = new NG.PlayerProfile();
+      const announcer = NG.AnnouncerSystem ? new NG.AnnouncerSystem(game) : null;
+      if (announcer) {
+        await announcer.init();
+        announcer.setLocalPlayerName(profile.username || 'Jugador');
+        game.setAnnouncer(announcer);
+      }
 
       bootProgress(2);
       const metrics = NG.MetricsOverlay ? new NG.MetricsOverlay(game) : null;
@@ -62,6 +68,7 @@
       window.__noiseGolfProfile = profile;
       window.__noiseGolfMenu = menu;
       window.__noiseGolfMetrics = metrics;
+      window.__noiseGolfAnnouncer = announcer;
       window.__noiseGolfZoomGuard = zoomGuard;
       window.__noiseGolfReady = true;
     } catch (error) {

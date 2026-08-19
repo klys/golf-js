@@ -1,0 +1,96 @@
+NOISE GOLF 2D WEB · LOG PATCH 0004 · LOCUTORES
+==============================================
+TIPO: PATCH PATH ACUMULATIVO / OVERLAY
+BASE: NOISE_GOLF_2D_WEB_0011_NETCODE · PATCH_LEVEL=0003
+DESTINO: raíz del juego
+
+RESUMEN
+-------
+Este paquete contiene EXCLUSIVAMENTE las rutas creadas o modificadas por la
+integración del sistema de locutores. Todo archivo que no aparece en este log
+queda fuera del ZIP y no debe reemplazarse.
+
+🆕 ARCHIVOS AGREGADOS
+---------------------
+CHANGELOG_0012_ANNOUNCER.txt
+PATCH_MANIFEST_0004.txt
+LOG_PATCH_0004_LOCUTORES_PATH_ACUMULATIVO.txt
+announcer/README.md
+announcer/CHECKPOINTS_INTEGRACION.md
+announcer/config.json
+announcer/config-data.js
+announcer/engine.js
+announcer/manager.js
+announcer/persona-data.js
+announcer/ui.js
+announcer/ui.css
+announcer/data/commentator.json
+announcer/data/informant.json
+announcer/tools/validate_integration.py
+
+✏️ ARCHIVOS MODIFICADOS
+-----------------------
+VERSION.txt
+  - Versión 0012 / PATCH_LEVEL 0004.
+
+index.html
+  - Añade acceso/pantalla de LOCUTORES.
+  - Carga el subsistema announcer/.
+
+js/main.js
+  - Inicialización y enlace de AnnouncerSystem con GolfGame.
+
+js/ui/menu.js
+  - Registro/configuración del menú LOCUTORES.
+  - Nombre, voz, tono, velocidad y volumen compartido.
+
+js/core/game.js
+  - Hooks de gameplay offline para eventos narrables.
+
+js/network/multiplayerSession.js
+  - Autoridad narrativa del host.
+  - Mensaje fiable announcer:bundle.
+  - Sincronización temporal host→clientes.
+  - Hooks online/turnos/Battle Royale/colisiones/sabotajes/finales.
+
+🚚 ARCHIVOS MOVIDOS / RENOMBRADOS
+---------------------------------
+NINGUNO.
+
+🗑️ ARCHIVOS ELIMINADOS
+----------------------
+NINGUNO.
+
+RUTAS QUE EXPLÍCITAMENTE NO SE TOCAN
+------------------------------------
+dist/
+assets/
+css/
+config.json
+config.example.json
+js/config.js
+js/core/noise.js
+js/core/physics.js
+js/core/terrain.js
+js/engine/
+js/render/
+js/utils/
+js/network/* excepto js/network/multiplayerSession.js
+js/ui/* excepto js/ui/menu.js
+node_modules/
+y cualquier otra ruta de la base no listada en 🆕 o ✏️.
+
+APLICACIÓN
+----------
+1. Partir de NOISE_GOLF_2D_WEB_0011_NETCODE PATCH_LEVEL 0003.
+2. Extraer este ZIP directamente en la raíz del juego.
+3. Permitir reemplazo SOLO de las seis rutas marcadas ✏️.
+4. Los archivos 🆕 simplemente se añaden.
+5. No hay operaciones de movimiento ni borrado que ejecutar.
+
+VALIDACIÓN
+----------
+- El formato del ZIP fue verificado como overlay sin carpeta contenedora.
+- Se comprobó que todos los archivos del payload pertenecen a 🆕 o ✏️.
+- Los archivos marcados ✏️ existen en la base original y cambian respecto a ella.
+- Los archivos announcer/ no existían en la base original.

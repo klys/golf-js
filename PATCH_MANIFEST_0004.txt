@@ -1,0 +1,52 @@
+NOISE GOLF 2D · PATCH 0004 · LOCUTORES · PATH ACUMULATIVO
+===========================================================
+
+BASE REQUERIDA
+NOISE_GOLF_2D_WEB_0011_NETCODE · PATCH_LEVEL=0003
+
+FORMATO DEL ZIP
+- No contiene el proyecto completo.
+- No contiene carpeta contenedora externa.
+- Las rutas empiezan directamente desde la raíz del juego.
+- Extraer/copiar sobre la raíz de NOISE GOLF conservando rutas.
+- Solo se sobrescriben los archivos marcados ✏️.
+- Solo se crean los archivos marcados 🆕.
+- Ningún archivo no listado debe tocarse.
+
+🆕 AGREGADOS
+CHANGELOG_0012_ANNOUNCER.txt
+PATCH_MANIFEST_0004.txt
+LOG_PATCH_0004_LOCUTORES_PATH_ACUMULATIVO.txt
+announcer/README.md
+announcer/CHECKPOINTS_INTEGRACION.md
+announcer/config.json
+announcer/config-data.js
+announcer/engine.js
+announcer/manager.js
+announcer/persona-data.js
+announcer/ui.js
+announcer/ui.css
+announcer/data/commentator.json
+announcer/data/informant.json
+announcer/tools/validate_integration.py
+
+✏️ MODIFICADOS
+VERSION.txt
+index.html
+js/core/game.js
+js/main.js
+js/network/multiplayerSession.js
+js/ui/menu.js
+
+🚚 MOVIDOS / RENOMBRADOS
+NINGUNO
+
+🗑️ ELIMINADOS
+NINGUNO
+
+IMPORTANTE
+- `dist/` NO se modifica.
+- `css/`, `assets/`, el resto de `js/`, configs de red y demás archivos de la
+  base quedan completamente fuera del parche porque no fueron tocados.
+- Los bancos `announcer/data/commentator.json` e `informant.json` se incluyen
+  como nuevos archivos internos del subsistema de locución.

@@ -1,0 +1,4112 @@
+{
+  "meta": {
+    "schema": "emotional-machine-persona-v1",
+    "version": "3.0.0-test07-battle-royale",
+    "language": "es",
+    "role": "commentator",
+    "displayName": "Rafa Voltio",
+    "description": "Narrador principal explosivo, sarcástico y teatral con composición semántica coherente por familias de evento. Incluye narrativa Battle Royale, rivalidades, sabotajes, favoritos dinámicos y finales de supervivencia."
+  },
+  "identity": {
+    "name": "Rafa Voltio",
+    "shortName": "Rafa",
+    "roleLabel": "Comentarista",
+    "relationship": "Se lleva bien con Álex Prisma. Lo provoca, le pide datos y exagera sus respuestas para mantener ritmo de espectáculo.",
+    "coreTraits": [
+      "sarcástico",
+      "explosivo",
+      "teatral",
+      "competitivo",
+      "bromista",
+      "rápido para elogiar una gran jugada",
+      "dispuesto a burlarse de errores sin insultar al jugador"
+    ],
+    "never": [
+      "insultos personales fuertes",
+      "humillación real",
+      "lenguaje discriminatorio",
+      "referencias sexuales",
+      "amenazas",
+      "afirmar datos que el contexto no contiene"
+    ]
+  },
+  "voiceDefaults": {
+    "lang": "es-ES",
+    "rate": 1.1,
+    "pitch": 0.94,
+    "volume": 1
+  },
+  "generation": {
+    "defaultProfile": "voltio",
+    "sarcasmStrength": 0.78,
+    "creativity": 0.72,
+    "maxSegments": 3,
+    "minCooldownEvents": 1,
+    "recentPhraseMemory": 28,
+    "recentFragmentMemory": 38,
+    "sentencePatterns": [
+      "{lead} {core}",
+      "{core}. {tail}",
+      "{lead} {core}. {tail}",
+      "{core}. En resumen, esto es {reaction}.",
+      "{lead} {core}. Resultado: {reaction}."
+    ],
+    "questionPatterns": [
+      "{question}",
+      "{lead} {question}",
+      "{core} {question}"
+    ],
+    "compactPatterns": [
+      "{core}",
+      "{lead} {core}",
+      "{core}. {tail}"
+    ],
+    "coherenceAttempts": 24,
+    "semanticBias": 0.82
+  },
+  "personalityProfiles": {
+    "voltio": {
+      "label": "Voltio · Sarcástico explosivo",
+      "description": "Sarcasmo dominante, emoción alta, burla ligera y elogio fuerte cuando se lo ganan.",
+      "toneBias": {
+        "sarcastic": 1.8,
+        "mocking": 1.35,
+        "excited": 1.5,
+        "dramatic": 1.15,
+        "praising": 1.1
+      }
+    },
+    "hype": {
+      "label": "Hype total",
+      "description": "Más gritos, celebración y dramatismo; menos análisis.",
+      "toneBias": {
+        "excited": 2.2,
+        "happy": 1.5,
+        "praising": 1.6,
+        "dramatic": 1.4,
+        "informative": 0.6
+      }
+    },
+    "sarcasm": {
+      "label": "Sarcasmo máximo",
+      "description": "Humor seco, comentarios punzantes y burlas frecuentes.",
+      "toneBias": {
+        "sarcastic": 2.5,
+        "mocking": 2,
+        "excited": 1,
+        "praising": 0.8
+      }
+    },
+    "dramatic": {
+      "label": "Dramático de estadio",
+      "description": "Tensión, pausas, finales grandes y emoción contenida.",
+      "toneBias": {
+        "dramatic": 2.4,
+        "excited": 1.4,
+        "pessimistic": 1.2,
+        "praising": 1.2
+      }
+    },
+    "motivator": {
+      "label": "Motivador competitivo",
+      "description": "Empuja al jugador, celebra progresos y suaviza la burla.",
+      "toneBias": {
+        "motivating": 2.2,
+        "praising": 1.7,
+        "happy": 1.4,
+        "mocking": 0.5,
+        "pessimistic": 0.7
+      }
+    },
+    "pessimist": {
+      "label": "Pesimista divertido",
+      "description": "Siempre sospecha que el mapa va a ganar, con humor sarcástico.",
+      "toneBias": {
+        "pessimistic": 2.2,
+        "sarcastic": 1.8,
+        "mocking": 1.2,
+        "disappointed": 1.3
+      }
+    },
+    "praiser": {
+      "label": "Alabador técnico",
+      "description": "Busca momentos de calidad y los eleva como jugadas históricas.",
+      "toneBias": {
+        "praising": 2.3,
+        "happy": 1.5,
+        "excited": 1.5,
+        "sarcastic": 0.9
+      }
+    }
+  },
+  "toneLabels": {
+    "sarcastic": "Sarcástico",
+    "mocking": "Burla",
+    "excited": "Emocionado",
+    "happy": "Feliz",
+    "disappointed": "Decepcionado",
+    "pessimistic": "Pesimista",
+    "motivating": "Motivador",
+    "praising": "Alabador",
+    "greeting": "Saludos",
+    "informative": "Informativo",
+    "dramatic": "Dramático",
+    "neutral": "Neutral"
+  },
+  "tones": {
+    "sarcastic": {
+      "leads": [
+        "Bueno, bueno, agarren sus palomitas...",
+        "Mira tú por dónde, el mismísimo Tiger Woods reencarnado...",
+        "Claro, porque hacerlo como la gente normal era demasiado aburrido.",
+        "Ah, perfecto, una obra maestra de la improvisación.",
+        "Qué sorpresa tan absolutamente épica e insólita.",
+        "Esto empieza con aroma a meme clásico.",
+        "Fantástico, el manual de física acaba de autodestruirse.",
+        "Hay decisiones cuestionables... y luego está esta genialidad.",
+        "No sé si llamar a la policía de la geometría o ponerme de pie.",
+        "Atención al público, porque entramos en terreno pantanoso."
+      ],
+      "tails": [
+        "Y nadie podrá decir jamás que aquí falta espectáculo.",
+        "La gravedad acaba de pedir un tiempo muerto para procesarlo.",
+        "Al menos aburridos no nos vamos a quedar hoy.",
+        "Seguro estaba calculadísimo en su mente, confíen.",
+        "Eso según el protocolo que nadie en este estadio ha leído.",
+        "Aún queda mapa suficiente para empeorarlo o volverse leyenda.",
+        "Una obra de ingeniería muy discutible, pero una obra al fin.",
+        "Me niego a creer que eso figuraba en el plan original.",
+        "El mapa acaba de tomar notas para su próximo meme.",
+        "Un caos magnífico, perfectamente presentado en alta definición."
+      ],
+      "reactions": [
+        "un desastre majestuoso",
+        "una decisión de museo de arte moderno",
+        "caos con certificado de origen",
+        "una genialidad extremadamente sospechosa",
+        "un plan con demasiadas fugas",
+        "un momento para enmarcar en el salón",
+        "una idea peligrosamente creativa",
+        "un accidente con clase y estilo",
+        "una jugada con demasiada personalidad propia",
+        "una hermosa tragedia deportiva"
+      ]
+    },
+    "mocking": {
+      "leads": [
+        "Uy, esto va directo a la recopilación de bloopers.",
+        "Señoras y señores, contemplen el arte del despiste.",
+        "No quiero señalar con el dedo, pero ese tiro fue épicamente raro.",
+        "Con todo el amor del mundo lo digo...",
+        "Permítanme saborear este segundo de pura comedia.",
+        "Eso ha sido... extremadamente valiente, tirando a suicida.",
+        "A ver cómo le explicamos esta trayectoria al patrocinador.",
+        "Hay que tener un talento especial para conseguir eso.",
+        "Ni programándolo a propósito salía una curva tan extraña.",
+        "Un aplauso bien fuerte por esa creatividad involuntaria."
+      ],
+      "tails": [
+        "Spoiler: el hoyo sigue esperándote en la misma coordenada.",
+        "La pelota acaba de pedir un mapa para orientarse.",
+        "Hasta el césped está juzgando esa decisión.",
+        "Eso va de cabeza al Salón de la Fama de las decisiones dudosas.",
+        "El terreno acaba de ganar el debate sin despeinarse.",
+        "Qué forma tan elegante y enrevesada de complicarse la vida.",
+        "La dignidad sobrevivirá... con suerte y bastante terapia.",
+        "No pasa nada, los creadores de memes necesitan comer.",
+        "Y luego me preguntan por qué necesito café en las transmisiones.",
+        "Yo solo narro las locuras que mis ojos intentan procesar."
+      ],
+      "reactions": [
+        "una maravilla del fallo humano",
+        "una clase magistral de improvisación salvaje",
+        "una comedia en tres actos",
+        "un giro de guion digno de película",
+        "un atropello frontal a la geometría",
+        "un regalo para la repetición en cámara lenta",
+        "una anécdota inolvidable",
+        "una decisión tan valiente como absurda",
+        "una belleza completamente accidental",
+        "un pequeño crimen pasional contra el golf"
+      ]
+    },
+    "excited": {
+      "leads": [
+        "¡ABRÁNCENSE QUE VIENE LO BUENO!",
+        "¡AQUÍ HAY FUEGO Y DEL BUENO!",
+        "¡Miren eso, por el amor de Dios!",
+        "¡SE VIENE LA JUGADA DE LA JORNADA!",
+        "¡QUÉ MOMENTO MÁS ABSOLUTAMENTE ÉPICO!",
+        "¡Esto no es un partido, esto es puro cine!",
+        "¡Tensión al máximo, se me eriza la piel!",
+        "¡Miren volar esa pelota, parece un cohete!",
+        "¡NO PARPADEEN O SE LO PIERDEN!",
+        "¡Aquí puede nacer una leyenda o un desastre colosal!"
+      ],
+      "tails": [
+        "¡Esto se pone sabroso de verdad!",
+        "¡El estadio entero está de pie gritando!",
+        "¡Qué pedazo de barbaridad acabamos de presenciar!",
+        "¡ESTO SÍ ES ESPECTÁCULO PURO Y DURO!",
+        "¡TENEMOS PARTIDAZO PARA LA HISTORIA!",
+        "¡Que alguien busque una cinta métrica ahora mismo!",
+        "¡La ronda se acaba de encender por completo!",
+        "¡No me pidan que mantenga la calma ahora!",
+        "¡Eso merece quedar grabado en letras de oro!",
+        "¡Qué manera tan salvaje de romper el mapa!"
+      ],
+      "reactions": [
+        "una locura colosal",
+        "un misil con teledirección",
+        "una barbaridad histórica",
+        "espectáculo en estado puro",
+        "una jugada verdaderamente titánica",
+        "una bomba atómica de adrenalina",
+        "una trayectoria endemoniada",
+        "un momento inolvidable",
+        "un golpe de autoridad magistral",
+        "una sobrecarga de pura energía"
+      ]
+    },
+    "happy": {
+      "leads": [
+        "Da gusto ver jugadas así, señoras y señores.",
+        "Esto sí que le saca una sonrisa a cualquiera.",
+        "Qué belleza de momento, qué delicia.",
+        "¡Así es como se juega a esto, sí señor!",
+        "Resolución impecable, una maravilla.",
+        "Limpio, elegante y directo al objetivo.",
+        "Da verdadero placer narrar genialidades así.",
+        "Esto cambia el ambiente por completo.",
+        "Muy pero que muy agradable a la vista.",
+        "Por fin aparece la magia en el green."
+      ],
+      "tails": [
+        "Así da gusto transmitir una ronda de golf.",
+        "La pelota y el jugador por fin cantan en la misma frecuencia.",
+        "Ese toque devuelve la fe a los creyentes.",
+        "Buen ritmo, lectura impecable, ejecución perfecta.",
+        "Pagaría una entrada solo por ver el siguiente tiro.",
+        "Hasta el mapa parece sonreír ante tanto talento.",
+        "Un momento redondo, de esos que hacen afición.",
+        "Eso le inyecta pura buena vibra a la partida.",
+        "Jugado con maestría, sin necesidad de tanta parafernalia.",
+        "¡Y que la fiesta no pare!"
+      ],
+      "reactions": [
+        "un golpe bellísimo",
+        "una resolución magistral",
+        "un momento lleno de clase",
+        "una jugada sumamente elegante",
+        "una respuesta rotunda y sólida",
+        "una pequeña fiesta en el campo",
+        "un avance perfecto",
+        "una lectura de sabios",
+        "una ejecución quirúrgica",
+        "un respiro con sabor a gloria"
+      ]
+    },
+    "disappointed": {
+      "leads": [
+        "Ay, ay, ay... mi corazón.",
+        "Qué verdadera lástima, hombre.",
+        "Eso ha dolido hasta en las gradas.",
+        "Uf, se le escapó entre los dedos.",
+        "No, no, no... esto no era lo planificado.",
+        "Había demasiado potencial para terminar así.",
+        "Se nos derrumbó el castillo de naipes.",
+        "Qué oportunidad de oro desperdiciada.",
+        "Eso deja un sabor amargo en la garganta.",
+        "El globo se desinfló justo al final."
+      ],
+      "tails": [
+        "Toca tragar saliva y recomponer la mente.",
+        "Habrá que hacer un reinicio mental urgente.",
+        "El próximo palo va a pesar una tonelada.",
+        "La idea era brillante; la ejecución, una tragedia.",
+        "Aún hay espacio para responder, pero el golpe duele.",
+        "El campo no le perdona un pestañeo a nadie.",
+        "La ronda se acaba de volver muy cuesta arriba.",
+        "Una lástima tremenda, venía perfilado como héroe.",
+        "Toca pasar página más rápido que un rayo.",
+        "El mapa acaba de cobrar una factura muy dolorosa."
+      ],
+      "reactions": [
+        "una oportunidad tirada a la basura",
+        "un final verdaderamente amargo",
+        "un tiro que perdió toda la magia",
+        "una lectura trágicamente incompleta",
+        "un error que va a costar caro",
+        "un tropezón feo e inesperado",
+        "una ocasión dorada echada a perder",
+        "un desenlace implacable y cruel",
+        "un bajón de moral importante",
+        "una salida de escena descorazonadora"
+      ]
+    },
+    "pessimistic": {
+      "leads": [
+        "Amigos, esto empieza a oler a quemado.",
+        "No me gusta nada la cara que está poniendo el mapa.",
+        "Veo tormenta negra en el horizonte deportivo.",
+        "Cada segundo que pasa complica más la existencia.",
+        "Aquí se están acumulando deudas con la física.",
+        "El terreno se está cobrando intereses usurarios.",
+        "Sinceramente, no le veo una salida airosa a esto.",
+        "La trampa se está cerrando sin piedad.",
+        "Prepárense, porque esto puede doler muchísimo.",
+        "El margen de error se redujo a cero."
+      ],
+      "tails": [
+        "Y las buenas noticias parecen haberse ido de vacaciones.",
+        "Cualquier pestañeo aquí cotiza en la quiebra absoluta.",
+        "La pendiente psicológica pesa más que la pelota.",
+        "No me parece el lugar ideal para inventarse milagros.",
+        "El mapa ya enseñó los colmillos y tiene hambre.",
+        "Cada golpe empieza a costar un año de vida.",
+        "No queda colchón ni para un pequeño resbalón.",
+        "Necesitamos una respuesta milagrosa e inmediata.",
+        "La presión está sentada en tu regazo pidiendo explicaciones.",
+        "Esto requiere la precisión de un cirujano desesperado."
+      ],
+      "reactions": [
+        "un panorama completamente claustrofóbico",
+        "una espiral bastante peligrosa",
+        "un problema de dimensiones épicas",
+        "una cuesta imposible de escalar",
+        "una situación extremadamente frágil",
+        "un hilo de navaja muy afilado",
+        "un escenario absolutamente hostil",
+        "una dinámica de pesadilla",
+        "un agujero negro emocional",
+        "una cuenta pendiente muy abultada"
+      ]
+    },
+    "motivating": {
+      "leads": [
+        "¡Vamos, caramba, que aquí no se rinde nadie!",
+        "¡Cabeza alta y la mirada en la gloria!",
+        "¡Esto se puede dar vuelta, lo creo totalmente!",
+        "Hay que picar piedra y seguir insistiendo.",
+        "Borrón y cuenta nueva: siguiente golpe, nueva era.",
+        "¡Nada de bajar los brazos, la historia continúa!",
+        "Respira profundo, ajusta los guantes y vuelve al plan.",
+        "La verdadera respuesta de un campeón empieza justo ahora.",
+        "Hay terreno de sobra para la épica.",
+        "No regalemos nada, que cada yarda cuente."
+      ],
+      "tails": [
+        "Un buen impacto puede cambiar el destino entero.",
+        "Las grandes remontadas siempre arrancan con un valiente.",
+        "Que el fallo anterior no te juegue el próximo tiro.",
+        "Aún queda mucho mapa por conquistar.",
+        "Convierte la rabia de ese error en pura precisión.",
+        "Déjate de milagros raros y construye el camino paso a paso.",
+        "Confianza ciega en tu talento, ve a por ello.",
+        "Este contacto puede reiniciar la ronda por completo.",
+        "Una jugada a la vez, con sangre fría.",
+        "Aún puedes firmar un cierre digno de Hollywood."
+      ],
+      "reactions": [
+        "una llamada urgente a la rebelión",
+        "el punto de inflexión perfecto",
+        "un grito de guerra para despertar",
+        "una oportunidad de oro para levantarse",
+        "un momento que exige carácter de hierro",
+        "una puerta abierta a la heroica",
+        "un reinicio cargado de fe",
+        "una prueba de fuego para los nervios",
+        "un reto a la altura de los grandes",
+        "el momento exacto para tomar el control"
+      ]
+    },
+    "praising": {
+      "leads": [
+        "¡APLAUDAN DE PIE, SEÑORAS Y SEÑORES!",
+        "Magia pura, qué barbaridad de nivel.",
+        "¡Qué lectura estratégica más soberbia!",
+        "Eso no es talento, ¡eso es clase magistral!",
+        "Simplemente perfecto, sin una sola fisura.",
+        "¡Qué manera tan magistral de dictar cátedra!",
+        "Aquí hay aroma de verdadero campeón.",
+        "Ejecución quirúrgica de libro de historia.",
+        "Eso no fue un golpe, fue una obra de arte.",
+        "Quítense el sombrero ante este titán."
+      ],
+      "tails": [
+        "No le sobra ni le falta absolutamente un milímetro.",
+        "Una combinación mortal de potencia y elegancia.",
+        "Eso demuestra quién manda realmente en la pista.",
+        "Completamente imposible hacerlo con más clase.",
+        "Una respuesta digna de leyenda del deporte.",
+        "Sencillamente precioso de principio a fin.",
+        "El mapa le hizo una pregunta difícil y recibió un portazo.",
+        "Así es como se domina una situación de máxima presión.",
+        "Técnica de elite y corazón helado en la misma jugada.",
+        "Acaba de subir el listón hasta las nubes."
+      ],
+      "reactions": [
+        "una obra de arte en movimiento",
+        "una lectura digna de los dioses",
+        "un impacto con sello de leyenda",
+        "una solución brillante e impecable",
+        "un dominio absoluto de la escena",
+        "una jugada de finísima orfebrería",
+        "una decisión digna de genio",
+        "una respuesta de calibre mundial",
+        "un golpe para enmarcar en el museo",
+        "una cátedra inolvidable de golf"
+      ]
+    },
+    "greeting": {
+      "leads": [
+        "¡MUY BUENAS A TODOS, AMANTES DEL PELOTAZO!",
+        "¡Bienvenidos al espectáculo supremo del green!",
+        "Aquí estamos de nuevo, preparados para el show.",
+        "Se abre el telón y el escenario echa chispas.",
+        "Todo listo, motores encendidos y ambiente al 100%.",
+        "¡Que empiece el verdadero ruido en la cancha!",
+        "Un saludo enorme a los valientes que se conectan.",
+        "El campo nos recibe con sus mejores galas... y sus trampas.",
+        "Tenemos palo, pelota y un montón de caos en camino.",
+        "¡Señoras y señores, ajústense los cinturones porque arrancamos!"
+      ],
+      "tails": [
+        "Pónganse cómodos, porque hoy pienso comentarlo todo.",
+        "Prometo solemnemente no tener piedad con las malas decisiones.",
+        "El mapa está hambriento y busca su primera víctima.",
+        "Vamos a averiguar de una vez por todas quién manda aquí.",
+        "¡Que ruede la pelota y fluya la magia!",
+        "Venimos sin filtro y con cero ganas de aburrirnos.",
+        "Abrimos los micrófonos y cerramos las excusas.",
+        "El primer impacto marcará el tono de toda la epopeya.",
+        "Veamos qué clase de locura nos depara el destino hoy.",
+        "Álex, espero que hayas traído la calculadora y mucha paciencia."
+      ],
+      "reactions": [
+        "un arranque con sabor a gloria",
+        "una jornada que promete épica",
+        "un escenario listo para el combate",
+        "una historia inédita por escribir",
+        "el primer capítulo del drama",
+        "una partida repleta de posibilidades",
+        "un laberinto hermoso y peligroso",
+        "una nueva cita con el destino",
+        "un comienzo que huele a pólvora",
+        "un baile directo con el caos"
+      ]
+    },
+    "informative": {
+      "leads": [
+        "Atención a la tarjeta de datos:",
+        "Contexto vital para entender la jugada:",
+        "Para los amantes de la táctica, observen esto:",
+        "Detalle técnico que muchos pasarán por alto:",
+        "Conviene recordar un número clave:",
+        "Lectura rápida del terreno:",
+        "La clave oculta de este tiro es la siguiente:",
+        "Apunte puramente físico:",
+        "En números fríos y directos:",
+        "Una referencia que cambia el panorama:"
+      ],
+      "tails": [
+        "Ese pequeño parámetro decidirá el éxito del intento.",
+        "Quizá no sea vistoso, pero es donde se gana el torneo.",
+        "Guárdense esa cifra en la cabeza, será relevante.",
+        "Eso explica perfectamente el fenómeno que presenciamos.",
+        "El próximo disparo debe respetar esa física o pagará caro.",
+        "La arquitectura del mapa pesa más que la intención.",
+        "Dato pequeño, pero consecuencia catastrófica o gloriosa.",
+        "La jugada cobra todo el sentido cuando ves este número.",
+        "Eso altera drásticamente la trayectoria ideal.",
+        "Menos emoción y más matemática por un segundo."
+      ],
+      "reactions": [
+        "un dato táctico crucial",
+        "una lectura puramente matemática",
+        "una referencia técnica determinante",
+        "un detalle de física pura",
+        "un punto de contexto clave",
+        "una variable perfectamente medible",
+        "una clave estratégica oculta",
+        "una observación fría y objetiva",
+        "una explicación analítica",
+        "una pista clave para el desenlace"
+      ]
+    },
+    "dramatic": {
+      "leads": [
+        "Silencio absoluto en el mapa...",
+        "El aire pesa una tonelada ahora mismo.",
+        "En este instante se decide la gloria o el abismo.",
+        "El universo entero se reduce a esta bola.",
+        "La ronda ha aguantado la respiración.",
+        "Se acerca el momento de la verdad sin retorno.",
+        "El campo parece haberse encogido de repente.",
+        "Cada milímetro se siente como un kilómetro.",
+        "Esto dejó de ser un simple juego hace rato.",
+        "La tensión se puede cortar con un cuchillo de mantequilla."
+      ],
+      "tails": [
+        "Un milímetro separa al héroe del meme eterno.",
+        "El próximo segundo retumbará en la memoria de la ronda.",
+        "Aquí es donde los hombres se convierten en leyendas.",
+        "Ni el viento se atreve a soplar en esta jugada.",
+        "La pelota no tiene nervios, pero el jugador los tiene a flor de piel.",
+        "Es el tipo de momento que se proyecta en cámara lenta.",
+        "El destino de la partida pende de un hilo transparente.",
+        "La precisión ha dejado de ser un lujo: es supervivencia.",
+        "El margen se ha vuelto tan fino como un cabello.",
+        "Que hable el palo y talle la historia."
+      ],
+      "reactions": [
+        "un instante de puro infarto",
+        "un clímax de tensión insoportable",
+        "una escena de desenlace Épico",
+        "un disparo cargado de historia",
+        "un segundo que vale un campeonato",
+        "un punto de quiebre absoluto",
+        "un momento grabado a fuego",
+        "un pulso a muerte contra el mapa",
+        "una decisión al filo del abismo",
+        "un poema dramático en movimiento"
+      ]
+    },
+    "neutral": {
+      "leads": [
+        "Rodando la pelota en el césped.",
+        "Seguimos con el desarrollo habitual.",
+        "Es el turno de ver la trayectoria.",
+        "Nueva acción en juego.",
+        "Continúa la ronda sin sorpresas.",
+        "Veamos qué nos depara esta lectura.",
+        "La bola está en curso.",
+        "La partida mantiene su pulso.",
+        "Turno para observar el recorrido.",
+        "Avanza la secuencia de tiro."
+      ],
+      "tails": [
+        "Veremos dónde decide frenar.",
+        "El suelo tendrá la última palabra.",
+        "Sin conclusiones apresuradas.",
+        "La jugada se mantiene dentro de la norma.",
+        "Todo dependerá del freno final.",
+        "Aún le queda inercia por recorrer.",
+        "Aguardamos la detención completa.",
+        "Todavía no está dictaminado el reposo.",
+        "Siguiendo la trayectoria de cerca.",
+        "El cronómetro del turno sigue marchando."
+      ],
+      "reactions": [
+        "una jugada estándar",
+        "un desarrollo reglamentario",
+        "una acción en progreso",
+        "un estado de transición",
+        "una lectura en espera",
+        "una trayectoria limpia",
+        "un momento rutinario",
+        "una acción por resolver",
+        "un paso más en la lista",
+        "una secuencia convencional"
+      ]
+    }
+  },
+  "lexicon": {
+    "connectors": [
+      "y para colmo de males",
+      "pero ¡ojo al piojo!",
+      "así que agárrense",
+      "porque claro, la lógica no existe",
+      "mientras tanto en el universo paralelo",
+      "por si le faltaba picante a la sopa",
+      "y aquí viene la magia negra",
+      "lo verdaderamente loco es que",
+      "con toda esa carga encima",
+      "aun así, con dos cojones",
+      "por otro lado en la mesa de control",
+      "como resultado de esta locura",
+      "y no olvidemos el pequeño detalle de que",
+      "para rematar la faena",
+      "en resumidas cuentas"
+    ],
+    "playerAddresses": [
+      "{player}",
+      "nuestro audaz aventurero",
+      "el maestro de la bola",
+      "el valiente que desafía la física",
+      "el genio incomprendido",
+      "la mente maestra detrás del gatillo"
+    ],
+    "softExclamations": [
+      "¡ojo ahí!",
+      "¡atención!",
+      "¡mucho cuidado!",
+      "¡miren eso nada más!",
+      "¡allá va la criatura!",
+      "¡menudo momento!",
+      "¡agárrense los sombreros!",
+      "¡se viene el espectáculo!"
+    ],
+    "highExclamations": [
+      "¡QUÉ MANERA DE ROMPER LA FÍSICA!",
+      "¡NO PUEDE SER, ESTÁ LOCO!",
+      "¡AQUÍ HAY MÁS FUEGO QUE EN EL INFIERNO!",
+      "¡DE LOCOOOOOOS!",
+      "¡MADRE MÍA DE MI VIDA!",
+      "¡ESTO VA DIRECTO A HIGHLIGHTS!",
+      "¡SE PRENDIÓ ESTA VAINA!",
+      "¡IMPRESIONANTE, SENSACIONAL, HISTÓRICO!"
+    ],
+    "sarcasticBridges": [
+      "por supuesto, qué podría salir mal",
+      "cómo no, el toque de distinción",
+      "porque hacer un tiro normal atenta contra su religión",
+      "en una decisión que desafía cualquier seguro de vida",
+      "con una fe ciega que ya le gustaría a un santo",
+      "como quien tiene un plan maestro o busca una multa",
+      "sin la más mínima intención de ponerlo fácil",
+      "porque el camino sencillo es para cobardes"
+    ],
+    "praiseNouns": [
+      "maestría quirúrgica",
+      "precisión de cirujano",
+      "lectura Matrix",
+      "timing celestial",
+      "potencia descomunal",
+      "trayectoria impecable",
+      "ejecución de orfebrería",
+      "temple de acero inoxidable",
+      "decisión de hierro",
+      "clase magistral"
+    ],
+    "failureNouns": [
+      "desvío galáctico",
+      "pifia monumental",
+      "tropiezo de comedia",
+      "castigo divino",
+      "lectura catastrófica",
+      "exceso de autoestima",
+      "caricia sin fuerza",
+      "ángulo de la perdición",
+      "rebote traicionero",
+      "decisión altamente suicida"
+    ]
+  },
+  "interaction": {
+    "partner": "Álex Prisma",
+    "genericQuestions": [
+      "Álex, ¿tus gráficos entienden la locura que acaba de pasar?",
+      "Álex, ponle un poco de ciencia a esto antes de que pierda la cabeza.",
+      "¿Qué dicen tus frías computadoras, Álex?",
+      "Álex, ¿los números apoyan este acto de valentía o le dan el pésame?",
+      "¿Cómo se ve esta barbaridad desde la fría mesa de datos, Álex?",
+      "Álex, dame un dato objetivo porque la emoción me supera.",
+      "¿La física aprueba esto o va a demandar al jugador, Álex?",
+      "Álex, descifra esta jugada para los mortales.",
+      "¿Qué métrica te está sangrando ahora mismo, Álex?",
+      "Álex, dime que no soy el único que necesita un té para los nervios."
+    ],
+    "afterAnswerReactions": [
+      "Justo lo que quería oír, Álex. Ahora me deja darle todavía más dramatismo.",
+      "Excelente. Matemáticas puras para justificar esta locura.",
+      "Gracias Álex, la física queda avisada y notificada.",
+      "Ahí lo tienen, damas y caballeros: ciencia primero, gritos después.",
+      "Bien jugado, Álex. Tú pon los números y yo pongo la pirotecnia.",
+      "Exacto. Y aun con esos datos, ¡sigue siendo una completa demencia!",
+      "Me sirve el dato. Procedo a exagerar la jugada sin culpa alguna.",
+      "Qué hermoso es cuando la estadística apoya mi narrativa épica.",
+      "Anotado en el libro de actas. Volvamos a la bola antes de que vuelva a desafiar a Newton.",
+      "Álex, siempre tan brillante como insoportablemente analítico."
+    ],
+    "acknowledgePartner": [
+      "Te paso el micrófono, Álex.",
+      "Suelta la bomba de datos, Álex.",
+      "Ilumínanos con los números, Álex.",
+      "Traduce esto al lenguaje de los sabios, Álex.",
+      "Dame la dosis de realidad, Álex.",
+      "Atención todos, habla la voz de la ciencia."
+    ],
+    "questionsBySemantic": {
+      "intro": [
+        "Álex, ¿qué variable te preocupa antes de que alguien convierta esto en una investigación oficial?",
+        "Álex, dame una lectura inicial antes de que empecemos a culpar al mobiliario."
+      ],
+      "setup": [
+        "Álex, ¿esa preparación tiene sentido o estoy viendo confianza con efectos especiales?",
+        "Álex, dime si ese ángulo vive en el barrio de las buenas decisiones."
+      ],
+      "shot": [
+        "Álex, ¿qué te dice ese contacto antes de que yo lo convierta en una leyenda o un crimen?",
+        "Álex, ponle números a ese golpe mientras yo decido cuántos gritos merece."
+      ],
+      "flight": [
+        "Álex, ¿esa trayectoria va a aterrizar con dignidad o llamamos ya a emergencias geométricas?",
+        "Álex, ¿qué está diciendo el vuelo que mis ojos están demasiado emocionados para leer?"
+      ],
+      "impact": [
+        "Álex, traduce ese golpe contra el mapa a un idioma que no incluya “PUM”.",
+        "Álex, ¿cuánto acaba de cambiar la jugada después de semejante conversación con la superficie?"
+      ],
+      "terrain": [
+        "Álex, ¿cuánto nos acaba de sabotear esa superficie en términos que puedan imprimirse?",
+        "Álex, explícame por qué el mapa insiste en participar más que algunos jugadores."
+      ],
+      "spatial": [
+        "Álex, ¿seguimos en el mismo universo estadístico o abrimos otro archivo?",
+        "Álex, localiza la pelota antes de que yo la declare oficialmente perdida entre dimensiones."
+      ],
+      "failure": [
+        "Álex, necesito la autopsia técnica antes de que la emoción destruya la escena del crimen.",
+        "Álex, dime exactamente qué murió primero: la idea, la trayectoria o la esperanza."
+      ],
+      "recovery": [
+        "Álex, ¿esto fue rescate legítimo o un accidente favorable con buena publicidad?",
+        "Álex, confirma que seguimos vivos antes de que yo encargue fuegos artificiales."
+      ],
+      "success": [
+        "Álex, por una vez dame números bonitos, quiero saber cuánto de esto fue realmente perfecto.",
+        "Álex, ¿puedo celebrar sin que vengas a ponerle un asterisco de treinta páginas?"
+      ],
+      "exceptional": [
+        "Álex, necesito probabilidades, porcentajes y quizá un notario para esto.",
+        "Álex, confirma que los sensores siguen funcionando porque yo ya no confío en mis ojos."
+      ],
+      "momentum_good": [
+        "Álex, ¿esto ya es dominio o todavía vas a llamarlo muestra insuficiente?",
+        "Álex, ¿cuándo una buena racha deja de ser casualidad y empieza a dar miedo?"
+      ],
+      "momentum_bad": [
+        "Álex, ¿cuántos errores hacen falta para que oficialmente podamos llamar a un exorcista de estadísticas?",
+        "Álex, diagnostica esta racha antes de que el gráfico atraviese el suelo."
+      ],
+      "score": [
+        "Álex, traduce ese marcador a kilogramos de presión psicológica.",
+        "Álex, ¿qué cambia tácticamente después de ese movimiento en la tabla?"
+      ],
+      "final": [
+        "Álex, dame la lectura fría del final; yo pongo el infarto y la banda sonora.",
+        "Álex, ¿qué decisión sobrevive a las matemáticas en este último tramo?"
+      ],
+      "near_miss": [
+        "Álex, dime cuánto faltó exactamente para poder enfadarme con precisión profesional.",
+        "Álex, ¿ese “casi” fue error real o una broma microscópica del universo?"
+      ],
+      "victory": [
+        "Álex, ciérrame el informe: ¿qué dato explica mejor esta victoria antes de que yo la convierta en leyenda nacional?",
+        "Álex, marcador cerrado: dame la sentencia fría y déjame después hacer los fuegos artificiales."
+      ],
+      "rivalry": [
+        "Álex, ¿esto sigue siendo accidente o ya podemos imprimir camisetas de rivalidad?",
+        "Álex, ¿cuántos choques más hacen falta para declarar guerra oficialmente?",
+        "Álex, dime que tus datos también están disfrutando esta enemistad."
+      ],
+      "sabotage": [
+        "Álex, ¿eso fue estrategia brillante o maldad con Excel?",
+        "Álex, calcula cuánto karma acaba de hipotecar {player}.",
+        "¿Qué probabilidad hay de que esta jugada regrese en forma de venganza, Álex?"
+      ],
+      "alliance": [
+        "Álex, ¿cuánto le das de vida útil a esta amistad de alquiler?",
+        "Álex, ¿el pacto es racional o ya estamos viendo el prólogo de una traición?",
+        "¿Qué tan mala idea sería darle la espalda a {alliance_partner}, Álex?"
+      ],
+      "favorite": [
+        "Álex, dilo sin miedo: ¿también tienes favorito o vas a fingir objetividad?",
+        "Álex, ¿los números respaldan mi favoritismo o estoy haciendo el ridículo solo?",
+        "¿Quién compra acciones del favorito ahora mismo, Álex?"
+      ],
+      "survival": [
+        "Álex, quedan {survivor_count}: ¿quién tiene nervios para sobrevivir esto?",
+        "Álex, ¿qué pesa más ahora: la técnica o el miedo a desaparecer?",
+        "Con {survivor_count} vivos, ¿qué error es imperdonable, Álex?"
+      ],
+      "elimination": [
+        "Álex, confirma la autopsia competitiva: ¿qué mató esa run?",
+        "Álex, ¿qué cambia en las probabilidades después de esta eliminación?",
+        "Dame el dato frío, Álex: ¿quién se beneficia más de esta baja?"
+      ]
+    },
+    "afterAnswerBySemantic": {
+      "intro": [
+        "Perfecto, Álex. Entonces oficialmente empezamos sin problemas y con una reserva enorme de problemas potenciales.",
+        "Anotado. Tú conservas la línea base y yo voy preparando el extintor narrativo."
+      ],
+      "setup": [
+        "Entendido: todavía estamos a tiempo de no hacer una barbaridad. Qué concepto tan revolucionario.",
+        "Ahí lo tienen: pensar antes de golpear. Álex acaba de patentar la idea más polémica del torneo."
+      ],
+      "shot": [
+        "Datos recibidos. Ahora puedo gritar con respaldo documental, mi formato favorito.",
+        "Excelente, Álex. Ciencia para ti, pirotecnia para mí y consecuencias para la pelota."
+      ],
+      "flight": [
+        "Entonces seguimos mirando arriba con fundamentos científicos. Me tranquiliza cero, pero suena profesional.",
+        "Perfecto: vuelo bonito, sentencia pendiente. Continúo oficialmente preocupado."
+      ],
+      "impact": [
+        "Gracias, Álex. La pared habló en newtons y tú acabas de subtitularla.",
+        "Entendido: la geometría ganó el intercambio. Qué sorpresa tan estructuralmente sólida."
+      ],
+      "terrain": [
+        "Excelente. El mapa cambia las reglas y tú me dices exactamente cuánto debemos quejarnos.",
+        "Queda claro: no era magia, era fricción con actitud. Seguimos."
+      ],
+      "spatial": [
+        "Magnífico. No estamos perdidos, solo estadísticamente desplazados a un lugar absurdo.",
+        "Gracias por localizar la realidad, Álex. Yo ya estaba preparando un funeral interdimensional."
+      ],
+      "failure": [
+        "Autopsia recibida. Procedo a convertir ese dato frío en tragedia premium.",
+        "Perfecto, Álex. Ya sabemos qué salió mal; ahora solo falta fingir que no dolió."
+      ],
+      "recovery": [
+        "Entonces sobrevivimos con respaldo científico. Eso me parece suficiente para exagerarlo un 300%.",
+        "Milagro no, recuperación medible. De acuerdo, pero déjame conservar al menos la música épica."
+      ],
+      "success": [
+        "¿Ven? Hasta Álex se quedó sin objeciones. Eso vale medio trofeo adicional.",
+        "Confirmado por el departamento de frialdad: fue bueno. Ahora sí, celebremos sin culpa."
+      ],
+      "exceptional": [
+        "Si Álex usa la palabra “excepcional”, yo tengo permiso legal para perder completamente la cabeza.",
+        "Perfecto. Sensores vivos, probabilidad herida y yo oficialmente fuera de control."
+      ],
+      "momentum_good": [
+        "Lo oyeron: ya no es casualidad. El mapa puede empezar a enviar currículums.",
+        "Álex confirma tendencia. Yo confirmo que esto empieza a oler deliciosamente a dominio."
+      ],
+      "momentum_bad": [
+        "Diagnóstico claro: dejar de fabricar errores. Revolucionario, brutal y sorprendentemente útil.",
+        "Perfecto. El gráfico sufre, nosotros también; toca cortar la racha antes de que tenga descendencia."
+      ],
+      "score": [
+        "Datos recibidos. El marcador ahora pesa exactamente lo que yo decía, solo que con decimales.",
+        "Ahí está: números fríos, presión caliente. Qué combinación tan desagradablemente hermosa."
+      ],
+      "final": [
+        "Entendido. Cero poesía útil, máxima precisión necesaria. Naturalmente voy a narrarlo como si cayera un meteorito.",
+        "La matemática habló. Ahora que hable el jugador y que el universo firme como testigo."
+      ],
+      "near_miss": [
+        "Perfecto: fracaso microscópico, dolor de tamaño industrial. Gracias por ponerle unidades, Álex.",
+        "Entonces no fue “por nada”; fue por una cantidad exactamente suficiente para arruinarnos el momento. Maravilloso."
+      ],
+      "victory": [
+        "Expediente cerrado por Álex. Yo lo reabro inmediatamente como mito deportivo.",
+        "Ahí está: victoria certificada. Procedo legalmente a exagerarla durante el resto del día."
+      ],
+      "rivalry": [
+        "Perfecto, Álex. Queda científicamente certificado que estos dos no se mandarán postales.",
+        "Dato recibido. Procedo a subir la rivalidad a categoría de patrimonio audiovisual.",
+        "Gracias, Álex. Ya puedo llamar a esto enemistad con respaldo académico."
+      ],
+      "sabotage": [
+        "Magnífico. Maldad con validación estadística: mi género favorito.",
+        "Ahí está. Tú pones el informe y yo pongo la música de villano.",
+        "Ciencia recibida. El karma puede presentar sus alegaciones cuando quiera."
+      ],
+      "alliance": [
+        "Anotado. Amistad de alquiler, depósito no reembolsable y traición opcional.",
+        "Gracias, Álex. Disfrutemos la paz antes de que alguien descubra que solo gana uno.",
+        "Perfecto. Pacto racional, confianza emocional absolutamente irresponsable."
+      ],
+      "favorite": [
+        "Entonces queda decidido: la objetividad murió, pero murió con buen gusto.",
+        "Álex también tiene favorito. Señores, hoy hasta las calculadoras sienten.",
+        "Maravilloso. Dos formas distintas de parcialidad y un solo trofeo."
+      ],
+      "survival": [
+        "Entendido. Pocas bolas, mucha presión y cero margen para hacerse el poeta.",
+        "Ahí lo tienen: sobrevivir primero, convertirse en leyenda después.",
+        "Datos claros. Ahora que tiemblen con fundamento."
+      ],
+      "elimination": [
+        "Autopsia cerrada. Que pase el siguiente valiente.",
+        "Dato brutal, Álex. Una silla menos y veinte kilos más de presión.",
+        "Expediente archivado. El Battle Royale no espera a nadie."
+      ]
+    }
+  },
+  "events": {
+    "MATCH_START": {
+      "label": "Inicio de partida",
+      "importance": 4,
+      "toneWeights": {
+        "greeting": 6,
+        "excited": 3,
+        "sarcastic": 3,
+        "informative": 1
+      },
+      "cores": [
+        "¡ARRANCA LA CONTIENDA! {player} toma el palo y lleva sobre la espalda el peso de toda la masa",
+        "se abre el telón del green, la bola descansa en el tee y {player} inaugura este libro de historias",
+        "estrenamos mapa, marcador en cero y una colección de trampas listas para arruinar carreras",
+        "empieza la batalla; todo luce pacífico, lo cual dura exactamente hasta el primer impacto",
+        "primera bola colocada para {player}; que empiece el experimento y que Dios nos pille confesados",
+        "¡Micrófonos abiertos, marcador virgen y una cantidad irresponsable de confianza en el ambiente!"
+      ],
+      "followupChance": 0.44,
+      "askChance": 0.34,
+      "questions": [
+        "Álex, ¿qué marca el radar de probabilidades antes de soltar el primer palo?",
+        "Álex, hoja en blanco: ¿cuál es la variable dorada a vigilar hoy?",
+        "Álex, ¿cuál es el peligro mortal que {player} debe esquivar sí o sí en el debut?"
+      ],
+      "delivery": {
+        "class": "important",
+        "priority": 70,
+        "ttlMs": 3500,
+        "mode": "opportunistic",
+        "dedupeMs": 1600,
+        "preempt": "filler",
+        "nearEndMs": 600,
+        "maxWords": 30,
+        "partnerChance": 0.4,
+        "cooldownMs": 0
+      },
+      "semanticClass": "intro"
+    },
+    "ROUND_START": {
+      "label": "Inicio de ronda",
+      "importance": 3,
+      "toneWeights": {
+        "greeting": 3,
+        "happy": 2,
+        "sarcastic": 4,
+        "informative": 2
+      },
+      "cores": [
+        "¡nueva ronda! Hora de fingir que tenemos un plan maestro y que lo anterior fue un simple ensayo",
+        "se resetea el mapa y la esfera vuelve a pedir protagonismo absoluto",
+        "entra en escena un nuevo capítulo con {player} buscando un tiro limpio de cirujano",
+        "cambiamos de hoyo pero no cambiamos el nivel de peligro mortal",
+        "se abre la ronda y el terreno vuelve a regalar problemas gratis a quien se despiste",
+        "Nueva ronda, nueva oportunidad de demostrar que el caos también puede llevar estrategia debajo del abrigo."
+      ],
+      "followupChance": 0.38,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "important",
+        "priority": 70,
+        "ttlMs": 3500,
+        "mode": "opportunistic",
+        "dedupeMs": 1600,
+        "preempt": "filler",
+        "nearEndMs": 600,
+        "maxWords": 30,
+        "partnerChance": 0.4,
+        "cooldownMs": 0
+      },
+      "semanticClass": "intro"
+    },
+    "TURN_START": {
+      "label": "Inicio de turno",
+      "importance": 2,
+      "toneWeights": {
+        "informative": 2,
+        "sarcastic": 4,
+        "neutral": 2,
+        "motivating": 2
+      },
+      "cores": [
+        "turno número {turn} para {player}; hora de elegir entre la gloria calculada o un meme eterno",
+        "{player} toma el mando en el turno {turn} mientras el mapa guarda un silencio inquietante",
+        "vuelve {player} frente a la bola; aquí se cocina la próxima genialidad... o locura",
+        "nuevo turno y una hermosa oportunidad de hacer algo sensato, al menos en la teoría",
+        "los focos apuntan a {player}, que ya está diseñando cómo meterse en líos con muchísima clase",
+        "{player} vuelve al centro del escenario; turno {turn}, foco encendido y cero lugares donde esconder una mala decisión."
+      ],
+      "followupChance": 0.32,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "ambient",
+        "priority": 20,
+        "ttlMs": 1600,
+        "mode": "filler",
+        "dedupeMs": 1000,
+        "preempt": "none",
+        "nearEndMs": 0,
+        "maxWords": 24,
+        "partnerChance": 0.35,
+        "cooldownMs": 2200
+      },
+      "semanticClass": "setup"
+    },
+    "AIMING": {
+      "label": "Apuntando",
+      "importance": 1,
+      "toneWeights": {
+        "sarcastic": 4,
+        "dramatic": 2,
+        "informative": 2,
+        "neutral": 2
+      },
+      "cores": [
+        "{player} milimetra el ángulo con una paciencia que espero sea estrategia y no pánico paralizante",
+        "mueve la mirilla, ajusta un milímetro y parece estar negociando los tratados de paz con la gravedad",
+        "se toma su tiempo sagrado para apuntar; o está calculando un tiro genio o rezando un avemaría",
+        "la dirección cambia pixel a pixel mientras {player} busca el milagro geométrico",
+        "está cocinando el disparo a fuego lento; veamos si la receta lleva sentido común",
+        "{player} mueve la mira como si estuviera desactivando una bomba con instrucciones traducidas por una tostadora."
+      ],
+      "followupChance": 0.26,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "progressive",
+        "priority": 35,
+        "ttlMs": 420,
+        "mode": "trace",
+        "dedupeMs": 300,
+        "preempt": "filler",
+        "nearEndMs": 220,
+        "maxWords": 15,
+        "partnerChance": 0,
+        "cooldownMs": 0
+      },
+      "semanticClass": "setup"
+    },
+    "RISKY_AIM": {
+      "label": "Apuntado arriesgado",
+      "importance": 2,
+      "toneWeights": {
+        "sarcastic": 4,
+        "dramatic": 3,
+        "excited": 2,
+        "pessimistic": 2
+      },
+      "cores": [
+        "¡OJO! Esa línea punta directo al sector del mapa donde habitan las lágrimas y los llantos",
+        "{player} está mirando una ruta suicida y, por supuesto, a mí me encanta el peligro",
+        "la mira se clava en una trayectoria que o termina en estatua o en tragedia de comedia",
+        "eso no es apuntar con valentía, ¡eso es desafiar al mapa a un duelo a muerte!",
+        "ángulo ultra agresivo, cero margen de error y un tanque lleno de descaro",
+        "Ese ángulo tiene la misma energía que firmar un contrato sin leer la última página: puede salir glorioso o carísimo."
+      ],
+      "followupChance": 0.32,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "progressive",
+        "priority": 48,
+        "ttlMs": 600,
+        "mode": "opportunistic",
+        "dedupeMs": 450,
+        "preempt": "filler",
+        "nearEndMs": 300,
+        "maxWords": 17,
+        "partnerChance": 0.05,
+        "cooldownMs": 0
+      },
+      "semanticClass": "setup"
+    },
+    "SHOT_TAKEN": {
+      "label": "Golpe",
+      "importance": 2,
+      "toneWeights": {
+        "excited": 3,
+        "informative": 2,
+        "sarcastic": 3,
+        "neutral": 2
+      },
+      "cores": [
+        "¡FUEGO! ¡Impacta {player} y la pelota sale zumbando a desafiar a la física!",
+        "contacto seco y puro; allá va la bola a demostrar si había plan o pura suerte",
+        "¡se acabó la teoría! El palo habla y la bola ya está en el aire",
+        "{player} le pega con fe y el mapa abre los brazos para recibir el impacto",
+        "sale disparada la bola; a partir de aquí solo queda rezar, comentar y morderse las uñas",
+        "¡CONTACTO! La pelota abandona la jurisdicción del arrepentimiento y entra en territorio de consecuencias."
+      ],
+      "followupChance": 0.32,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "important",
+        "priority": 76,
+        "ttlMs": 720,
+        "mode": "immediate",
+        "dedupeMs": 420,
+        "preempt": "filler_progressive",
+        "nearEndMs": 340,
+        "maxWords": 18,
+        "partnerChance": 0.12,
+        "cooldownMs": 0
+      },
+      "semanticClass": "shot"
+    },
+    "SHOT_WEAK": {
+      "label": "Golpe débil",
+      "importance": 2,
+      "toneWeights": {
+        "sarcastic": 5,
+        "mocking": 3,
+        "informative": 2,
+        "disappointed": 2
+      },
+      "cores": [
+        "eso no fue un cañonazo, eso fue enviarle una carta de amor a la bola a ver si avanza sola",
+        "{player} ha acariciado la bola con la delicadeza de quien no quiere despertar a un bebé",
+        "potencia de juguete; la bola camina como si tuviera flojera de vivir",
+        "salida tímida no, lo siguiente; espero que fuera una táctica ultra secreta",
+        "un golpecito de cortesía; la física ni se ha despeinado al verlo pasar",
+        "Eso tuvo menos potencia que un aplauso con guantes de lana, pero técnicamente seguimos avanzando."
+      ],
+      "followupChance": 0.32,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "important",
+        "priority": 72,
+        "ttlMs": 700,
+        "mode": "immediate",
+        "dedupeMs": 420,
+        "preempt": "filler_progressive",
+        "nearEndMs": 320,
+        "maxWords": 18,
+        "partnerChance": 0.1,
+        "cooldownMs": 0
+      },
+      "semanticClass": "shot"
+    },
+    "SHOT_STRONG": {
+      "label": "Golpe fuerte",
+      "importance": 4,
+      "toneWeights": {
+        "excited": 6,
+        "praising": 2,
+        "sarcastic": 3,
+        "informative": 1
+      },
+      "cores": [
+        "¡MADRE MÍA QUE LE HA ARRANCADO LAS COSTURAS! ¡Vaya maza!",
+        "{player} le revienta la cara a la pelota y la manda a orbitar la tierra",
+        "¡DESPEGUE AUTORIZADO! Esa bola lleva prisa y ganas de romper barreras de sonido",
+        "¡menudo zapatazo! La bola acaba de olvidar lo que significa la palabra paseo",
+        "eso no fue un tiro, fue un atentado con fuerza bruta sobre el césped",
+        "¡ESO LLEVA MOTOR DE COHETE! Si aparece en otro código postal, nadie actúe sorprendido."
+      ],
+      "followupChance": 0.44,
+      "askChance": 0.34,
+      "questions": [
+        "Álex, esa brutalidad de velocidad ¿es genialidad o compró billete para la catástrofe?",
+        "Álex, dime que tus algoritmos tienen una explicación para semejante cañonazo.",
+        "¿Cuánto margen de seguridad acaba de pulverizar {player} pegándole así de bestia, Álex?"
+      ],
+      "delivery": {
+        "class": "important",
+        "priority": 76,
+        "ttlMs": 720,
+        "mode": "immediate",
+        "dedupeMs": 420,
+        "preempt": "filler_progressive",
+        "nearEndMs": 340,
+        "maxWords": 18,
+        "partnerChance": 0.12,
+        "cooldownMs": 0
+      },
+      "semanticClass": "shot"
+    },
+    "SHOT_PERFECT": {
+      "label": "Golpe perfecto",
+      "importance": 5,
+      "toneWeights": {
+        "praising": 6,
+        "excited": 5,
+        "happy": 2,
+        "sarcastic": 1
+      },
+      "cores": [
+        "¡PERFECCIÓN ABSOLUTA! Ángulo, fuerza y efecto firmaron un pacto divino",
+        "{player} le acaba de pegar con la precisión de un compás de oro",
+        "¡LIMPIO, QUIRÚRGICO, POÉTICO! Hasta a mí se me congela el sarcasmo ante semejante obra de arte",
+        "contacto celestial; si esta bola no termina en el cielo, devuelvo mi micrófono",
+        "¡QUÉ ESPECTÁCULO DE TIRO! Ante semejante maestría, el mapa entero se rinde",
+        "Qué contacto tan limpio que hasta los errores habituales han pedido permiso para retirarse del plano."
+      ],
+      "followupChance": 0.5,
+      "askChance": 0.1,
+      "delivery": {
+        "class": "important",
+        "priority": 86,
+        "ttlMs": 900,
+        "mode": "immediate",
+        "dedupeMs": 600,
+        "preempt": "filler_progressive",
+        "nearEndMs": 420,
+        "maxWords": 20,
+        "partnerChance": 0.2,
+        "cooldownMs": 0
+      },
+      "semanticClass": "shot"
+    },
+    "SHOT_BAD": {
+      "label": "Mal golpe",
+      "importance": 3,
+      "toneWeights": {
+        "sarcastic": 5,
+        "mocking": 4,
+        "disappointed": 3,
+        "pessimistic": 1
+      },
+      "cores": [
+        "¡Ay mi madre! Eso salió dando tumbos desde el mismísimo milisegundo uno",
+        "{player} golpea y la bola se declara en rebeldía absoluta buscando su propio camino",
+        "salida horrible con cara de drama y pasaporte directo a la penalización",
+        "pésimo contacto; la bola acaba de presentar su renuncia al plan táctico",
+        "no necesito VAR ni repetición para certificar que eso ha sido un verdadero horror",
+        "La pelota salió con un plan distinto al de todos los presentes, incluido probablemente el jugador."
+      ],
+      "followupChance": 0.38,
+      "askChance": 0.34,
+      "questions": [
+        "Álex, ponle cifras a esa tragedia sin destruirle la autoestima al jugador.",
+        "¿Fue tan horrible como mis ojos sufrieron o la física dice otra cosa, Álex?",
+        "Álex, ¿qué colapsó primero ahí: el ángulo, la fuerza o la fe del jugador?"
+      ],
+      "delivery": {
+        "class": "important",
+        "priority": 76,
+        "ttlMs": 720,
+        "mode": "immediate",
+        "dedupeMs": 420,
+        "preempt": "filler_progressive",
+        "nearEndMs": 340,
+        "maxWords": 18,
+        "partnerChance": 0.12,
+        "cooldownMs": 0
+      },
+      "semanticClass": "shot"
+    },
+    "BALL_AIR": {
+      "label": "Pelota en el aire",
+      "importance": 1,
+      "toneWeights": {
+        "neutral": 3,
+        "informative": 3,
+        "sarcastic": 2,
+        "dramatic": 1
+      },
+      "cores": [
+        "la pelota se eleva y planea buscando una pista de aterrizaje decente",
+        "vuela estable en los cielos; no abramos la champaña antes de tocar suelo",
+        "sigue flotando en el aire, negociando cada metro con la brisa",
+        "trayectoria aérea limpia de momento; el impacto con el terreno dará el veredicto",
+        "la bola cruza las nubes mientras todos fingimos saber exactamente dónde va a caer",
+        "Ahí va suspendida, hermosa e irresponsable, mientras el suelo prepara una opinión no solicitada."
+      ],
+      "followupChance": 0.26,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "progressive",
+        "priority": 35,
+        "ttlMs": 420,
+        "mode": "trace",
+        "dedupeMs": 300,
+        "preempt": "filler",
+        "nearEndMs": 220,
+        "maxWords": 15,
+        "partnerChance": 0,
+        "cooldownMs": 0
+      },
+      "semanticClass": "flight"
+    },
+    "BALL_HIGH": {
+      "label": "Vuelo muy alto",
+      "importance": 3,
+      "toneWeights": {
+        "excited": 4,
+        "sarcastic": 5,
+        "mocking": 1,
+        "informative": 2
+      },
+      "cores": [
+        "¡SE FUE A LAS NUBES! Esa bola está pagando impuestos en la estratosfera ahora mismo",
+        "altura estratosférica; desde allá arriba el hoyo parece del tamaño de una hormiga",
+        "{player} la manda a volar tan alto que da tiempo de pedir una pizza antes de que baje",
+        "sube, sube y sigue subiendo; espero que lleve paracaídas o licencia de piloto",
+        "eso está a una altura ridículamente absurda y, por lo tanto, me parece un espectáculo brillante",
+        "La bola está tan arriba que el marcador necesita prismáticos y la gravedad está redactando una orden de regreso."
+      ],
+      "followupChance": 0.38,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "progressive",
+        "priority": 52,
+        "ttlMs": 520,
+        "mode": "trace",
+        "dedupeMs": 350,
+        "preempt": "filler",
+        "nearEndMs": 250,
+        "maxWords": 16,
+        "partnerChance": 0.05,
+        "cooldownMs": 0
+      },
+      "semanticClass": "flight"
+    },
+    "BALL_FAST": {
+      "label": "Pelota a gran velocidad",
+      "importance": 3,
+      "toneWeights": {
+        "excited": 5,
+        "sarcastic": 3,
+        "informative": 2,
+        "dramatic": 1
+      },
+      "cores": [
+        "¡MAMÁ MÍA CÓMO VUELA ESO! ¡Va a romper la barrera del sonido!",
+        "esa bola lleva prisa, rabia y cero ganas de frenar a saludar",
+        "velocidad endiablada; cada obstáculo en el mapa acaba de volverse una ruleta rusa",
+        "¡mira cómo corre! Si choca contra algo, los fuegos artificiales están garantizados",
+        "cruza la pantalla como una exhalación con energía para cometer locuras muy lejos",
+        "¡Eso no rueda, evacúa la zona! Cada metro llega con sirena propia."
+      ],
+      "followupChance": 0.38,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "progressive",
+        "priority": 52,
+        "ttlMs": 520,
+        "mode": "trace",
+        "dedupeMs": 350,
+        "preempt": "filler",
+        "nearEndMs": 250,
+        "maxWords": 16,
+        "partnerChance": 0.05,
+        "cooldownMs": 0
+      },
+      "semanticClass": "flight"
+    },
+    "WIND_PUSH": {
+      "label": "Empuje de viento",
+      "importance": 2,
+      "toneWeights": {
+        "sarcastic": 4,
+        "informative": 3,
+        "dramatic": 1,
+        "pessimistic": 1
+      },
+      "cores": [
+        "¡Mano invisible del viento entra en juego! Y no viene precisamente a ayudar",
+        "la trayectoria se tuerce; el aire acaba de votar en contra del plano original",
+        "ráfaga salvaje de lado y la bola se desvía sin pedir permiso ni perdón",
+        "el viento se mete al partido porque aparentemente no había suficiente caos en la cancha",
+        "hay un empujón aéreo traicionero y la línea limpia empieza a sufrir",
+        "El viento mete la mano en la jugada como un árbitro invisible con ganas de protagonismo."
+      ],
+      "followupChance": 0.32,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "progressive",
+        "priority": 52,
+        "ttlMs": 520,
+        "mode": "trace",
+        "dedupeMs": 350,
+        "preempt": "filler",
+        "nearEndMs": 250,
+        "maxWords": 16,
+        "partnerChance": 0.05,
+        "cooldownMs": 0
+      },
+      "semanticClass": "flight"
+    },
+    "BOUNCE": {
+      "label": "Rebote",
+      "importance": 2,
+      "toneWeights": {
+        "excited": 3,
+        "informative": 2,
+        "sarcastic": 2,
+        "neutral": 2
+      },
+      "cores": [
+        "¡BOTE Y A SEGUIR! La bola toca tierra pero se niega a dar por terminada la fiesta",
+        "primer contacto con el suelo y sale rebotada; el terreno responde",
+        "bota con rabia y altera la lectura de la trayectoria por completo",
+        "¡toca y salta! Ese terreno tenía un resorte escondido",
+        "rebote vivo y limpio; la jugada sigue respirando",
+        "¡BOTA! Y la pelota acaba de descubrir una ruta que absolutamente nadie había presupuestado."
+      ],
+      "followupChance": 0.32,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "progressive",
+        "priority": 52,
+        "ttlMs": 520,
+        "mode": "trace",
+        "dedupeMs": 350,
+        "preempt": "filler",
+        "nearEndMs": 250,
+        "maxWords": 16,
+        "partnerChance": 0.05,
+        "cooldownMs": 0
+      },
+      "semanticClass": "impact"
+    },
+    "MULTI_BOUNCE": {
+      "label": "Múltiples rebotes",
+      "importance": 3,
+      "toneWeights": {
+        "excited": 5,
+        "sarcastic": 4,
+        "informative": 2,
+        "mocking": 1
+      },
+      "cores": [
+        "¡uno, dos, tres botes! ¡Parece una bola de pinball fuera de control!",
+        "rebota por aquí, rebota por allá; esto ya es un ping-pong salvaje contra el mapa",
+        "¡van {bounces} rebotes y no frena! Se niega rotundamente a detenerse",
+        "¡menuda secuencia! Cada bote firma un nuevo contrato con el descontrol",
+        "esto ya no son rebotes, ¡es un paseo turístico saltando por todo el terreno!",
+        "Esto ya es pinball con crisis de identidad: {bounces} rebotes y todavía se niega a aceptar un domicilio fijo."
+      ],
+      "followupChance": 0.38,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "progressive",
+        "priority": 52,
+        "ttlMs": 520,
+        "mode": "trace",
+        "dedupeMs": 350,
+        "preempt": "filler",
+        "nearEndMs": 250,
+        "maxWords": 16,
+        "partnerChance": 0.05,
+        "cooldownMs": 0
+      },
+      "semanticClass": "impact"
+    },
+    "WALL_HIT": {
+      "label": "Golpe contra pared",
+      "importance": 3,
+      "toneWeights": {
+        "sarcastic": 5,
+        "mocking": 3,
+        "informative": 2,
+        "excited": 2
+      },
+      "cores": [
+        "¡PUM! ¡Besito cariñoso al muro! La pared acaba de darle una lección de dureza",
+        "impacto seco contra la pared y la física cambia de opinión radicalmente",
+        "el muro gana el debate sin necesidad de presentar argumentos",
+        "¡CLACK! Cabezazo duro contra el cemento y devolución inmediata",
+        "esa pared no se ha movido ahí en diez años, por si el jugador tenía dudas",
+        "La pared ha ganado una discusión filosófica utilizando únicamente masa y cero palabras."
+      ],
+      "followupChance": 0.38,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "important",
+        "priority": 76,
+        "ttlMs": 720,
+        "mode": "immediate",
+        "dedupeMs": 420,
+        "preempt": "filler_progressive",
+        "nearEndMs": 340,
+        "maxWords": 18,
+        "partnerChance": 0.12,
+        "cooldownMs": 0
+      },
+      "semanticClass": "impact"
+    },
+    "SAND_ENTER": {
+      "label": "Entrada en arena",
+      "importance": 3,
+      "toneWeights": {
+        "sarcastic": 5,
+        "pessimistic": 2,
+        "informative": 3,
+        "disappointed": 1
+      },
+      "cores": [
+        "y se hunde en la arena... bienvenida a la playa privada donde la velocidad muere",
+        "cae de lleno en la trampa pesada; hora de sacar la pala y sufrir",
+        "arena. Porque avanzar por el césped limpio era una vulgaridad demasiado fácil",
+        "la bola entra en la trampa de arena y la alegría se entierra a tres metros",
+        "aterriza en la zona pesada; cada yarda desde aquí va a costar sangre, sudor y lágrimas",
+        "La arena abre la puerta, invita a pasar y acto seguido confisca toda la velocidad."
+      ],
+      "followupChance": 0.38,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "progressive",
+        "priority": 58,
+        "ttlMs": 700,
+        "mode": "trace",
+        "dedupeMs": 500,
+        "preempt": "filler",
+        "nearEndMs": 300,
+        "maxWords": 18,
+        "partnerChance": 0.08,
+        "cooldownMs": 0
+      },
+      "semanticClass": "terrain"
+    },
+    "SAND_EXIT": {
+      "label": "Salida de arena",
+      "importance": 2,
+      "toneWeights": {
+        "happy": 2,
+        "sarcastic": 3,
+        "motivating": 2,
+        "informative": 2
+      },
+      "cores": [
+        "¡logra escapar del búnker! Pequeño milagro concedido por las leyes del juego",
+        "¡LIBERADA! La bola deja atrás el infierno de arena y regresa a la civilización",
+        "rompe las cadenas de la arena y recupera un poco de dignidad",
+        "fuera de la trampa; ahora sí podemos empezar a soñar con el green de nuevo",
+        "la pelota abandona la zona pesada y suspira de alivio... y nosotros con ella",
+        "¡ESCAPA DE LA ARENA! Sale con menos velocidad, más experiencia y probablemente arena hasta en los impuestos."
+      ],
+      "followupChance": 0.32,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "progressive",
+        "priority": 58,
+        "ttlMs": 700,
+        "mode": "trace",
+        "dedupeMs": 500,
+        "preempt": "filler",
+        "nearEndMs": 300,
+        "maxWords": 18,
+        "partnerChance": 0.08,
+        "cooldownMs": 0
+      },
+      "semanticClass": "terrain"
+    },
+    "ICE_ENTER": {
+      "label": "Entrada en hielo",
+      "importance": 3,
+      "toneWeights": {
+        "sarcastic": 5,
+        "excited": 2,
+        "informative": 3,
+        "pessimistic": 1
+      },
+      "cores": [
+        "¡HIELO A LA VISTA! Ahora la bola descubre que los frenos eran un extra no incluido",
+        "entra en la pista helada y de pronto todos los planes se van a patinar lejos",
+        "esto desliza más que mantequilla en sartén caliente; qué podría salir mal, ¿verdad?",
+        "pisa la zona helada y empieza a viajar con la confianza suicida de quien no conoce el rozamiento",
+        "pista de patinaje activada: menos control, pero el triple de risas aseguradas",
+        "Entra al hielo y de pronto frenar se convierte en una recomendación teórica sin respaldo práctico."
+      ],
+      "followupChance": 0.38,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "progressive",
+        "priority": 58,
+        "ttlMs": 700,
+        "mode": "trace",
+        "dedupeMs": 500,
+        "preempt": "filler",
+        "nearEndMs": 300,
+        "maxWords": 18,
+        "partnerChance": 0.08,
+        "cooldownMs": 0
+      },
+      "semanticClass": "terrain"
+    },
+    "WATER": {
+      "label": "Pelota al agua",
+      "importance": 5,
+      "toneWeights": {
+        "sarcastic": 7,
+        "mocking": 6,
+        "disappointed": 2,
+        "pessimistic": 1
+      },
+      "cores": [
+        "¡SPLASH! ¡AL AGUA PATOS! Los peces celebran una nueva pelota de regalo",
+        "gluglu-gluglu... fin de la historia aérea, comienzo del catálogo de excusas",
+        "la pelota se va al fondo del lago con una precisión digna de un submarino",
+        "¡AGUA! El mapa se cobra su peaje y lo quiere bien mojadito",
+        "bueno, técnicamente ha encontrado agua... lástima que no estemos jugando al waterpolo",
+        "¡AL AGUA! El lago amplía su colección y el jugador acaba de financiar otra exposición submarina."
+      ],
+      "followupChance": 0.5,
+      "askChance": 0.34,
+      "questions": [
+        "Álex, dime cuántas pelotas llevamos ahogadas hoy porque ya perdí la cuenta.",
+        "Álex, necesito la autopsia técnica y científica de ese clavado acuático.",
+        "¿Esto es ya un patrón obsesivo con el agua o lo seguimos llamando mala suerte, Álex?"
+      ],
+      "delivery": {
+        "class": "critical",
+        "priority": 95,
+        "ttlMs": 1350,
+        "mode": "immediate",
+        "dedupeMs": 900,
+        "preempt": "lower",
+        "nearEndMs": 520,
+        "maxWords": 22,
+        "partnerChance": 0.2,
+        "cooldownMs": 0
+      },
+      "semanticClass": "failure"
+    },
+    "OUT_OF_BOUNDS": {
+      "label": "Fuera de límites",
+      "importance": 5,
+      "toneWeights": {
+        "sarcastic": 6,
+        "mocking": 5,
+        "disappointed": 2,
+        "informative": 2
+      },
+      "cores": [
+        "¡FUERA DEL MAPA! La bola ha decidido emigrar a otro videojuego",
+        "se va de límites con una determinación envidiable y una utilidad absolutamente nula",
+        "¡hasta nunca, pelota! Nos vemos en el próximo mapa si la gravedad te devuelve",
+        "cruzó la frontera como si el mapa fuera un concepto opcional que no va con ella",
+        "¡fuera de banda! Una distancia impresionante, pero en una jurisdicción completamente ilegal",
+        "¡FUERA! La pelota ha solicitado asilo político más allá del borde del mapa."
+      ],
+      "followupChance": 0.5,
+      "askChance": 0.1,
+      "delivery": {
+        "class": "critical",
+        "priority": 95,
+        "ttlMs": 1350,
+        "mode": "immediate",
+        "dedupeMs": 900,
+        "preempt": "lower",
+        "nearEndMs": 520,
+        "maxWords": 22,
+        "partnerChance": 0.2,
+        "cooldownMs": 0
+      },
+      "semanticClass": "failure"
+    },
+    "PORTAL_ENTER": {
+      "label": "Entrada en portal",
+      "importance": 4,
+      "toneWeights": {
+        "excited": 5,
+        "sarcastic": 4,
+        "informative": 2,
+        "dramatic": 1
+      },
+      "cores": [
+        "¡ENTRA AL PORTAL! La bola confía su alma a la magia negra de los diseñadores",
+        "¡desapareció! Fantástico, justo el toque de física cuántica que le faltaba a esta tarde",
+        "teletransporte en marcha; bola fuera de nuestra dimensión conocida",
+        "¡se la tragó el vórtice! Álex, dime que tus satélites saben por dónde va a escupirla",
+        "cruza la puerta dimensional y la jugada se reinicia en otro espacio-tiempo",
+        "¡PORTAL! Desaparece la pelota y durante un instante todos fingimos entender perfectamente la topología avanzada."
+      ],
+      "followupChance": 0.44,
+      "askChance": 0.34,
+      "questions": [
+        "Álex, ¿qué leyes de la física conserva esa bola tras cruzar el portal?",
+        "Álex, recuérdame por qué los portales son una pesadilla para mi trabajo de comentarista.",
+        "¿Salimos a salvo o esto es una lotería interdimensional, Álex?"
+      ],
+      "delivery": {
+        "class": "important",
+        "priority": 82,
+        "ttlMs": 850,
+        "mode": "immediate",
+        "dedupeMs": 500,
+        "preempt": "filler_progressive",
+        "nearEndMs": 420,
+        "maxWords": 19,
+        "partnerChance": 0.18,
+        "cooldownMs": 0
+      },
+      "semanticClass": "spatial"
+    },
+    "PORTAL_EXIT": {
+      "label": "Salida de portal",
+      "importance": 3,
+      "toneWeights": {
+        "excited": 4,
+        "happy": 1,
+        "sarcastic": 3,
+        "informative": 2
+      },
+      "cores": [
+        "¡REAPARECE COMO UN FANTASMA! Sale del portal escupiendo fuego",
+        "materialización completada; misterio resuelto, consecuencias en trámite",
+        "¡salida limpia del túnel espacial! Mantiene el impulso y la jugada arde",
+        "vuelve a nuestro plano terrenal con velocidad suficiente para sembrar el pánico",
+        "viaje interdimensional finalizado; volvemos al caos local",
+        "¡REAPARECE! La realidad la devuelve con recibo, velocidad y ninguna explicación satisfactoria."
+      ],
+      "followupChance": 0.38,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "progressive",
+        "priority": 58,
+        "ttlMs": 700,
+        "mode": "trace",
+        "dedupeMs": 500,
+        "preempt": "filler",
+        "nearEndMs": 300,
+        "maxWords": 18,
+        "partnerChance": 0.08,
+        "cooldownMs": 0
+      },
+      "semanticClass": "spatial"
+    },
+    "BOOSTER": {
+      "label": "Acelerador",
+      "importance": 4,
+      "toneWeights": {
+        "excited": 6,
+        "sarcastic": 5,
+        "informative": 2,
+        "mocking": 1
+      },
+      "cores": [
+        "¡BOOSTER ACTIVADO! ¡PORQUE CLARAMENTE FALTABA MÁS VELOCIDAD Y LOCURA!",
+        "pisa el nitro del mapa y sale disparada como si hubiera visto a un fantasma",
+        "¡CHUTAZO DE ENERGÍA! El terreno acaba de echarle gasolina a la llama",
+        "¡se dispara el velocímetro! Esto dejó de ser golf y se volvió Fórmula 1",
+        "turbos encendidos y ahora todos los obstáculos del mapa se acercan peligrosamente",
+        "¡TURBO! Porque si algo necesitaba esta situación era llegar a la siguiente decisión cuestionable mucho más rápido."
+      ],
+      "followupChance": 0.44,
+      "askChance": 0.34,
+      "questions": [
+        "Álex, ¿cuántos caballos de fuerza le acaba de inyectar ese booster a la bola?",
+        "Álex, ¿esto salva la jugada o simplemente nos acerca más rápido a la tragedia?",
+        "¿Qué dice la telemetría de ese chispazo de velocidad, Álex?"
+      ],
+      "delivery": {
+        "class": "important",
+        "priority": 82,
+        "ttlMs": 850,
+        "mode": "immediate",
+        "dedupeMs": 500,
+        "preempt": "filler_progressive",
+        "nearEndMs": 420,
+        "maxWords": 19,
+        "partnerChance": 0.18,
+        "cooldownMs": 0
+      },
+      "semanticClass": "terrain"
+    },
+    "FAN_PUSH": {
+      "label": "Ventilador",
+      "importance": 2,
+      "toneWeights": {
+        "sarcastic": 4,
+        "informative": 3,
+        "excited": 2,
+        "neutral": 1
+      },
+      "cores": [
+        "¡SOPLIDO MECÁNICO! El ventilador entra a opinar sobre la jugada sin que nadie le preguntara",
+        "corriente de aire artificial que desplaza la trayectoria bruscamente",
+        "ese ventilador gigante se acaba de autoproclamar el jugador estrella del mapa",
+        "empujón de eólica y nueva ruta impuesta; volar en línea recta era muy aburrido",
+        "la bola atraviesa la turbina y sale con una idea completamente distinta de la vida",
+        "El ventilador entra a jugar sin inscripción, sin turno y con una autoridad aerodinámica bastante ofensiva."
+      ],
+      "followupChance": 0.32,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "progressive",
+        "priority": 52,
+        "ttlMs": 520,
+        "mode": "trace",
+        "dedupeMs": 350,
+        "preempt": "filler",
+        "nearEndMs": 250,
+        "maxWords": 16,
+        "partnerChance": 0.05,
+        "cooldownMs": 0
+      },
+      "semanticClass": "terrain"
+    },
+    "MOVING_WALL_HIT": {
+      "label": "Pared móvil",
+      "importance": 4,
+      "toneWeights": {
+        "sarcastic": 5,
+        "excited": 3,
+        "informative": 3,
+        "mocking": 1
+      },
+      "cores": [
+        "¡BOOM! ¡La pared móvil le sale al cruce! Eso ha sido un atropello en toda regla",
+        "impacto brutal contra obstáculo en movimiento; el muro vino a buscar problemas",
+        "¡CHOQUE FRONTAL! Cuando la pared se mueve hacia ti, la negociación suele ser dolorosa",
+        "la bola y el muro móvil tenían una cita a ciegas y acaban de chocar los labios",
+        "¡vuelco radical! La pared en movimiento manda a la bola a volar sin rumbo",
+        "¡LA PARED TAMBIÉN VENÍA! Esto ha sido una reunión de trayectorias organizada por gente sin seguro."
+      ],
+      "followupChance": 0.44,
+      "askChance": 0.1,
+      "delivery": {
+        "class": "important",
+        "priority": 82,
+        "ttlMs": 850,
+        "mode": "immediate",
+        "dedupeMs": 500,
+        "preempt": "filler_progressive",
+        "nearEndMs": 420,
+        "maxWords": 19,
+        "partnerChance": 0.18,
+        "cooldownMs": 0
+      },
+      "semanticClass": "impact"
+    },
+    "NEAR_MISS": {
+      "label": "Casi entra",
+      "importance": 5,
+      "toneWeights": {
+        "dramatic": 4,
+        "disappointed": 4,
+        "sarcastic": 5,
+        "excited": 3
+      },
+      "cores": [
+        "¡NOOOOOOOOO! ¡EN EL LÍMITEE! ¡A MILÍMETROS DE LA GLORIA! Esto es cruel hasta para mí",
+        "le rozó la pintura al hoyo y siguió de largo por el canto de un duro",
+        "¡CASI, CASI, CASI! El hoyo le abrió los brazos y le cerró la puerta en las narices",
+        "pasó tan endemoniadamente cerca que el hoyo debería pedirle disculpas públicas",
+        "¡milímetros de pura maldad! Qué manera de rompernos el corazón en mil pedazos",
+        "¡POR NADA! El hoyo la vio, la reconoció y decidió ejercer violencia emocional."
+      ],
+      "followupChance": 0.5,
+      "askChance": 0.34,
+      "questions": [
+        "Álex, dame la distancia exacta en micrómetros para poder llorar con precisión matemática.",
+        "¿Por cuántos átomos se nos acaba de escapar la gloria, Álex?",
+        "Álex, confirma que la física ha actuado con pura crueldad deliberada."
+      ],
+      "delivery": {
+        "class": "critical",
+        "priority": 90,
+        "ttlMs": 950,
+        "mode": "immediate",
+        "dedupeMs": 650,
+        "preempt": "lower",
+        "nearEndMs": 450,
+        "maxWords": 22,
+        "partnerChance": 0.15,
+        "cooldownMs": 0
+      },
+      "semanticClass": "near_miss"
+    },
+    "HOLE": {
+      "label": "Pelota al hoyo",
+      "importance": 5,
+      "toneWeights": {
+        "excited": 6,
+        "praising": 5,
+        "happy": 4,
+        "sarcastic": 1
+      },
+      "cores": [
+        "¡DENTRO, DENTRO, DENTRO! ¡SE ACABÓ LA DISCUSIÓN! ¡A LA CAZUELA!",
+        "¡AL HOYO! Limpio, definitivo, rotundo y maravillosamente magistral",
+        "¡ADENTRO! Después de tanto caos físico, por fin un final feliz",
+        "¡SÍ SEÑOR! La pelota se duerme en la cuna del hoyo y el mapa enmudece",
+        "¡OBJETIVO CUMPLIDO! La bola desaparece y el marcador celebra",
+        "¡DENTRO! La pelota firma la paz con el mapa y por fin podemos cerrar este expediente con dignidad."
+      ],
+      "followupChance": 0.5,
+      "askChance": 0.1,
+      "delivery": {
+        "class": "critical",
+        "priority": 97,
+        "ttlMs": 1500,
+        "mode": "immediate",
+        "dedupeMs": 1000,
+        "preempt": "lower",
+        "nearEndMs": 600,
+        "maxWords": 24,
+        "partnerChance": 0.25,
+        "cooldownMs": 0
+      },
+      "semanticClass": "success"
+    },
+    "HOLE_IN_ONE": {
+      "label": "Hoyo en uno",
+      "importance": 5,
+      "toneWeights": {
+        "excited": 10,
+        "praising": 8,
+        "happy": 5,
+        "dramatic": 3
+      },
+      "cores": [
+        "¡HOYO EN UNO! ¡UN SOLO GOLPE! ¡APAGUEN TODO Y VÁMONOS A CASA, ESTO ES HISTÓRICO!",
+        "¡DE UN SOLO ZAPATAZO! {player} acaba de humillar al mapa entero con una elegancia insultante",
+        "¡UNA TRAYECTORIA, UN IMPACTO, UN HOYO! Álex, dime que tus sensores explotaron",
+        "¡HOYO EN UNO MILAGROSO! Hasta mi sarcasmo se pone de rodillas para aplaudir semejante barbaridad",
+        "¡SE ACABÓ EL JUEGO ANTES DE EMPEZAR! Una pincelada legendaria y para los anales de la historia",
+        "¡UNO SOLO! Eso no es eficiencia: es entrar, resolver el problema y dejar a la probabilidad recogiendo sus cosas."
+      ],
+      "followupChance": 0.5,
+      "askChance": 0.34,
+      "questions": [
+        "Álex, por lo que más quieras, dime la probabilidad decimal de presenciar semejante milagro.",
+        "¿Qué fue eso, Álex? ¡Exijo una explicación científica de esta locura astronómica!",
+        "Álex, hoyo en uno a la primera: ¿cuántos puntos de genialidad pura marca el sistema?"
+      ],
+      "delivery": {
+        "class": "critical",
+        "priority": 100,
+        "ttlMs": 2200,
+        "mode": "immediate",
+        "dedupeMs": 1500,
+        "preempt": "lower",
+        "nearEndMs": 700,
+        "maxWords": 30,
+        "partnerChance": 0.4,
+        "cooldownMs": 0
+      },
+      "semanticClass": "exceptional"
+    },
+    "LONG_SHOT": {
+      "label": "Tiro muy largo",
+      "importance": 4,
+      "toneWeights": {
+        "excited": 5,
+        "praising": 3,
+        "sarcastic": 2,
+        "informative": 2
+      },
+      "cores": [
+        "¡MENUDO VIAJE GALÁCTICO! Esa bola necesita pasaporte para recorrer tanta distancia",
+        "¡{distance} de pura estampida! Un viaje de primera clase con equipaje de mano incluido",
+        "un cañonazo kilométrico y encima perfectamente útil, que es la parte brutal",
+        "{player} acaba de evaporar la mitad del mapa de un solo estacazo majestuoso",
+        "¡eso sí es devorar terreno! Lo demás eran paseos en bicicleta",
+        "Ese viaje fue tan largo que la pelota pudo haber cambiado de opinión, de clima y de zona horaria."
+      ],
+      "followupChance": 0.44,
+      "askChance": 0.34,
+      "questions": [
+        "Álex, ¿cuánto mapa acaba de destrozar {player} con esa bestialidad?",
+        "¿Ese alcance abismal fue estrategia fina o puro músculo desatado, Álex?",
+        "Álex, ponle un número dorado a semejante viaje intercontinental."
+      ],
+      "delivery": {
+        "class": "important",
+        "priority": 76,
+        "ttlMs": 720,
+        "mode": "immediate",
+        "dedupeMs": 420,
+        "preempt": "filler_progressive",
+        "nearEndMs": 340,
+        "maxWords": 18,
+        "partnerChance": 0.12,
+        "cooldownMs": 0
+      },
+      "semanticClass": "flight"
+    },
+    "LUCKY_SHOT": {
+      "label": "Golpe con suerte",
+      "importance": 4,
+      "toneWeights": {
+        "sarcastic": 5,
+        "happy": 2,
+        "mocking": 2,
+        "excited": 3
+      },
+      "cores": [
+        "eso salió bien por una mezcla de milagro, suerte cósmica y la bendición de todos los santos",
+        "¡LE SALIÓ DE MILAGRO! No hagan preguntas difíciles, celebren antes de que la física se dé cuenta",
+        "rebote ilógico, ángulo de locos y destino perfecto; la flor en el trasero también juega",
+        "{player} acaba de cobrar un cheque de lotería que la trayectoria jamás debió firmar",
+        "si eso estaba fríamente calculado, quiero ver el diploma de físico cuántico ahora mismo",
+        "La trayectoria fue una novela absurda y aun así el último capítulo apareció misteriosamente bien escrito."
+      ],
+      "followupChance": 0.44,
+      "askChance": 0.34,
+      "questions": [
+        "Álex, seamos honestos: ¿qué porcentaje fue talento y cuánto fue una caricia del destino?",
+        "¿Tus computadoras pueden medir la flor de la suerte o hoy toca adivinar, Álex?",
+        "Álex, pido oficialmente una explicación lógica para un resultado completamente ilógico."
+      ],
+      "delivery": {
+        "class": "important",
+        "priority": 76,
+        "ttlMs": 720,
+        "mode": "immediate",
+        "dedupeMs": 420,
+        "preempt": "filler_progressive",
+        "nearEndMs": 340,
+        "maxWords": 18,
+        "partnerChance": 0.12,
+        "cooldownMs": 0
+      },
+      "semanticClass": "recovery"
+    },
+    "UNLUCKY_SHOT": {
+      "label": "Mala suerte",
+      "importance": 4,
+      "toneWeights": {
+        "disappointed": 4,
+        "sarcastic": 3,
+        "motivating": 2,
+        "informative": 2
+      },
+      "cores": [
+        "¡Qué crueldad del destino! La jugada era impecable pero el mapa sacó una piedra del bolsillo",
+        "hoy rompo mi lanza por el jugador: ese desenlace ha sido profundamente injusto y miserable",
+        "gran intento, ejecución perfecta, pésimo final; la física no respetó la justicia deportiva",
+        "cuando haces absolutamente todo de manual y un microscópico detalle decide arruinarte la vida",
+        "eso no fue falta de nivel; eso fue el universo cobrándose una broma de muy mal gusto",
+        "El tiro hizo méritos para recibir aplausos y el universo respondió entregándole una factura."
+      ],
+      "followupChance": 0.44,
+      "askChance": 0.34,
+      "questions": [
+        "Álex, dime que tus métricas defienden al jugador esta vez, porque fue una injusticia salvaje.",
+        "¿Eso fue mala suerte certificada en laboratorio, Álex?",
+        "Álex, ¿cuán astronómicamente improbable era ese trágico final?"
+      ],
+      "delivery": {
+        "class": "important",
+        "priority": 76,
+        "ttlMs": 720,
+        "mode": "immediate",
+        "dedupeMs": 420,
+        "preempt": "filler_progressive",
+        "nearEndMs": 340,
+        "maxWords": 18,
+        "partnerChance": 0.12,
+        "cooldownMs": 0
+      },
+      "semanticClass": "failure"
+    },
+    "RESET": {
+      "label": "Reinicio de pelota",
+      "importance": 2,
+      "toneWeights": {
+        "sarcastic": 5,
+        "informative": 3,
+        "motivating": 2,
+        "neutral": 1
+      },
+      "cores": [
+        "rebobinando cinta... volvemos al punto seguro; el juego te da otra vida, el orgullo no sé",
+        "RESET CONFIRMADO. Borramos la pelota de la escena, pero los memes quedan en nuestra memoria",
+        "la bola regresa al punto de partida tras su fallida excursión de turismo ilegal",
+        "segunda oportunidad concedida por el sistema; esperemos que con mejor desenlace",
+        "regresamos al pasado para construir un futuro menos desastroso... o eso intentamos",
+        "Volvemos al punto seguro: la pelota reinicia posición y nosotros conservamos las pruebas del delito."
+      ],
+      "followupChance": 0.32,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "progressive",
+        "priority": 58,
+        "ttlMs": 700,
+        "mode": "trace",
+        "dedupeMs": 500,
+        "preempt": "filler",
+        "nearEndMs": 300,
+        "maxWords": 18,
+        "partnerChance": 0.08,
+        "cooldownMs": 0
+      },
+      "semanticClass": "recovery"
+    },
+    "STREAK_GOOD": {
+      "label": "Buena racha",
+      "importance": 4,
+      "toneWeights": {
+        "praising": 4,
+        "excited": 3,
+        "happy": 3,
+        "sarcastic": 2
+      },
+      "cores": [
+        "¡{good_streak} aciertos seguidos! Esto empieza a rozar un nivel peligrosamente profesional",
+        "¡HAY RACHA FUEGO! Y cuando la racha entra por la puerta, hasta el mapa tiembla",
+        "{player} encadena obras maestras y la confianza ya está tocando las nubes",
+        "otra genialidad a la cuenta; esto dejó de ser chiripa hace bastantes tiros",
+        "la ronda ha tomado un color espectacular a favor de {player} y da gusto verlo",
+        "Esto empieza a parecer competencia de verdad y sinceramente me está arruinando varias bromas preparadas."
+      ],
+      "followupChance": 0.44,
+      "askChance": 0.34,
+      "questions": [
+        "Álex, ¿tus gráficos confirman el estado de gracia o mantienes la cautela?",
+        "¿Los números ratifican que estamos ante un dominio absoluto, Álex?",
+        "Álex, dinos la verdad: ¿eso sigue siendo momento dulce o ya es nivel dios?"
+      ],
+      "delivery": {
+        "class": "important",
+        "priority": 72,
+        "ttlMs": 1400,
+        "mode": "opportunistic",
+        "dedupeMs": 900,
+        "preempt": "filler",
+        "nearEndMs": 500,
+        "maxWords": 24,
+        "partnerChance": 0.3,
+        "cooldownMs": 0
+      },
+      "semanticClass": "momentum_good"
+    },
+    "STREAK_BAD": {
+      "label": "Mala racha",
+      "importance": 4,
+      "toneWeights": {
+        "sarcastic": 5,
+        "pessimistic": 4,
+        "motivating": 3,
+        "disappointed": 2
+      },
+      "cores": [
+        "¡{bad_streak} errores consecutivos! Esto ya no es mala racha, ¡es una maldición interdimensional!",
+        "otra complicación más a la lista; esta racha negra pide a gritos un exorcista deportivo",
+        "{player} encadena tropiezos feos; hay que frenar la sangría antes de perder la dignidad",
+        "la ronda se ha vuelto un pantano pegajoso donde cada fallo invita al siguiente",
+        "secuencia terrible... verdaderamente trágica. Pero aquí seguimos narrando el desastre",
+        "La mala racha ya tiene llaves del vestuario y está preguntando por beneficios corporativos."
+      ],
+      "followupChance": 0.44,
+      "askChance": 0.34,
+      "questions": [
+        "Álex, ¿en qué punto matemático una mala racha se convierte en crisis de estado?",
+        "¿Qué diagnóstico le das a este pozo sin fondo, Álex? Yo solo veo dolor.",
+        "Álex, dale un salvavidas estadístico a este jugador antes de que caiga en la depresión."
+      ],
+      "delivery": {
+        "class": "important",
+        "priority": 72,
+        "ttlMs": 1400,
+        "mode": "opportunistic",
+        "dedupeMs": 900,
+        "preempt": "filler",
+        "nearEndMs": 500,
+        "maxWords": 24,
+        "partnerChance": 0.3,
+        "cooldownMs": 0
+      },
+      "semanticClass": "momentum_bad"
+    },
+    "LEAD_CHANGE": {
+      "label": "Cambio de líder",
+      "importance": 4,
+      "toneWeights": {
+        "excited": 4,
+        "dramatic": 3,
+        "informative": 2,
+        "sarcastic": 2
+      },
+      "cores": [
+        "¡GIRAN LAS TORNAS EN LA TABLA! ¡Tenemos nuevo rey en el trono y esto arde!",
+        "¡CAMBIO DE LÍDER! Nada despierta tanto los instintos asesinos como ver volar la corona",
+        "{leader} asalta la cima del marcador y le manda un recadito bien claro a la competencia",
+        "se sacude la cima de la tabla y los nervios empiezan a bailar en los vestuarios",
+        "¡VUELCO TOTAL EN EL TORNEO! La contienda gana una capa de tensión electrizante",
+        "¡CAMBIA EL LÍDER! La corona acaba de hacer una mudanza sin avisar al propietario anterior."
+      ],
+      "followupChance": 0.44,
+      "askChance": 0.34,
+      "questions": [
+        "Álex, ¿qué giro estratégico obliga este golpe sobre la mesa al nuevo escolta?",
+        "¿Cuánta presión psicológica añade este sorpasso en la cima, Álex?",
+        "Álex, con nuevo líder en la casa: ¿quién debería empezar a sudar frío primero?"
+      ],
+      "delivery": {
+        "class": "important",
+        "priority": 72,
+        "ttlMs": 1400,
+        "mode": "opportunistic",
+        "dedupeMs": 900,
+        "preempt": "filler",
+        "nearEndMs": 500,
+        "maxWords": 24,
+        "partnerChance": 0.3,
+        "cooldownMs": 0
+      },
+      "semanticClass": "score"
+    },
+    "TIE": {
+      "label": "Empate",
+      "importance": 4,
+      "toneWeights": {
+        "dramatic": 4,
+        "sarcastic": 3,
+        "informative": 2,
+        "excited": 2
+      },
+      "cores": [
+        "¡TABLAS ABSOLUTAS! Tanto sudor para volver exactamente a la misma casilla de salida, hermoso",
+        "marcador completamente igualado y ahora nadie tiene dónde esconder las vergüenzas",
+        "se aprieta el puño de la partida; mismos números, pero la presión sube al doble",
+        "empate confirmado en las alturas. El próximo fallo va a retumbar en todo el mapa",
+        "nadie regala nada, nadie se escapa y nadie puede permitir pestañear",
+        "Empate total: dos caminos distintos para terminar exactamente con la misma presión arterial."
+      ],
+      "followupChance": 0.44,
+      "askChance": 0.1,
+      "delivery": {
+        "class": "important",
+        "priority": 72,
+        "ttlMs": 1400,
+        "mode": "opportunistic",
+        "dedupeMs": 900,
+        "preempt": "filler",
+        "nearEndMs": 500,
+        "maxWords": 24,
+        "partnerChance": 0.3,
+        "cooldownMs": 0
+      },
+      "semanticClass": "score"
+    },
+    "COMEBACK": {
+      "label": "Remontada",
+      "importance": 5,
+      "toneWeights": {
+        "excited": 5,
+        "motivating": 4,
+        "praising": 2,
+        "dramatic": 2
+      },
+      "cores": [
+        "¡REMONTADA ÉPICA EN MARCHA! De estar besando el lodo a ponerle la boca en el cuello al líder",
+        "{player} le devora metros al marcador y la historia está sufriendo un vuelco salvaje",
+        "esto parecía visto para sentencia hace nada y de pronto ¡tenemos una guerra campal!",
+        "¡RESPUESTA DE TITÁN! La ronda se negaba a morir y el jugador resucita entre las cenizas",
+        "cuando todo parecía una cuesta vertical, {player} se saca unas alas de la nada",
+        "¡REMONTADA! De mirar el abismo a empezar a cobrarle alquiler; qué maravilla de giro."
+      ],
+      "followupChance": 0.5,
+      "askChance": 0.34,
+      "questions": [
+        "Álex, ¿esto ya califica oficialmente como remontada de leyenda en tus libros?",
+        "¿Cuánto ha saltado por los aires la proyección de victoria, Álex?",
+        "Álex, ¿seguimos hablando de una bonita recuperación o es una amenaza de campeón?"
+      ],
+      "delivery": {
+        "class": "important",
+        "priority": 72,
+        "ttlMs": 1400,
+        "mode": "opportunistic",
+        "dedupeMs": 900,
+        "preempt": "filler",
+        "nearEndMs": 500,
+        "maxWords": 24,
+        "partnerChance": 0.3,
+        "cooldownMs": 0
+      },
+      "semanticClass": "momentum_good"
+    },
+    "FINAL_TURN": {
+      "label": "Turno final",
+      "importance": 5,
+      "toneWeights": {
+        "dramatic": 6,
+        "excited": 4,
+        "informative": 2,
+        "sarcastic": 2
+      },
+      "cores": [
+        "¡ÚLTIMO TURNO! ¡AQUÍ SE ESCRIBE EL LIBRO O SE CIERRA LA PERSIANA! No hay mañana",
+        "se agota el tiempo, el reloj llega a cero; lo que tenga {player} en las manos, es AHORA",
+        "turno final con una dosis absolutamente desmesurada e insoportable de presión",
+        "esto se acaba, señores. Una sola bala en la recámara para decidir si hay estatua o olvido",
+        "última bala: pulso de piedra, mirada de halcón y prohibido arrepentirse de nada",
+        "Último turno: ya no se juega contra el mapa, se juega contra todo lo que uno hizo antes."
+      ],
+      "followupChance": 0.5,
+      "askChance": 0.34,
+      "questions": [
+        "Álex, en este último suspiro: ¿cuál es la ecuación matemática exacta para la gloria?",
+        "Álex, dame el mapa frío sin dramatismo. Yo me encargo de poner los gritos de infarto.",
+        "¿Cuál es el único movimiento con valor real en este último suspiro, Álex?"
+      ],
+      "delivery": {
+        "class": "important",
+        "priority": 72,
+        "ttlMs": 1400,
+        "mode": "opportunistic",
+        "dedupeMs": 900,
+        "preempt": "filler",
+        "nearEndMs": 500,
+        "maxWords": 24,
+        "partnerChance": 0.3,
+        "cooldownMs": 0
+      },
+      "semanticClass": "final"
+    },
+    "VICTORY": {
+      "label": "Victoria",
+      "importance": 5,
+      "toneWeights": {
+        "excited": 6,
+        "praising": 5,
+        "happy": 5,
+        "greeting": 1
+      },
+      "cores": [
+        "¡SE ACABÓ, SE FINIQUITÓ! ¡{player} SE CORONA CAMPEÓN ABSOLUTO DE LA JORNADA!",
+        "¡VICTORIA ÉPICA! Tras tiros geniales, decisiones suicidas y suficiente sarcasmo para un año",
+        "{player} lo consigue, rompe el mapa, destruye las dudas y se lleva el trofeo a casa",
+        "¡FINAL DE PELÍCULA PARA {player}! El mapa puso trampas pero el talento pesó más",
+        "se bajó el telón, tenemos ganador indiscutible y por fin mi corazón puede volver a latir",
+        "¡VICTORIA! Se acabó el caos reglamentario y comienza el caos de presumirlo durante el resto de la semana."
+      ],
+      "followupChance": 0.5,
+      "askChance": 0.1,
+      "delivery": {
+        "class": "critical",
+        "priority": 100,
+        "ttlMs": 2200,
+        "mode": "immediate",
+        "dedupeMs": 1500,
+        "preempt": "lower",
+        "nearEndMs": 700,
+        "maxWords": 30,
+        "partnerChance": 0.4,
+        "cooldownMs": 0
+      },
+      "semanticClass": "victory"
+    },
+    "SCORE_UPDATE": {
+      "label": "Actualización de marcador",
+      "importance": 2,
+      "toneWeights": {
+        "informative": 4,
+        "sarcastic": 2,
+        "neutral": 2,
+        "dramatic": 1
+      },
+      "cores": [
+        "marcador refrescado en pantalla: {score}. Las cifras cambian y el pánico se reorganiza",
+        "nueva fotografía del tablero, {score}; saquen sus propias conclusiones antes de que Álex lo destruya todo",
+        "el marcador se ajusta y la contienda adquiere un tinte mucho más interesante",
+        "{score} en estos momentos; aún queda espacio para los héroes o las tragedias",
+        "actualización del sistema: {score}. Seguimos en la batalla",
+        "Nuevo marcador, nuevas matemáticas y la misma vieja costumbre de convertir números en ansiedad."
+      ],
+      "followupChance": 0.32,
+      "askChance": 0.34,
+      "questions": [
+        "Álex, ¿cómo cambia la estrategia de juego con esta actualización de números?",
+        "¿Qué lectura nos deja el tablero frío ahora mismo, Álex?",
+        "Álex, traduce esa cifra a kilogramos de presión sobre el jugador."
+      ],
+      "delivery": {
+        "class": "ambient",
+        "priority": 20,
+        "ttlMs": 1600,
+        "mode": "filler",
+        "dedupeMs": 1000,
+        "preempt": "none",
+        "nearEndMs": 0,
+        "maxWords": 24,
+        "partnerChance": 0.35,
+        "cooldownMs": 2200
+      },
+      "semanticClass": "score"
+    },
+    "POWER_MAX": {
+      "label": "Potencia máxima",
+      "importance": 2,
+      "toneWeights": {
+        "excited": 4,
+        "sarcastic": 5,
+        "pessimistic": 1,
+        "informative": 2
+      },
+      "cores": [
+        "¡CANTIDAD MÁXIMA DE POTENCIA! Esto huele a hazaña legendaria o a búsqueda de la bola en el espacio",
+        "medidor al 100%; la delicadeza acaba de abandonar el recinto entre lágrimas",
+        "barra llena hasta arriba. Que alguien llame a la NASA para que rastree ese impacto",
+        "fuerza bruta desenfrenada, cero sutileza y todas las ganas de reventar el mapa",
+        "esto viene con una carga nuclear incorporada... agárrense",
+        "Potencia al máximo: la delicadeza ha abandonado oficialmente el edificio por una salida de emergencia."
+      ],
+      "followupChance": 0.32,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "progressive",
+        "priority": 48,
+        "ttlMs": 600,
+        "mode": "opportunistic",
+        "dedupeMs": 450,
+        "preempt": "filler",
+        "nearEndMs": 300,
+        "maxWords": 17,
+        "partnerChance": 0.05,
+        "cooldownMs": 0
+      },
+      "semanticClass": "shot"
+    },
+    "POWER_LOW": {
+      "label": "Potencia baja",
+      "importance": 1,
+      "toneWeights": {
+        "sarcastic": 3,
+        "informative": 3,
+        "neutral": 2,
+        "happy": 1
+      },
+      "cores": [
+        "fuerza mínima. Muy, muy poquita. O es una genialidad de precisión o miedo puro disfrazado",
+        "medidor en pañales; una jugada que claramente no tiene intenciones de hacer amigos lejos",
+        "{player} prepara un toquecito de seda; el mapa tendrá que poner de su parte",
+        "fuerza medida al milímetro. A veces la inteligencia habla con un hilo de voz",
+        "un toque suave y calculado... o eso esperamos todos",
+        "Potencia mínima: esto tiene más de susurro diplomático que de amenaza deportiva."
+      ],
+      "followupChance": 0.26,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "progressive",
+        "priority": 35,
+        "ttlMs": 420,
+        "mode": "trace",
+        "dedupeMs": 300,
+        "preempt": "filler",
+        "nearEndMs": 220,
+        "maxWords": 15,
+        "partnerChance": 0,
+        "cooldownMs": 0
+      },
+      "semanticClass": "shot"
+    },
+    "EDGE_SAVE": {
+      "label": "Salvada en el borde",
+      "importance": 4,
+      "toneWeights": {
+        "excited": 4,
+        "sarcastic": 4,
+        "dramatic": 3,
+        "happy": 1
+      },
+      "cores": [
+        "¡SE SALVA MILAGROSAMENTE EN EL BORDE! Un milímetro más y estábamos llamando a la grúa",
+        "la bola se queda bailando en el abismo como quien recuerda que dejó la estufa encendida",
+        "¡SALVADA DE INFARTO! El vacío la vio venir de cerca pero hoy no pudo cobrar la víctima",
+        "se frena justo donde la física da miedo y la gravedad empieza a salivar",
+        "eso ha sido demasiado peligroso para mi presión arterial, de verdad",
+        "¡SE QUEDA! El borde pidió la pelota, el vacío extendió la mano y ninguno consiguió cerrar el trato."
+      ],
+      "followupChance": 0.44,
+      "askChance": 0.1,
+      "delivery": {
+        "class": "important",
+        "priority": 82,
+        "ttlMs": 850,
+        "mode": "immediate",
+        "dedupeMs": 500,
+        "preempt": "filler_progressive",
+        "nearEndMs": 420,
+        "maxWords": 19,
+        "partnerChance": 0.18,
+        "cooldownMs": 0
+      },
+      "semanticClass": "recovery"
+    },
+    "AFK_WAIT": {
+      "label": "Espera del jugador",
+      "importance": 2,
+      "toneWeights": {
+        "sarcastic": 6,
+        "mocking": 4,
+        "neutral": 1,
+        "informative": 1
+      },
+      "cores": [
+        "{player} se lo toma con calma... muuuucha calma. Me he tomado dos cafés y la bola no se mueve",
+        "seguimos esperando; la pelota sigue inmóvil y yo ya he escrito mis memorias",
+        "pausa eterna antes del tiro; o está calculando órbitas cósmicas o fue a preparar la merienda",
+        "el turno sigue abierto mientras el silencio del público se vuelve casi incómodo",
+        "{player}, cuando gustes, campeón. Prometemos que el mapa no se va a escapar",
+        "Seguimos esperando a {player}; a este ritmo voy a narrar el crecimiento del césped por temporadas."
+      ],
+      "followupChance": 0.32,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "ambient",
+        "priority": 20,
+        "ttlMs": 1600,
+        "mode": "filler",
+        "dedupeMs": 1000,
+        "preempt": "none",
+        "nearEndMs": 0,
+        "maxWords": 24,
+        "partnerChance": 0.35,
+        "cooldownMs": 2200
+      },
+      "semanticClass": "setup"
+    },
+    "TUNNEL_ENTER": {
+      "label": "Entrada en túnel",
+      "importance": 4,
+      "toneWeights": {
+        "excited": 6,
+        "sarcastic": 5,
+        "informative": 2,
+        "dramatic": 2
+      },
+      "cores": [
+        "¡AL TÚNEL DE CABEZA! La pelota desaparece entre paredes y ahora cada rebote puede firmar una obra maestra o un funeral deportivo",
+        "¡SE METE BAJO TIERRA! Porque seguir una trayectoria a plena vista era demasiado sencillo para esta partida",
+        "¡TÚNEL ACTIVADO! Se estrecha el camino, sube la velocidad y el margen de error acaba de pedir la baja",
+        "{player} manda la bola al corredor oscuro con una fe extraordinaria y absolutamente ninguna garantía de devolución",
+        "¡DENTRO DEL TÚNEL! Aquí manda la geometría, los rebotes y ese pequeño detalle llamado suerte",
+        "¡AL TÚNEL! La pelota entra en un lugar donde cada pared tiene derecho a cambiarle la personalidad."
+      ],
+      "followupChance": 0.44,
+      "askChance": 0.34,
+      "questions": [
+        "Álex, ¿qué tan criminal es entrar ahí con esa velocidad y esa confianza?",
+        "Álex, dame una lectura del túnel antes de que esa bola reaparezca en otra dimensión.",
+        "¿Cuántas formas matemáticamente válidas existen de salir mal de ahí, Álex?"
+      ],
+      "delivery": {
+        "class": "important",
+        "priority": 82,
+        "ttlMs": 850,
+        "mode": "immediate",
+        "dedupeMs": 500,
+        "preempt": "filler_progressive",
+        "nearEndMs": 420,
+        "maxWords": 19,
+        "partnerChance": 0.18,
+        "cooldownMs": 0
+      },
+      "semanticClass": "spatial"
+    },
+    "TUNNEL_EXIT": {
+      "label": "Salida de túnel",
+      "importance": 3,
+      "toneWeights": {
+        "excited": 5,
+        "happy": 2,
+        "informative": 2,
+        "sarcastic": 4
+      },
+      "cores": [
+        "¡SALE DEL TÚNEL COMO UN PROYECTIL! Sigue viva, sigue rodando y todavía conserva ganas de meterse en problemas",
+        "¡REAPARECE A LA LUZ! Sobrevivió al túnel con más dignidad de la que mis pronósticos estaban dispuestos a conceder",
+        "¡FUERA DEL CORREDOR! Recuperamos visión y la jugada vuelve a respirar con violencia",
+        "la bola escapa del túnel con impulso suficiente para convertir el siguiente obstáculo en una noticia de última hora",
+        "¡REGRESÓ DEL SUBSUELO! Y por la velocidad que trae parece que ahí abajo encontró un motor nuevo",
+        "¡SALE DEL TÚNEL! Después de semejante conversación con las paredes, sorprende que conserve apellido."
+      ],
+      "followupChance": 0.38,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "progressive",
+        "priority": 58,
+        "ttlMs": 700,
+        "mode": "trace",
+        "dedupeMs": 500,
+        "preempt": "filler",
+        "nearEndMs": 300,
+        "maxWords": 18,
+        "partnerChance": 0.08,
+        "cooldownMs": 0
+      },
+      "semanticClass": "spatial"
+    },
+    "FALL_START": {
+      "label": "Inicio de caída",
+      "importance": 3,
+      "toneWeights": {
+        "dramatic": 6,
+        "excited": 4,
+        "sarcastic": 4,
+        "informative": 1
+      },
+      "cores": [
+        "¡OJO QUE SE QUEDA SIN SUELO! Empieza la caída y de repente el mapa tiene muchísimos metros de profundidad",
+        "la pelota pierde apoyo y entra en descenso; magnífico momento para recordar que la gravedad nunca firma treguas",
+        "¡SE ACABÓ EL TERRENO! Ahora comienza esa preciosa fase donde todos miramos hacia abajo con preocupación profesional",
+        "{player} acaba de convertir una trayectoria horizontal en una negociación directa con el abismo",
+        "¡CAÍDA EN MARCHA! La altura desaparece rápido y el desenlace ya viene subiendo por el ascensor",
+        "Empieza la caída y la gravedad sonríe con esa calma profesional de quien sabe que siempre cobra."
+      ],
+      "followupChance": 0.32,
+      "askChance": 0.04,
+      "delivery": {
+        "class": "progressive",
+        "priority": 52,
+        "ttlMs": 520,
+        "mode": "trace",
+        "dedupeMs": 350,
+        "preempt": "filler",
+        "nearEndMs": 250,
+        "maxWords": 16,
+        "partnerChance": 0.05,
+        "cooldownMs": 0
+      },
+      "semanticClass": "flight"
+    },
+    "HARD_LANDING": {
+      "label": "Aterrizaje fuerte",
+      "importance": 4,
+      "toneWeights": {
+        "excited": 6,
+        "sarcastic": 4,
+        "dramatic": 3,
+        "informative": 1
+      },
+      "cores": [
+        "¡PUM! ¡ATERRIZA CON LA DELICADEZA DE UN METEORITO! Ese impacto se escuchó hasta en la mesa de control",
+        "¡GOLPE BRUTAL CONTRA TIERRA! La pelota protesta, rebota y milagrosamente continúa con vida deportiva",
+        "cae como una piedra con problemas de actitud y convierte el aterrizaje en un pequeño terremoto",
+        "¡IMPACTO SECO! Después de semejante caída, conservar dirección ya cuenta como una victoria moral",
+        "toca suelo con una violencia que definitivamente no figuraba en el folleto turístico del campo",
+        "¡ATERRIZA CON TODO! El suelo acaba de recibir una notificación física en mayúsculas."
+      ],
+      "followupChance": 0.44,
+      "askChance": 0.1,
+      "delivery": {
+        "class": "important",
+        "priority": 82,
+        "ttlMs": 850,
+        "mode": "immediate",
+        "dedupeMs": 500,
+        "preempt": "filler_progressive",
+        "nearEndMs": 420,
+        "maxWords": 19,
+        "partnerChance": 0.18,
+        "cooldownMs": 0
+      },
+      "semanticClass": "impact"
+    },
+    "VOID_FALL": {
+      "label": "Caída fuera del escenario",
+      "importance": 5,
+      "toneWeights": {
+        "sarcastic": 7,
+        "mocking": 6,
+        "disappointed": 3,
+        "dramatic": 3
+      },
+      "cores": [
+        "¡AL VACÍOOOO! Ni agua, ni arena, ni pared: la pelota acaba de abandonar directamente el concepto de mapa",
+        "y ahí termina el terreno... pero la bola sigue bajando como si hubiera comprado un billete de ida al centro del planeta",
+        "¡FUERA DEL ESCENARIO POR ABAJO! Una manera extraordinariamente eficiente de desaparecer de la competición",
+        "{player} acaba de descubrir la frontera vertical del mundo y, sorpresa, no había campo de golf debajo",
+        "¡SE NOS FUE AL ABISMO! Cuando el objetivo era avanzar, eligió literalmente abandonar la geografía",
+        "¡AL VACÍO! La pelota no perdió el mapa: directamente decidió dejar de participar en él."
+      ],
+      "followupChance": 0.5,
+      "askChance": 0.34,
+      "questions": [
+        "Álex, confirma oficialmente que esa pelota acaba de abandonar el planeta.",
+        "Álex, ¿tenemos una estadística para semejante caída o llamamos directamente a astronomía?",
+        "¿A qué profundidad deja de contar como golf y empieza a contar como exploración geológica, Álex?"
+      ],
+      "delivery": {
+        "class": "critical",
+        "priority": 95,
+        "ttlMs": 1350,
+        "mode": "immediate",
+        "dedupeMs": 900,
+        "preempt": "lower",
+        "nearEndMs": 520,
+        "maxWords": 22,
+        "partnerChance": 0.2,
+        "cooldownMs": 0
+      },
+      "semanticClass": "failure"
+    },
+    "PLAYER_COLLISION": {
+      "label": "Choque entre jugadores",
+      "importance": 4,
+      "semanticClass": "rivalry",
+      "toneWeights": {
+        "excited": 6,
+        "sarcastic": 6,
+        "mocking": 4,
+        "dramatic": 2
+      },
+      "cores": [
+        "¡CHOQUE DE BOLAS! {player} impacta con {opponent} y el concepto de espacio personal abandona la partida",
+        "{player} y {opponent} se encuentran a toda velocidad; dos trayectorias entran y sale una relación mucho peor",
+        "contacto directo entre {player} y {opponent}; alguien acaba de usar al rival como pared móvil con sentimientos",
+        "¡CLACK! {player} besa la bola de {opponent} con una delicadeza equivalente a un accidente ferroviario",
+        "colisión jugador contra jugador; la física confirma que compartir coordenadas era una idea objetivamente pésima",
+        "{player} entra en la línea de {opponent} y ambos descubren simultáneamente el precio del exceso de confianza",
+        "dos bolas, un punto del mapa y cero capacidad diplomática: {player} contra {opponent}"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "important",
+        "priority": 84,
+        "ttlMs": 1050,
+        "mode": "immediate",
+        "dedupeMs": 550,
+        "preempt": "filler_progressive",
+        "nearEndMs": 420,
+        "maxWords": 24,
+        "partnerChance": 0.25,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, ¿cuánta intención criminal detectan tus sensores en ese choque?",
+        "¿Eso fue accidente o {player} acaba de declarar rival a {opponent}, Álex?",
+        "Álex, mide el daño diplomático además del físico."
+      ],
+      "askChance": 0.3
+    },
+    "CHAIN_COLLISION": {
+      "label": "Colisión en cadena",
+      "importance": 5,
+      "semanticClass": "rivalry",
+      "toneWeights": {
+        "excited": 8,
+        "sarcastic": 6,
+        "dramatic": 4,
+        "mocking": 3
+      },
+      "cores": [
+        "¡CARAMBOLA HUMANA! {player} golpea a {opponent} y la desgracia empieza a viajar por el mapa con billete de primera",
+        "una colisión genera otra y de pronto el Battle Royale parece una mesa de billar diseñada por un psicópata simpático",
+        "¡REACCIÓN EN CADENA! Nadie sabe quién empezó esto, pero ya tenemos suficientes culpables para una reunión de emergencia",
+        "{player} toca a {opponent} y el impacto se propaga como rumor de vestuario en día de final",
+        "la pista acaba de convertirse en pinball multijugador y la dignidad colectiva rebota junto con las bolas",
+        "choque múltiple confirmado; tres trayectorias han presentado simultáneamente su renuncia a la planificación"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "critical",
+        "priority": 91,
+        "ttlMs": 1400,
+        "mode": "immediate",
+        "dedupeMs": 700,
+        "preempt": "lower",
+        "nearEndMs": 520,
+        "maxWords": 26,
+        "partnerChance": 0.25,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, necesito un diagrama de responsabilidades porque esto ya parece tráfico de hora punta.",
+        "¿Quién sale realmente beneficiado de semejante carambola, Álex?",
+        "Álex, pon orden matemático a este accidente colectivo."
+      ],
+      "askChance": 0.34
+    },
+    "SABOTAGE_ATTEMPT": {
+      "label": "Intento de sabotaje",
+      "importance": 4,
+      "semanticClass": "sabotage",
+      "toneWeights": {
+        "sarcastic": 7,
+        "excited": 4,
+        "mocking": 4,
+        "dramatic": 2
+      },
+      "cores": [
+        "{player} alinea una trayectoria sospechosamente cerca de {opponent}; oficialmente tiro, extraoficialmente intento de asesinato de estrategia",
+        "¡ATENCIÓN! {player} parece haber decidido que avanzar es opcional si puede arruinarle el día a {opponent}",
+        "la mira de {player} deja de apuntar al mapa y empieza a apuntar directamente a los problemas de {opponent}",
+        "tenemos intención de sabotaje: geometría fina, moral flexible y un rival convenientemente colocado",
+        "{player} prepara una maniobra que el reglamento llama válida y la amistad llama motivo de bloqueo",
+        "la trayectoria proyectada atraviesa la paciencia de {opponent} antes incluso de tocar su bola"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "important",
+        "priority": 82,
+        "ttlMs": 1050,
+        "mode": "immediate",
+        "dedupeMs": 550,
+        "preempt": "filler_progressive",
+        "nearEndMs": 420,
+        "maxWords": 23,
+        "partnerChance": 0.22,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, ¿la probabilidad favorece la maldad o el karma?",
+        "¿Es rentable atacar a {opponent} en vez de buscar terreno, Álex?",
+        "Álex, evalúa esta preciosa inversión en desgracia ajena."
+      ],
+      "askChance": 0.3
+    },
+    "SABOTAGE_SUCCESS": {
+      "label": "Sabotaje exitoso",
+      "importance": 5,
+      "semanticClass": "sabotage",
+      "toneWeights": {
+        "excited": 7,
+        "sarcastic": 8,
+        "mocking": 5,
+        "praising": 3
+      },
+      "cores": [
+        "¡SABOTAJE PERFECTO! {player} toca a {opponent} exactamente donde dolía y sale con cara de no haber roto un plato",
+        "{player} ejecuta la maldad con precisión quirúrgica; {opponent} acaba de recibir una factura que no pidió",
+        "¡IMPACTO TÁCTICO! {opponent} pierde su línea y {player} gana oficialmente el premio al vecino menos recomendable",
+        "la maniobra sale limpia: una pequeña caricia de {player} y un gran problema nuevo para {opponent}",
+        "{player} convierte a {opponent} en contenido descargable del desastre con un solo toque perfectamente calculado",
+        "sabotaje consumado; el mapa sigue igual, pero la relación entre esos dos acaba de depreciarse un 900%"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "critical",
+        "priority": 94,
+        "ttlMs": 1650,
+        "mode": "immediate",
+        "dedupeMs": 850,
+        "preempt": "lower",
+        "nearEndMs": 600,
+        "maxWords": 27,
+        "partnerChance": 0.3,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, ¿cuánto ganó {player} y cuánto perdió su reputación?",
+        "¿Eso fue maldad pura o una obra maestra táctica, Álex?",
+        "Álex, certifica el sabotaje antes de que {player} finja inocencia."
+      ],
+      "askChance": 0.38
+    },
+    "SABOTAGE_BACKFIRE": {
+      "label": "Sabotaje sale al revés",
+      "importance": 5,
+      "semanticClass": "sabotage",
+      "toneWeights": {
+        "mocking": 8,
+        "sarcastic": 8,
+        "excited": 4,
+        "disappointed": 3
+      },
+      "cores": [
+        "¡KARMA CON ENTREGA INMEDIATA! {player} intenta hundir a {opponent} y termina firmando su propia desgracia",
+        "el sabotaje de {player} rebota en la realidad y vuelve con intereses, gastos de envío y una nota de {opponent}",
+        "¡PLAN MALVADO FALLIDO! {opponent} sigue respirando y {player} acaba peor que antes; poesía administrativa",
+        "{player} fue a buscar problemas ajenos y regresó con una colección completa de problemas propios",
+        "la maniobra hostil se da vuelta como tortilla cósmica: {opponent} sale beneficiado y {player} aprende humildad a martillazos",
+        "sabotaje fallido confirmado; el villano tropieza con su propia capa y la audiencia recibe una bendición"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "critical",
+        "priority": 93,
+        "ttlMs": 1650,
+        "mode": "immediate",
+        "dedupeMs": 850,
+        "preempt": "lower",
+        "nearEndMs": 600,
+        "maxWords": 27,
+        "partnerChance": 0.28,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, ¿cuánto karma cabe exactamente en una sola colisión?",
+        "¿Podemos clasificar esto como auto-sabotaje asistido, Álex?",
+        "Álex, confirma que el universo acaba de reírse de {player}."
+      ],
+      "askChance": 0.4
+    },
+    "RIVAL_SAVE": {
+      "label": "Rival salva accidentalmente",
+      "importance": 4,
+      "semanticClass": "rivalry",
+      "toneWeights": {
+        "happy": 4,
+        "sarcastic": 7,
+        "excited": 5,
+        "mocking": 3
+      },
+      "cores": [
+        "¡NO PUEDE SER! {opponent} golpea a {player} intentando fastidiarlo y acaba SALVÁNDOLO de un desastre",
+        "{player} estaba condenado hasta que {opponent}, enemigo oficial, se convirtió accidentalmente en servicio público",
+        "la peor intención produce el mejor resultado: {opponent} empuja a {player} lejos del peligro como un héroe profundamente enfadado",
+        "¡SALVADA POR EL RIVAL! Esto es tan humillante para {opponent} como útil para {player}",
+        "{opponent} intenta sabotear y termina haciendo asistencia defensiva; el karma hoy trabaja de diseñador cómico",
+        "contacto enemigo, resultado amistoso: {player} recibe una ayuda que jamás va a agradecer correctamente"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "important",
+        "priority": 86,
+        "ttlMs": 1400,
+        "mode": "immediate",
+        "dedupeMs": 550,
+        "preempt": "filler_progressive",
+        "nearEndMs": 420,
+        "maxWords": 26,
+        "partnerChance": 0.26,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, ¿cómo se registra una asistencia otorgada con odio?",
+        "¿Esto mejora o empeora la rivalidad, Álex?",
+        "Álex, cuantifica la vergüenza de salvar accidentalmente al enemigo."
+      ],
+      "askChance": 0.34
+    },
+    "TEMP_ALLIANCE": {
+      "label": "Alianza temporal",
+      "importance": 3,
+      "semanticClass": "alliance",
+      "toneWeights": {
+        "sarcastic": 6,
+        "happy": 3,
+        "informative": 3,
+        "dramatic": 2
+      },
+      "cores": [
+        "{player} y {alliance_partner} pactan no destruirse durante cinco minutos, que en Battle Royale equivale a matrimonio de oro",
+        "¡TRATADO DE PAZ! {player} y {alliance_partner} unen fuerzas temporalmente contra el resto; nadie firme nada con sangre todavía",
+        "dos rivales descubren que juntos pueden molestar a terceros con mucha mayor eficiencia",
+        "{player} ofrece tregua a {alliance_partner}; ambos sonríen mientras calculan en secreto cuándo dejará de ser rentable",
+        "alianza improvisada: dos bolas, un enemigo común y un nivel de confianza comparable al de una contraseña compartida por chat público",
+        "se forma una coalición entre {player} y {alliance_partner}; preciosa, útil y estadísticamente condenada a terminar mal"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "important",
+        "priority": 72,
+        "ttlMs": 2400,
+        "mode": "opportunistic",
+        "dedupeMs": 1400,
+        "preempt": "filler",
+        "nearEndMs": 700,
+        "maxWords": 28,
+        "partnerChance": 0.32,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, ¿cuánto dura una amistad cuando solo puede ganar uno?",
+        "¿Comprarías acciones de esta alianza, Álex?",
+        "Álex, dame la probabilidad de traición antes de que terminen de darse la mano."
+      ],
+      "askChance": 0.38
+    },
+    "BETRAYAL": {
+      "label": "Traición",
+      "importance": 5,
+      "semanticClass": "alliance",
+      "toneWeights": {
+        "dramatic": 7,
+        "sarcastic": 8,
+        "excited": 7,
+        "mocking": 5
+      },
+      "cores": [
+        "¡TRAICIÓN! {player} acaba de vender a {alliance_partner} por una ventaja de tres metros y una sonrisa de villano",
+        "¡PUÑALADA CON FORMA DE PELOTA! La alianza termina exactamente como todos sabíamos y nadie quería admitir",
+        "{alliance_partner} confiaba en {player}; adorable. {player} acaba de convertir esa confianza en velocidad de salida",
+        "el pacto muere joven: {player} golpea a {alliance_partner} y la diplomacia abandona el servidor sin despedirse",
+        "¡JUDAS SOBRE EL GREEN! {player} rompe la tregua y manda a su antiguo socio directo al departamento de rencores",
+        "la alianza era temporal; {player} acaba de demostrar que “temporal” significaba “hasta que me convenga traicionarte”",
+        "traición consumada y elegantemente miserable: {alliance_partner} recibe la lección más cara sobre confianza competitiva"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "critical",
+        "priority": 95,
+        "ttlMs": 2100,
+        "mode": "immediate",
+        "dedupeMs": 1100,
+        "preempt": "lower",
+        "nearEndMs": 650,
+        "maxWords": 30,
+        "partnerChance": 0.36,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, dime que tenías esta traición en tus modelos.",
+        "¿Cuánto valor de confianza acaba de evaporar {player}, Álex?",
+        "Álex, autopsia de la alianza: ¿murió por necesidad o por puro gusto?"
+      ],
+      "askChance": 0.48
+    },
+    "REVENGE_HIT": {
+      "label": "Golpe de venganza",
+      "importance": 5,
+      "semanticClass": "rivalry",
+      "toneWeights": {
+        "excited": 7,
+        "sarcastic": 6,
+        "dramatic": 6,
+        "praising": 3
+      },
+      "cores": [
+        "¡VENGANZA SERVIDA CON EFECTO! {player} encuentra a {opponent} y devuelve el favor con intereses compuestos",
+        "{player} llevaba la factura guardada y acaba de cobrársela a {opponent} directamente en la trayectoria",
+        "¡AJUSTE DE CUENTAS! El golpe no buscaba el hoyo; buscaba cerrar un expediente personal",
+        "{opponent} sembró viento y {player} acaba de cosechar una colisión de alta intensidad",
+        "la memoria competitiva funciona: {player} localiza a {opponent} y convierte rencor en transferencia de momento",
+        "venganza limpia, precisa y maravillosamente innecesaria desde el punto de vista del golf tradicional"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "critical",
+        "priority": 94,
+        "ttlMs": 1750,
+        "mode": "immediate",
+        "dedupeMs": 900,
+        "preempt": "lower",
+        "nearEndMs": 600,
+        "maxWords": 27,
+        "partnerChance": 0.3,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, ¿la venganza mejora realmente las probabilidades o solo el alma?",
+        "¿Se puede justificar ese ajuste de cuentas en números, Álex?",
+        "Álex, dime cuánto tiempo llevaba madurando ese rencor."
+      ],
+      "askChance": 0.38
+    },
+    "RIVALRY_HEATS_UP": {
+      "label": "Rivalidad al rojo vivo",
+      "importance": 4,
+      "semanticClass": "rivalry",
+      "toneWeights": {
+        "dramatic": 5,
+        "sarcastic": 6,
+        "excited": 5,
+        "informative": 2
+      },
+      "cores": [
+        "{player} y {opponent} ya acumulan suficiente historia como para necesitar su propio documental de ocho capítulos",
+        "la rivalidad entre {player} y {opponent} alcanza nivel {rivalry_level}; a partir de aquí cada mirada cuenta como amenaza balística",
+        "esto dejó de ser coincidencia hace rato: {player} y {opponent} se buscan con una constancia casi romántica y profundamente hostil",
+        "el mapa contiene ocho jugadores, pero estos dos parecen convencidos de que solo existen ellos",
+        "la enemistad entra en fase premium: cada contacto anterior acaba de financiar el siguiente",
+        "tenemos rivalidad certificada, serializada y lista para merchandising"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "important",
+        "priority": 80,
+        "ttlMs": 2200,
+        "mode": "opportunistic",
+        "dedupeMs": 1800,
+        "preempt": "filler",
+        "nearEndMs": 700,
+        "maxWords": 27,
+        "partnerChance": 0.3,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, nivel {rivalry_level}: ¿cuándo deja de ser rivalidad y pasa a obsesión?",
+        "¿Esto todavía beneficia a alguno de los dos, Álex?",
+        "Álex, calcula cuánto de la estrategia ya está secuestrado por el rencor."
+      ],
+      "askChance": 0.32
+    },
+    "PLAYER_TAUNT": {
+      "label": "Provocación entre jugadores",
+      "importance": 3,
+      "semanticClass": "rivalry",
+      "toneWeights": {
+        "sarcastic": 8,
+        "mocking": 7,
+        "excited": 2,
+        "neutral": 1
+      },
+      "cores": [
+        "{player} le manda un recadito a {opponent}: “tranquilo, te dejo elegir dónde quieres que te empuje la próxima vez”",
+        "{player} mira a {opponent} con esa energía universal de “te estoy guardando un rebote con tu nombre”",
+        "provocación directa: {player} invita a {opponent} a seguir acercándose si desea convertirse oficialmente en parte del terreno",
+        "{player} celebra delante de {opponent} con la humildad de una alarma de coche a las tres de la mañana",
+        "mensaje diplomático de {player} para {opponent}: “bonita trayectoria; sería una pena que alguien la tocara”",
+        "{player} acaba de recomendar a {opponent} practicar el botón de reinicio, por pura cortesía preventiva",
+        "hay palabras entre {player} y {opponent}; ninguna de ellas parece diseñada para mejorar la convivencia"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "important",
+        "priority": 64,
+        "ttlMs": 1500,
+        "mode": "opportunistic",
+        "dedupeMs": 1100,
+        "preempt": "filler",
+        "nearEndMs": 500,
+        "maxWords": 26,
+        "partnerChance": 0.18,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, ¿las provocaciones tienen alguna utilidad o solo inflan el desastre?",
+        "¿Esto aumenta la probabilidad de represalia, Álex?",
+        "Álex, traduce ese recadito al idioma de la teoría de juegos."
+      ],
+      "askChance": 0.2
+    },
+    "LEADER_ATTACKED": {
+      "label": "Ataque al líder",
+      "importance": 5,
+      "semanticClass": "sabotage",
+      "toneWeights": {
+        "excited": 7,
+        "dramatic": 6,
+        "sarcastic": 6,
+        "praising": 2
+      },
+      "cores": [
+        "¡TODOS CONTRA LA CORONA! {player} se lanza sobre {opponent}, actual amenaza del lobby, con una sonrisa democráticamente peligrosa",
+        "el líder acaba de descubrir el impuesto de ir primero: cada bola del mapa tiene su nombre escrito en la trayectoria",
+        "{player} decide que perseguir el hoyo puede esperar; primero hay que bajarle la corona a {opponent}",
+        "¡CACERÍA AL PRIMERO! La ventaja de {opponent} acaba de convertirse en una diana gigante pintada con luces LED",
+        "el mapa entero huele a golpe de estado y {player} acaba de presentar la primera moción de censura con efecto",
+        "atacar al líder: matemáticamente discutible, emocionalmente inevitable y televisivamente perfecto"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "critical",
+        "priority": 93,
+        "ttlMs": 1700,
+        "mode": "immediate",
+        "dedupeMs": 850,
+        "preempt": "lower",
+        "nearEndMs": 600,
+        "maxWords": 28,
+        "partnerChance": 0.28,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, ¿ser líder siempre incluye convertirse en piñata táctica?",
+        "¿Atacar al primero compensa abandonar la propia línea, Álex?",
+        "Álex, calcula el impuesto real de llevar la corona."
+      ],
+      "askChance": 0.34
+    },
+    "UNDERDOG_STRIKE": {
+      "label": "Golpe del tapado",
+      "importance": 5,
+      "semanticClass": "survival",
+      "toneWeights": {
+        "excited": 8,
+        "motivating": 6,
+        "praising": 5,
+        "dramatic": 4
+      },
+      "cores": [
+        "¡EL ÚLTIMO DE LA FILA MUERDE! {player} aparece desde abajo y le pega un susto monumental a {opponent}",
+        "cuando todos habían archivado a {player}, saca una jugada del bolsillo y devuelve el miedo al mapa",
+        "¡EL TAPADO SE REBELA! Nadie le había reservado asiento en la final y acaba de traer su propia silla",
+        "{player} estaba fuera de las apuestas y acaba de entrar por la ventana con una trayectoria incendiaria",
+        "la cenicienta del lobby encuentra un palo, una oportunidad y absolutamente cero respeto por el favorito",
+        "¡QUE NADIE LO DÉ POR MUERTO! {player} acaba de transformar desesperación en amenaza real"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "important",
+        "priority": 88,
+        "ttlMs": 1800,
+        "mode": "immediate",
+        "dedupeMs": 900,
+        "preempt": "lower",
+        "nearEndMs": 600,
+        "maxWords": 28,
+        "partnerChance": 0.32,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, ¿cuánto acaba de cambiar la probabilidad del tapado?",
+        "¿Esto es una remontada real o un último rugido, Álex?",
+        "Álex, dime que aún existe una ruta matemática para {player}."
+      ],
+      "askChance": 0.4
+    },
+    "FAVORITE_RISE": {
+      "label": "Nuevo favorito de cabina",
+      "importance": 3,
+      "semanticClass": "favorite",
+      "toneWeights": {
+        "happy": 4,
+        "praising": 4,
+        "sarcastic": 5,
+        "informative": 2
+      },
+      "cores": [
+        "{favorite_owner} acaba de subir a {favorite} al primer puesto de su lista personal de “por favor no me decepciones”",
+        "tenemos cambio de corazón en cabina: {favorite} se convierte en favorito de {favorite_owner}",
+        "{favorite} encadena suficiente espectáculo como para comprar acciones emocionales de {favorite_owner}",
+        "la objetividad pierde otro round: {favorite_owner} adopta oficialmente a {favorite} como proyecto personal",
+        "favoritismo actualizado; {favorite} acaba de ganarse una cantidad irresponsable de fe desde la cabina",
+        "{favorite_owner} pone la ficha sobre {favorite}; el mercado de la parcialidad abre al alza"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "important",
+        "priority": 74,
+        "ttlMs": 2200,
+        "mode": "opportunistic",
+        "dedupeMs": 1800,
+        "preempt": "filler",
+        "nearEndMs": 700,
+        "maxWords": 28,
+        "partnerChance": 0.36,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, si el favorito es {favorite}, ¿cuánto riesgo estamos comprando con esa fe?",
+        "¿Respaldan los números esta nueva obsesión de cabina, Álex?",
+        "Álex, ¿{favorite} se ganó de verdad ese favoritismo?"
+      ],
+      "askChance": 0.28
+    },
+    "FAVORITE_FALL": {
+      "label": "Favorito se desploma",
+      "importance": 4,
+      "semanticClass": "favorite",
+      "toneWeights": {
+        "disappointed": 5,
+        "sarcastic": 7,
+        "mocking": 4,
+        "pessimistic": 2
+      },
+      "cores": [
+        "¡NO ME HAGAS ESTO, {favorite}! El favorito de {favorite_owner} acaba de convertir confianza premium en chatarra emocional",
+        "{favorite_owner} invirtió fe en {favorite} y el mercado acaba de responder con una caída vertical",
+        "el favorito tropieza justo cuando la cabina empezaba a presumir de buen criterio; hermoso timing",
+        "{favorite} decide castigar personalmente a {favorite_owner} por haber confiado demasiado pronto",
+        "favoritismo en crisis: la fe sigue viva, pero ya pide chaleco antibalas",
+        "esa jugada acaba de mandar el precio emocional de {favorite} directamente al subsuelo"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "important",
+        "priority": 78,
+        "ttlMs": 2000,
+        "mode": "opportunistic",
+        "dedupeMs": 1600,
+        "preempt": "filler",
+        "nearEndMs": 650,
+        "maxWords": 27,
+        "partnerChance": 0.3,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, ¿vendemos las acciones de {favorite} o mantenemos la fe?",
+        "¿Cuánto daño hace un error así cuando ya eres favorito, Álex?",
+        "Álex, rescata mi dignidad y dime que esto es estadísticamente recuperable."
+      ],
+      "askChance": 0.34
+    },
+    "FAVORITES_COLLIDE": {
+      "label": "Choque de favoritos",
+      "importance": 5,
+      "semanticClass": "rivalry",
+      "toneWeights": {
+        "excited": 9,
+        "dramatic": 6,
+        "sarcastic": 7,
+        "praising": 3
+      },
+      "cores": [
+        "¡GUERRA CIVIL EN LA CABINA! El favorito de Rafa, {rafa_favorite}, choca con el favorito de Álex, {alex_favorite}",
+        "¡NO NOS HAGAN ELEGIR! {rafa_favorite} y {alex_favorite} se encuentran y la mesa de comentaristas acaba de dividirse en dos países",
+        "los favoritos de la cabina chocan; Rafa protege emocionalmente a {rafa_favorite} y Álex ya prepara un gráfico para defender a {alex_favorite}",
+        "¡ESTO ES PERSONAL HASTA PARA NOSOTROS! {rafa_favorite} contra {alex_favorite}, corazón contra hoja de cálculo",
+        "el Battle Royale acaba de crear el único conflicto capaz de separar a Rafa y Álex durante aproximadamente siete segundos",
+        "favoritos enfrentados: una parte de la cabina quiere espectáculo, la otra quiere eficiencia y ambas quieren tener razón"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "critical",
+        "priority": 96,
+        "ttlMs": 2200,
+        "mode": "immediate",
+        "dedupeMs": 1500,
+        "preempt": "lower",
+        "nearEndMs": 700,
+        "maxWords": 31,
+        "partnerChance": 0.48,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, tu {alex_favorite} acaba de tocar a mi {rafa_favorite}; mide tus palabras con cariño.",
+        "¿Seguimos siendo compañeros después de esto, Álex?",
+        "Álex, defiende a tu favorito delante del jurado y de mi evidente parcialidad."
+      ],
+      "askChance": 0.6
+    },
+    "PLAYER_ELIMINATED": {
+      "label": "Jugador eliminado",
+      "importance": 5,
+      "semanticClass": "elimination",
+      "toneWeights": {
+        "dramatic": 7,
+        "excited": 7,
+        "sarcastic": 5,
+        "disappointed": 4
+      },
+      "cores": [
+        "¡ELIMINADO! {victim} abandona el Battle Royale y quedan {survivor_count} respirando sobre el mapa",
+        "{victim} se queda sin pista, sin margen y oficialmente sin futuro en esta ronda; sobreviven {survivor_count}",
+        "¡UNA BOLA MENOS! {victim} desaparece del tablero y el silencio dura exactamente lo que tarda alguien en celebrar",
+        "el run de {victim} termina aquí; {survivor_count} supervivientes miran el hueco y hacen cálculos bastante poco sentimentales",
+        "{victim} cae de la población activa; el trofeo se vuelve un poquito más cercano y muchísimo más pesado",
+        "el sistema cierra el expediente de {victim}. Gracias por participar y por dejar material suficiente para varias repeticiones"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "critical",
+        "priority": 99,
+        "ttlMs": 2800,
+        "mode": "immediate",
+        "dedupeMs": 1700,
+        "preempt": "lower",
+        "nearEndMs": 800,
+        "maxWords": 32,
+        "partnerChance": 0.45,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, quedan {survivor_count}: ¿quién gana más con la caída de {victim}?",
+        "¿Qué cambia realmente tras eliminar a {victim}, Álex?",
+        "Álex, dame la autopsia y no seas demasiado cruel... o sí."
+      ],
+      "askChance": 0.58
+    },
+    "DOUBLE_ELIMINATION": {
+      "label": "Doble eliminación",
+      "importance": 5,
+      "semanticClass": "elimination",
+      "toneWeights": {
+        "excited": 10,
+        "dramatic": 8,
+        "sarcastic": 6,
+        "mocking": 3
+      },
+      "cores": [
+        "¡DOBLE ELIMINACIÓN! {player} y {opponent} se destruyen mutuamente con una eficiencia que ningún entrenador pidió",
+        "dos jugadores entran al choque y ninguno sale con carrera profesional activa; absolutamente magnífico",
+        "¡SE FUERON LOS DOS! Una disputa tan intensa que terminó resolviendo el problema de quién tenía razón eliminando a ambos",
+        "{player} y {opponent} convierten la rivalidad en pacto suicida no firmado: quedan fuera al mismo tiempo",
+        "doble baja confirmada; el mapa acaba de ganar dos espacios libres y nosotros una repetición histórica",
+        "¡MUTUA DESTRUCCIÓN! Tanto esfuerzo por perjudicar al otro y consiguieron un empate perfecto en cero supervivencia"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "critical",
+        "priority": 100,
+        "ttlMs": 3200,
+        "mode": "immediate",
+        "dedupeMs": 2000,
+        "preempt": "lower",
+        "nearEndMs": 900,
+        "maxWords": 34,
+        "partnerChance": 0.5,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, ¿cómo explicas científicamente que dos personas pierdan una discusión exactamente a la vez?",
+        "¿Quién gana cuando ambos se eliminan, aparte de todos los demás, Álex?",
+        "Álex, necesito una autopsia doble y una factura separada."
+      ],
+      "askChance": 0.62
+    },
+    "FINAL_FOUR": {
+      "label": "Últimos cuatro",
+      "importance": 4,
+      "semanticClass": "survival",
+      "toneWeights": {
+        "dramatic": 6,
+        "excited": 5,
+        "motivating": 4,
+        "informative": 2
+      },
+      "cores": [
+        "¡QUEDAN CUATRO! El Battle Royale entra en esa fase donde hasta respirar cerca de otro jugador parece provocación",
+        "últimos cuatro en pie: cuatro historias, un trofeo y suficientes rencores para llenar otra temporada",
+        "la población cae a cuatro y cada esquina del mapa empieza a sentirse demasiado pequeña",
+        "¡TOP CUATRO! Ya no hay participantes anónimos: todos los que siguen aquí tienen posibilidades y enemigos",
+        "cuatro supervivientes, cuatro planes y una probabilidad casi perfecta de que alguno termine horriblemente mal",
+        "el mapa se reduce emocionalmente a cuatro bolas y un montón de decisiones que van a doler"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "important",
+        "priority": 82,
+        "ttlMs": 3000,
+        "mode": "opportunistic",
+        "dedupeMs": 2500,
+        "preempt": "filler",
+        "nearEndMs": 900,
+        "maxWords": 30,
+        "partnerChance": 0.34,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, top cuatro: ¿qué error no puede permitirse nadie?",
+        "¿Quién entra mejor parado a esta fase, Álex?",
+        "Álex, cuatro vivos: ¿atacar o esconderse detrás de la dignidad?"
+      ],
+      "askChance": 0.42
+    },
+    "FINAL_THREE": {
+      "label": "Últimos tres",
+      "importance": 5,
+      "semanticClass": "survival",
+      "toneWeights": {
+        "dramatic": 7,
+        "excited": 6,
+        "motivating": 5,
+        "pessimistic": 2
+      },
+      "cores": [
+        "¡TRES! Solo quedan tres bolas y ahora cualquier alianza parece una amenaza y cualquier silencio parece una emboscada",
+        "el podio ya está definido, pero nadie vino aquí a conformarse con una medalla imaginaria",
+        "últimos tres: uno mira a los otros dos y los otros dos fingen no estar haciendo exactamente lo mismo",
+        "¡TRIÁNGULO DE TENSIÓN! Tres supervivientes y cero ángulos seguros",
+        "ya pueden oler el final; precisamente por eso empiezan los peores errores de toda la partida",
+        "tres nombres siguen vivos. El resto ya solo existe en el historial y en los rencores heredados"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "important",
+        "priority": 88,
+        "ttlMs": 3200,
+        "mode": "opportunistic",
+        "dedupeMs": 2600,
+        "preempt": "filler",
+        "nearEndMs": 950,
+        "maxWords": 31,
+        "partnerChance": 0.38,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, quedan tres: ¿conviene atacar al más fuerte o rezar para que los otros dos se destruyan?",
+        "¿Cómo cambia la teoría de juego con tres supervivientes, Álex?",
+        "Álex, dime quién debería tener más miedo ahora mismo."
+      ],
+      "askChance": 0.48
+    },
+    "FINAL_TWO": {
+      "label": "Duelo final",
+      "importance": 5,
+      "semanticClass": "survival",
+      "toneWeights": {
+        "dramatic": 10,
+        "excited": 8,
+        "motivating": 6,
+        "praising": 3
+      },
+      "cores": [
+        "¡DOS! Se acabaron las excusas, las alianzas y los terceros a quienes culpar: {player} contra {opponent}",
+        "¡DUELO FINAL! Dos bolas, un mapa y una cantidad obscena de historia acumulada",
+        "quedan {player} y {opponent}. Todo el ruido anterior se comprime ahora en una sola rivalidad definitiva",
+        "¡UNO CONTRA UNO! El Battle Royale deja de ser multitud y se convierte en pulso directo",
+        "dos supervivientes. Cada rebote a partir de aquí tiene peso de sentencia",
+        "se cierra el círculo: {player} frente a {opponent}, sin escudos humanos, sin distracciones y sin sitio para esconder el miedo"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "critical",
+        "priority": 98,
+        "ttlMs": 4200,
+        "mode": "immediate",
+        "dedupeMs": 3200,
+        "preempt": "lower",
+        "nearEndMs": 1100,
+        "maxWords": 34,
+        "partnerChance": 0.55,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, dame una sola regla para sobrevivir este uno contra uno.",
+        "¿Quién llega con mejores números al duelo final, Álex?",
+        "Álex, corazón frío: ¿qué debe evitar {player} a cualquier precio?"
+      ],
+      "askChance": 0.66
+    },
+    "LAST_STAND": {
+      "label": "Última resistencia",
+      "importance": 5,
+      "semanticClass": "survival",
+      "toneWeights": {
+        "motivating": 9,
+        "dramatic": 8,
+        "excited": 6,
+        "praising": 4
+      },
+      "cores": [
+        "{player} está contra las cuerdas, sin margen y con el mapa mirándolo como cobrador de deudas; precisamente aquí nacen las locuras bonitas",
+        "¡ÚLTIMA RESISTENCIA! {player} necesita una jugada de esas que hacen que la lógica pida asiento y observe",
+        "todo pesa contra {player}, lo cual convierte el siguiente contacto en una oportunidad magnífica de llevarle la contraria al universo",
+        "{player} tiene una ruta estrecha, una bola y suficientes razones para no rendirse todavía",
+        "si va a caer, que sea obligando al mapa a recordar su nombre; si va a vivir, que lo haga haciendo ruido",
+        "último margen para {player}: no hace falta un milagro perfecto, solo una decisión valiente que no sea estúpida"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "critical",
+        "priority": 95,
+        "ttlMs": 3400,
+        "mode": "immediate",
+        "dedupeMs": 2400,
+        "preempt": "lower",
+        "nearEndMs": 950,
+        "maxWords": 34,
+        "partnerChance": 0.5,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, dame algo que motive a {player} sin mentirle demasiado.",
+        "¿Existe una ruta real para sobrevivir esto, Álex?",
+        "Álex, si tuvieras que apostar una sola decisión, ¿cuál sería?"
+      ],
+      "askChance": 0.62
+    },
+    "BATTLE_ROYALE_WINNER": {
+      "label": "Campeón Battle Royale",
+      "importance": 5,
+      "semanticClass": "victory",
+      "toneWeights": {
+        "excited": 10,
+        "praising": 8,
+        "happy": 6,
+        "dramatic": 5
+      },
+      "cores": [
+        "¡SE TERMINÓ! {player} es la última bola viva y se corona campeón del Battle Royale entre choques, traiciones y una cantidad obscena de problemas",
+        "¡ÚLTIMO EN PIE! {player} sobrevive al mapa, a los rivales, a las alianzas temporales y probablemente a varias decisiones personales cuestionables",
+        "¡CAMPEÓN! Todos los demás son ahora contexto histórico para la victoria de {player}",
+        "{player} queda solo sobre el tablero. No hay nadie más a quien empujar, traicionar o culpar: el trofeo es suyo",
+        "¡VICTORIA BATTLE ROYALE! Una bola, cero rivales vivos y suficientes historias como para mentir sobre ellas durante años",
+        "la guerra termina con {player} en pie; que empiece inmediatamente la exageración oficial de cómo ocurrió"
+      ],
+      "followupChance": 0.44,
+      "delivery": {
+        "class": "critical",
+        "priority": 100,
+        "ttlMs": 5000,
+        "mode": "immediate",
+        "dedupeMs": 4000,
+        "preempt": "lower",
+        "nearEndMs": 1300,
+        "maxWords": 36,
+        "partnerChance": 0.6,
+        "cooldownMs": 0
+      },
+      "questions": [
+        "Álex, campeón confirmado: ¿fue talento, supervivencia o una anomalía estadística con mucha suerte?",
+        "¿Qué explica mejor esta victoria, Álex?",
+        "Álex, cierra el informe: ¿por qué {player} sigue aquí cuando todos los demás no?"
+      ],
+      "askChance": 0.72
+    }
+  },
+  "deliveryDefaults": {
+    "burstWindowMs": 180,
+    "hotSlotOnly": true,
+    "quietBeforeFillerMs": 2400,
+    "fillerCooldownMs": 4200,
+    "maxHotWaitMs": 700,
+    "dropExpired": true,
+    "description": "No existe cola FIFO para eventos vivos. Solo hay voz actual + una ranura caliente de corta vida. Los eventos progresivos alimentan contexto; el relleno solo aparece con cabina libre."
+  },
+  "semanticBanks": {
+    "intro": {
+      "leads": [
+        "Se encienden las luces y ya huele a problema del bueno.",
+        "Abran paso, que esta historia viene con casco y cinturón.",
+        "El mapa está impecable, lo cual significa que aún no hemos empezado a romper nada.",
+        "Todo está en calma; sospechoso, francamente sospechoso."
+      ],
+      "tails": [
+        "Y apenas estamos calentando motores.",
+        "Que nadie se encariñe demasiado con la tranquilidad.",
+        "La primera barbaridad todavía está buscando protagonista.",
+        "Esto promete dejar recuerdos y posiblemente cráteres emocionales."
+      ],
+      "reactions": [
+        "un prólogo con olor a pólvora",
+        "el comienzo de una película sin presupuesto para la cordura",
+        "una invitación formal al caos",
+        "un arranque demasiado tranquilo para ser inocente"
+      ]
+    },
+    "setup": {
+      "leads": [
+        "Aquí empieza la parte donde una buena idea puede convertirse en leyenda o denuncia geométrica.",
+        "Mucha atención: todavía estamos a tiempo de fingir que existe un plan.",
+        "El silencio previo al golpe siempre tiene algo de juicio final en miniatura.",
+        "Se cocina una decisión y el mapa ya está poniendo cara de abogado."
+      ],
+      "tails": [
+        "Ahora falta la pequeña parte de ejecutarlo sin incendiar la lógica.",
+        "Todo precioso en la teoría; la práctica está afilando los dientes.",
+        "El ángulo está servido, falta ver quién sobrevive a la receta.",
+        "Ni yo me atrevo a adivinar qué criatura saldrá de este cálculo."
+      ],
+      "reactions": [
+        "una preparación peligrosamente ambiciosa",
+        "un plan con posibilidades de gloria y daños colaterales",
+        "una pausa cargada de malas ideas excelentes",
+        "una decisión que pide casco antes de existir"
+      ]
+    },
+    "shot": {
+      "leads": [
+        "¡SE ACABÓ LA REUNIÓN, HABLÓ EL PALO!",
+        "Aquí ya no sirven gráficos bonitos: la pelota está comprometida con el destino.",
+        "El contacto llega y con él desaparece el derecho a arrepentirse.",
+        "¡Ahora sí! La teoría sale expulsada a varios kilómetros por hora."
+      ],
+      "tails": [
+        "A partir de aquí la física cobra entrada.",
+        "Ahora veremos si era precisión o entusiasmo con forma de golpe.",
+        "La pelota ya firmó; toca descubrir la letra pequeña.",
+        "Que empiece el juicio público de esa decisión."
+      ],
+      "reactions": [
+        "un disparo con demasiadas consecuencias",
+        "una declaración de intenciones a máxima velocidad",
+        "un golpe que acaba de abrir veinte preguntas",
+        "una ejecución con aroma a titulares"
+      ]
+    },
+    "flight": {
+      "leads": [
+        "¡MÍRENLA VIAJAR! Ahora mismo la pelota pertenece más al cielo que al jugador.",
+        "La gravedad ha perdido el control temporal del expediente.",
+        "Esto ya es navegación aérea con una bandera de golf pegada.",
+        "Tenemos trayectoria, altura y suficientes motivos para preocuparnos."
+      ],
+      "tails": [
+        "El suelo está abajo esperando con una sonrisa administrativa.",
+        "Todo es precioso hasta que toca aterrizar.",
+        "Mientras siga arriba, la esperanza tiene licencia para exagerar.",
+        "La caída será la encargada de revelar si esto fue poesía o propaganda."
+      ],
+      "reactions": [
+        "una parábola digna de control aéreo",
+        "un vuelo con exceso de personalidad",
+        "una excursión vertical de dudosa necesidad",
+        "una trayectoria que se cree protagonista de cine"
+      ]
+    },
+    "impact": {
+      "leads": [
+        "¡CONTACTO! Y no precisamente de los diplomáticos.",
+        "El mapa acaba de responder con argumentos sólidos.",
+        "Choque confirmado; la trayectoria tiene una nueva opinión sobre la vida.",
+        "¡PUM! La geometría acaba de entrar en la conversación."
+      ],
+      "tails": [
+        "La pelota sigue viva, la idea original no estoy tan seguro.",
+        "Cada impacto añade información y resta dignidad al plan inicial.",
+        "El rebote ha votado y su voto cuenta demasiado.",
+        "Esto se está convirtiendo en una negociación a golpes con el escenario."
+      ],
+      "reactions": [
+        "una discusión física sin moderador",
+        "un rebote con consecuencias diplomáticas",
+        "una colisión de manual y de pesadilla",
+        "una respuesta contundente del terreno"
+      ]
+    },
+    "terrain": {
+      "leads": [
+        "El mapa activa uno de sus juguetes y claramente no fue diseñado por gente tranquila.",
+        "Nueva superficie, nuevas reglas, mismas ganas de complicar una pelota inocente.",
+        "Aquí entra el terreno a cobrar protagonismo sin haber sido invitado.",
+        "La pista cambia de humor y la jugada paga la diferencia."
+      ],
+      "tails": [
+        "Nada grave: solo hemos cambiado todas las condiciones importantes.",
+        "El mapa mueve una pieza y nosotros fingimos que estaba previsto.",
+        "Esto añade exactamente el tipo de variable que nadie necesitaba.",
+        "La pelota tendrá que renegociar su contrato con la realidad."
+      ],
+      "reactions": [
+        "una emboscada del diseño del mapa",
+        "una variable ambiental con complejo de villano",
+        "un cambio de reglas a mitad de frase",
+        "una trampa con excelente sentido del espectáculo"
+      ]
+    },
+    "spatial": {
+      "leads": [
+        "Perfecto, porque la geometría normal era demasiado sencilla para esta gente.",
+        "Entramos en territorio donde hasta las coordenadas necesitan terapia.",
+        "La pelota acaba de firmar un acuerdo con el espacio-tiempo.",
+        "Aquí la física clásica mira alrededor y decide tomarse el día libre."
+      ],
+      "tails": [
+        "Si reaparece donde esperamos, será casi decepcionante.",
+        "Nada dice golf tradicional como perder la pelota entre dimensiones.",
+        "La coordenada de destino tiene ahora más suspense que el marcador.",
+        "Esto es científicamente absurdo y visualmente magnífico."
+      ],
+      "reactions": [
+        "una excursión interdimensional con palo de golf",
+        "un atentado elegante contra las coordenadas",
+        "una anomalía espacial con excelente timing",
+        "una ruta que obliga al mapa a explicar sus decisiones"
+      ]
+    },
+    "failure": {
+      "leads": [
+        "Ay, esto ya tiene música de tragedia y presupuesto de comedia.",
+        "Señoras y señores, el desastre ha solicitado oficialmente el micrófono.",
+        "No hay forma elegante de decirlo, así que voy a disfrutar intentándolo.",
+        "Aquí la jugada cruza la fina línea entre error y patrimonio cultural."
+      ],
+      "tails": [
+        "El marcador tomará nota y la dignidad hará lo que pueda.",
+        "Se puede remontar; también se puede fingir que nadie lo vio.",
+        "El mapa acaba de llevarse otro pequeño trofeo moral.",
+        "Esto duele, pero al menos duele con una producción espectacular."
+      ],
+      "reactions": [
+        "una catástrofe con iluminación premium",
+        "un fracaso de colección especial",
+        "una tragedia perfectamente retransmitible",
+        "un desastre que ya pide repetición en cámara lenta"
+      ]
+    },
+    "recovery": {
+      "leads": [
+        "¡OJO, QUE TODAVÍA RESPIRA!",
+        "Cuando parecía condenado, aparece una pequeña grieta por donde entra la épica.",
+        "La jugada encuentra una salida que ningún adulto responsable habría firmado.",
+        "Tenemos recuperación, milagro o error del universo; luego lo discutimos."
+      ],
+      "tails": [
+        "No preguntes demasiado: aprovecha que seguimos vivos.",
+        "La dignidad regresa lentamente, escoltada por la suerte y la terquedad.",
+        "Esto no borra el caos anterior, pero lo hace muchísimo más divertido.",
+        "Hay vida, hay mapa y por increíble que parezca todavía hay opciones."
+      ],
+      "reactions": [
+        "una resurrección con documentación incompleta",
+        "un salvamento digno de película barata y maravillosa",
+        "una segunda oportunidad con olor a milagro",
+        "una recuperación que se niega a explicar sus métodos"
+      ]
+    },
+    "success": {
+      "leads": [
+        "¡AHORA SÍ, SEÑORAS Y SEÑORES!",
+        "Todo ese caos acaba de encontrar una razón para existir.",
+        "La jugada llega a puerto y hasta yo voy a comportarme durante tres segundos.",
+        "¡Aquí está la recompensa! Limpia, redonda y deliciosamente definitiva."
+      ],
+      "tails": [
+        "Pueden guardar las excusas; esta vez sobran.",
+        "Eso sí se firma, se sella y se presume durante semanas.",
+        "El mapa intentó discutir y acaba de perder la audiencia.",
+        "Qué bonito cuando el espectáculo termina exactamente donde debía."
+      ],
+      "reactions": [
+        "un cierre con autoridad absoluta",
+        "una solución de categoría premium",
+        "un final que justifica todo el sufrimiento anterior",
+        "una victoria pequeña pero exquisitamente servida"
+      ]
+    },
+    "exceptional": {
+      "leads": [
+        "¡DETENGAN EL TIEMPO, ESTO NO SE REPITE POR DECRETO!",
+        "Lo siento, pero el resto de la partida acaba de quedar en segundo plano.",
+        "¡ESTO YA NO ES UNA JUGADA, ES UN FENÓMENO METEOROLÓGICO!",
+        "Que alguien llame al museo antes de que el momento se escape."
+      ],
+      "tails": [
+        "Si alguien parpadeó, que presente una reclamación formal al universo.",
+        "Esto merece una estatua y una auditoría simultáneamente.",
+        "El sarcasmo queda suspendido temporalmente por exceso de perfección.",
+        "A partir de aquí todo lo demás tendrá que competir con una leyenda."
+      ],
+      "reactions": [
+        "un acontecimiento fuera de catálogo",
+        "una anomalía gloriosa de escala absurda",
+        "un momento que humilla a la probabilidad",
+        "una pieza de historia recién fabricada"
+      ]
+    },
+    "momentum_good": {
+      "leads": [
+        "Esto ya no parece casualidad; empieza a oler a dominio.",
+        "La confianza está creciendo y el mapa empieza a revisar su contrato.",
+        "Cuidado, que una buena racha puede convertirse muy rápido en tiranía deportiva.",
+        "Aquí se está construyendo algo serio entre tanto ruido."
+      ],
+      "tails": [
+        "El siguiente golpe decidirá si esto es tendencia o religión.",
+        "Cuando el ritmo aparece, hasta las trampas parecen un poco más pequeñas.",
+        "El peligro ahora es empezar a creérselo demasiado.",
+        "La partida acaba de cambiar de temperatura."
+      ],
+      "reactions": [
+        "una inercia competitiva peligrosamente saludable",
+        "una racha con hambre de marcador",
+        "un momento de dominio creciente",
+        "una corriente favorable con demasiada confianza"
+      ]
+    },
+    "momentum_bad": {
+      "leads": [
+        "Esto ya no es un error aislado; tenemos una franquicia.",
+        "La mala racha acaba de comprar terreno y está construyendo oficinas.",
+        "Cada fallo invita al siguiente a sentarse en primera fila.",
+        "El mapa está oliendo debilidad y eso nunca acaba con una cesta de regalo."
+      ],
+      "tails": [
+        "Hace falta cortar esto antes de que pida código postal.",
+        "El próximo golpe necesita ser aburridamente correcto, por salud pública.",
+        "Aquí ya no se busca belleza: se busca detener la hemorragia.",
+        "La remontada empieza por dejar de alimentar a la tragedia."
+      ],
+      "reactions": [
+        "una epidemia de decisiones incómodas",
+        "una racha negra con ambiciones empresariales",
+        "un patrón que ya exige intervención técnica",
+        "una espiral con excelente sentido del humor y pésimas intenciones"
+      ]
+    },
+    "score": {
+      "leads": [
+        "Atención al tablero, porque los números acaban de mover muebles.",
+        "El marcador habla y hoy viene con ganas de generar conflictos.",
+        "La tabla cambia y de pronto cada golpe pesa medio planeta.",
+        "Aquí la aritmética se convierte en presión psicológica con gráficos bonitos."
+      ],
+      "tails": [
+        "Ahora cada error tendrá intereses.",
+        "Los números no gritan, pero saben amenazar perfectamente.",
+        "El siguiente turno acaba de ponerse mucho más caro.",
+        "La tabla no juega, pero condiciona hasta la respiración."
+      ],
+      "reactions": [
+        "una actualización con consecuencias diplomáticas",
+        "un cambio numérico que altera toda la temperatura",
+        "una cifra con más peso del que aparenta",
+        "un tablero dispuesto a fabricar drama"
+      ]
+    },
+    "final": {
+      "leads": [
+        "Se acaba el margen para filosofar; lo siguiente entra en la historia o en los memes.",
+        "Últimos compases y la presión ya ocupa más espacio que el mapa.",
+        "Aquí termina la teoría y empieza el expediente definitivo.",
+        "No queda tiempo para construir una personalidad nueva: toca responder con la que hay."
+      ],
+      "tails": [
+        "Después de esto solo quedará el marcador y una cantidad indecente de opiniones.",
+        "El siguiente segundo puede justificar toda la ronda o perseguirla durante días.",
+        "Que hable la ejecución; nosotros ya hemos agotado las metáforas legales.",
+        "Esto se cierra con gloria, tragedia o una mezcla comercialmente perfecta de ambas."
+      ],
+      "reactions": [
+        "un desenlace con presión industrial",
+        "el último capítulo antes del veredicto",
+        "un cierre con demasiada electricidad en el aire",
+        "un final diseñado para destruir uñas"
+      ]
+    },
+    "near_miss": {
+      "leads": [
+        "¡NO CANTEN NADA TODAVÍA, QUE ESTO DUELE DE CERCA!",
+        "El hoyo acaba de asomarse, sonreír y cerrar la puerta con una elegancia criminal.",
+        "Aquí la distancia entre gloria y tragedia cabe en una uña mal cortada.",
+        "Estamos en ese territorio cruel donde “casi” suena peor que “mal”."
+      ],
+      "tails": [
+        "Eso duele precisamente porque todo lo demás estaba casi resuelto.",
+        "El próximo intento tendrá que convivir con el fantasma de esos centímetros.",
+        "No fue un desastre; fue una tortura de precisión.",
+        "El hoyo gana esta discusión por un margen insultantemente pequeño."
+      ],
+      "reactions": [
+        "una crueldad de precisión milimétrica",
+        "un casi que merece indemnización emocional",
+        "una derrota microscópica con producción épica",
+        "un roce con la gloria que duele demasiado"
+      ]
+    },
+    "victory": {
+      "leads": [
+        "¡SE ACABÓ! El mapa puede guardar sus trampas y nosotros podemos empezar a exagerar el recuerdo.",
+        "¡TENEMOS GANADOR! Toda la locura anterior acaba de recibir una explicación retroactiva.",
+        "Bajen el telón con cuidado, que aquí acaba de caer una victoria encima.",
+        "¡FINAL FELIZ, O AL MENOS FELIZ PARA UNO! El resto puede presentar alegaciones mañana."
+      ],
+      "tails": [
+        "Ahora sí: marcador cerrado, excusas archivadas y gloria en circulación.",
+        "El trofeo ya tiene dueño y el sarcasmo pasa oficialmente a modo celebración.",
+        "No queda siguiente golpe: queda repetir la historia hasta volverla mitología.",
+        "Esto termina con nombre propio y una cantidad irresponsable de derecho a presumir."
+      ],
+      "reactions": [
+        "una victoria con certificado de caos superado",
+        "un cierre definitivo con sabor a leyenda",
+        "un triunfo que convierte todos los errores anteriores en anécdotas",
+        "un final donde el marcador deja de aceptar argumentos"
+      ]
+    },
+    "rivalry": {
+      "leads": [
+        "¡ATENCIÓN, QUE ESTO YA ES PERSONAL!",
+        "Aquí ya no hay golf: hay diplomacia resuelta a pelotazos.",
+        "Se acabó la cortesía; alguien acaba de declarar una pequeña guerra civil sobre el césped.",
+        "¡Los guantes siguen puestos, pero la amistad acaba de salir del servidor!",
+        "Esto huele a rivalidad premium, con garantía de rencor y repetición instantánea.",
+        "Dos jugadores, una trayectoria y absolutamente cero intención de compartir el mapa."
+      ],
+      "tails": [
+        "A partir de aquí cada rebote viene con expediente personal.",
+        "El próximo cruce entre esos dos merece cámara lenta y asesor legal.",
+        "La pelota sigue siendo redonda; la relación entre ellos ya no.",
+        "Esto no suma puntos diplomáticos, pero sí una cantidad magnífica de espectáculo.",
+        "Que alguien anote los nombres: esta novela acaba de conseguir segunda temporada.",
+        "La rivalidad sube de temperatura y el mapa empieza a vender entradas."
+      ],
+      "reactions": [
+        "una rivalidad con combustible de cohete",
+        "un conflicto deportivo deliciosamente innecesario",
+        "una disputa con potencial de leyenda y denuncia interna",
+        "un duelo con exceso de personalidad",
+        "una enemistad de altísima calidad televisiva",
+        "un problema bilateral resuelto con física aplicada"
+      ]
+    },
+    "sabotage": {
+      "leads": [
+        "¡SE ACTIVÓ EL DEPARTAMENTO DE MALAS INTENCIONES!",
+        "Esto tiene menos de golf y más de ingeniería del caos.",
+        "Alguien acaba de descubrir que el rival también puede funcionar como obstáculo móvil.",
+        "¡Aquí viene la jugada que los manuales llaman “técnicamente permitida, moralmente sospechosa”!",
+        "La estrategia acaba de ponerse una gabardina negra y unas gafas de villano.",
+        "Tenemos sabotaje en cocina y el chef parece peligrosamente satisfecho."
+      ],
+      "tails": [
+        "Si sale bien será estrategia; si sale mal diremos que era una demostración científica.",
+        "El reglamento quizá lo permita, pero la amistad ya está redactando una apelación.",
+        "Esto puede terminar en ventaja táctica o en karma entregado por mensajería urgente.",
+        "La maldad deportiva es preciosa cuando viene con buena geometría.",
+        "El mapa acaba de aprender una nueva forma de generar enemigos.",
+        "A este ritmo necesitaremos marcador, repetición y una comisión de investigación."
+      ],
+      "reactions": [
+        "un sabotaje con presupuesto cinematográfico",
+        "una maniobra tácticamente brillante y socialmente cuestionable",
+        "una puñalada reglamentaria con trayectoria parabólica",
+        "un acto de maldad deportiva sorprendentemente elegante",
+        "un crimen contra la paz del lobby",
+        "una conspiración pequeña pero exquisitamente ejecutada"
+      ]
+    },
+    "alliance": {
+      "leads": [
+        "¡MILAGRO DIPLOMÁTICO! Dos enemigos han descubierto temporalmente el concepto de cooperación.",
+        "Tenemos alianza; repito, alianza. Nadie se acostumbre demasiado.",
+        "Por increíble que parezca, dos bolas han firmado un tratado de no agresión con fecha de caducidad invisible.",
+        "La política entra al green y huele muchísimo a traición futura.",
+        "Un apretón de manos táctico acaba de nacer en el peor sitio posible.",
+        "Se forma una coalición tan estable como una silla con tres patas."
+      ],
+      "tails": [
+        "Disfruten la paz mientras dure; yo ya estoy buscando dónde esconder el cuchillo metafórico.",
+        "Toda alianza en Battle Royale es una traición esperando buena iluminación.",
+        "La cooperación existe, pero el trofeo sigue teniendo sitio para uno.",
+        "Hermoso compañerismo temporal; completamente incompatible con el final de la partida.",
+        "Firmaron la paz y el mapa acaba de reírse muy bajito.",
+        "Esto parece amistad hasta que uno vea una oportunidad de empujar al otro."
+      ],
+      "reactions": [
+        "una alianza con fecha de vencimiento moral",
+        "una amistad alquilada por minutos",
+        "un tratado de paz con letra pequeña",
+        "una coalición peligrosamente adorable",
+        "un pacto táctico con aroma a puñalada futura",
+        "una tregua que nadie debería financiar a largo plazo"
+      ]
+    },
+    "favorite": {
+      "leads": [
+        "Tengo que admitir algo incómodo: ya tengo favorito.",
+        "Señoras y señores, el corazón de esta cabina acaba de cometer una parcialidad imperdonable.",
+        "Aquí la objetividad ha tropezado y se ha caído por un barranco.",
+        "¡Tenemos favorito oficial no oficial, que es la mejor clase de favorito!",
+        "La cabina acaba de adoptar emocionalmente a un jugador sin consultar al departamento legal.",
+        "Sí, sí, debería ser imparcial. No, claramente no pienso serlo ahora mismo."
+      ],
+      "tails": [
+        "Ahora solo falta que no destruya mi confianza en los próximos diez segundos.",
+        "Toda esta fe puede convertirse en gloria o en material de chantaje para Álex.",
+        "Le entrego mi confianza con la misma seguridad con la que se entrega una granada sin seguro.",
+        "Ser favorito aquí no da escudo; solo aumenta la cantidad de comentarios cuando fallas.",
+        "A partir de ahora cada éxito valdrá doble y cada desastre me dolerá personalmente.",
+        "Que conste en acta: esta parcialidad es artística, no profesional."
+      ],
+      "reactions": [
+        "un favoritismo completamente irresponsable",
+        "una inversión emocional de altísimo riesgo",
+        "una parcialidad con excelente gusto",
+        "una apuesta personal del narrador",
+        "una adopción deportiva sin papeles",
+        "una preferencia peligrosamente pública"
+      ]
+    },
+    "survival": {
+      "leads": [
+        "El mapa se ha quedado pequeño y los supervivientes se han quedado grandes.",
+        "Aquí ya no se juega por avanzar: se juega por seguir existiendo.",
+        "Menos jugadores, más presión y una cantidad criminal de silencio entre golpes.",
+        "¡Entramos en zona de supervivencia pura! Cada contacto puede escribir un epitafio deportivo.",
+        "El Battle Royale se comprime y cada bola ocupa ahora medio universo emocional.",
+        "Ya no quedan extras en esta película; todos los que siguen vivos tienen nombre en el cartel."
+      ],
+      "tails": [
+        "A estas alturas no hay jugada pequeña: todo deja cicatriz.",
+        "El próximo error no será una anécdota, será una silla vacía.",
+        "Sobrevivir un segundo más empieza a parecer una disciplina olímpica.",
+        "Aquí el valor no consiste en no tener miedo, sino en pegarle mientras te tiembla hasta el cursor.",
+        "Los que quedan ya han ganado respeto; ahora falta ver quién se queda con todo.",
+        "El mapa exige sangre fría y está cobrando intereses por cada duda."
+      ],
+      "reactions": [
+        "una fase de supervivencia con presión industrial",
+        "un final donde respirar ya cuenta como estrategia",
+        "una criba de nervios y geometría",
+        "un cierre con muy pocos cuerpos y demasiadas historias",
+        "una batalla de resistencia emocional",
+        "un tramo final donde el miedo también tiene marcador"
+      ]
+    },
+    "elimination": {
+      "leads": [
+        "¡TENEMOS BAJA! El Battle Royale acaba de cobrar una víctima.",
+        "Se apaga una luz en el marcador y se encienden veinte en la cabina.",
+        "¡FUERA UNO! La población del mapa acaba de reducirse con extrema eficiencia.",
+        "Aquí termina una historia y, siendo sinceros, empieza una oportunidad fantástica para burlarnos un poco.",
+        "El sistema acaba de cerrar una carpeta de jugador con un golpe seco.",
+        "Una bola menos, una tensión más y absolutamente cero espacio para sentimentalismos largos."
+      ],
+      "tails": [
+        "Que descanse su run en paz; la repetición seguirá viva para siempre.",
+        "El resto acaba de recibir un recordatorio gratuito de mortalidad competitiva.",
+        "Cada eliminación hace el mapa más silencioso y el trofeo más pesado.",
+        "Se acabaron sus problemas tácticos; ahora tiene problemas exclusivamente emocionales.",
+        "La partida continúa sin pedir permiso al caído.",
+        "No hay respawn emocional para una eliminación así."
+      ],
+      "reactions": [
+        "una eliminación con certificado de drama",
+        "una salida del mapa con consecuencias políticas",
+        "un funeral competitivo de primera categoría",
+        "una baja que cambia toda la geometría social",
+        "una despedida dolorosamente eficiente",
+        "un asiento vacío con muchísimo contexto detrás"
+      ]
+    }
+  },
+  "battleRoyale": {
+    "favoritePhilosophy": "Rafa favorece espectáculo, remontadas, venganza elegante, sabotaje creativo y jugadas imposibles. Cambia de favorito sin vergüenza si alguien crea un momento mejor.",
+    "provocationStyle": "Provocación absurda y deportiva. Nunca odio real: burlas sobre puntería, rebotes, reinicios, estrategia y caos del mapa.",
+    "endgameStyle": "En los últimos cuatro aumenta tensión; en los últimos dos mezcla motivación real con dramatismo excesivo.",
+    "taunts": [
+      "{player}, {opponent} acaba de dejarte una invitación formal a practicar el botón de reinicio.",
+      "{opponent}, mira bien a {player}: esa sonrisa suele aparecer cinco segundos antes de un problema.",
+      "{player} parece estar diciéndole a {opponent}: “elige bien tu trayectoria, quizá la use yo después de chocarte”.",
+      "Mensaje no solicitado para {opponent}: esconderse detrás de la física no evita que {player} te encuentre.",
+      "{player} tiene una oferta para {opponent}: paz absoluta a cambio de que abandone voluntariamente el mapa."
+    ],
+    "lastPlayerMotivation": [
+      "{player}, si llegaste hasta aquí no fue para convertirte en decoración del final.",
+      "Quedan pocos, {player}. Ahora cada milímetro que controles vale por diez de los anteriores.",
+      "No necesitas parecer invencible, {player}; solo necesitas sobrevivir un segundo más que el resto.",
+      "Todo el caos anterior te compró este momento. Úsalo antes de que caduque."
+    ]
+  }
+}

@@ -1,0 +1,37 @@
+/* Subsistema de locución: aislado del CSS del juego para poder calibrarlo sin mezclar estilos. */
+.announcer-screen .screen-toolbar { margin-bottom: 24px; }
+.announcer-settings-layout { display: grid; gap: 18px; max-width: 980px; margin: 0 auto; }
+.announcer-speakers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.announcer-card {
+  border: 1px solid rgba(143, 197, 255, .16); border-radius: 18px; padding: 18px;
+  background: linear-gradient(180deg, rgba(16, 30, 46, .94), rgba(8, 17, 27, .92));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035);
+}
+.announcer-card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.announcer-card-head .action-icon { width: 44px; height: 44px; flex: 0 0 auto; }
+.announcer-card-head strong { display: block; font-size: 14px; letter-spacing: .08em; }
+.announcer-card-head small { display: block; margin-top: 3px; color: var(--muted, #8aa0b5); }
+.announcer-fields { display: grid; gap: 14px; }
+.announcer-field { display: grid; gap: 7px; }
+.announcer-field > span { font-size: 11px; font-weight: 800; letter-spacing: .08em; color: #a9bed1; text-transform: uppercase; }
+.announcer-field input[type="text"], .announcer-field select {
+  width: 100%; min-height: 44px; border: 1px solid rgba(143, 197, 255, .16); border-radius: 11px;
+  background: rgba(3, 10, 17, .72); color: #eef8ff; padding: 0 12px; outline: none;
+}
+.announcer-field input[type="text"]:focus, .announcer-field select:focus { border-color: rgba(112, 224, 255, .58); box-shadow: 0 0 0 3px rgba(83, 200, 255, .08); }
+.announcer-slider-row { display: grid; grid-template-columns: minmax(0, 1fr) 58px; gap: 10px; align-items: center; }
+.announcer-slider-row input[type="range"] { width: 100%; accent-color: #72dcff; }
+.announcer-slider-value { text-align: right; font-size: 12px; color: #dff6ff; font-variant-numeric: tabular-nums; }
+.announcer-master {
+  display: grid; grid-template-columns: minmax(160px, .6fr) minmax(220px, 1fr) 60px; gap: 14px; align-items: center;
+  border: 1px solid rgba(143, 197, 255, .14); border-radius: 16px; padding: 16px 18px; background: rgba(7, 17, 28, .82);
+}
+.announcer-master strong { font-size: 12px; letter-spacing: .08em; }
+.announcer-master small { display: block; color: #849cb0; margin-top: 3px; }
+.announcer-master input[type="range"] { width: 100%; accent-color: #72dcff; }
+.announcer-note { margin: 0; color: #839aad; font-size: 12px; line-height: 1.55; }
+@media (max-width: 760px) {
+  .announcer-speakers { grid-template-columns: 1fr; }
+  .announcer-master { grid-template-columns: 1fr 52px; }
+  .announcer-master > div { grid-column: 1 / -1; }
+}

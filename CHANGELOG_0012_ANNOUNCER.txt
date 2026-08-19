@@ -1,0 +1,83 @@
+NOISE GOLF 2D WEB 0012 · LOCUTORES AUTORITATIVOS (ES)
+=======================================================
+
+BASE: NOISE_GOLF_2D_WEB_0011_NETCODE · PATCH_LEVEL 0003
+TIPO: parche incremental acumulativo · PATCH_LEVEL 0004
+
+OBJETIVO
+-------
+Integrar el sistema Emotional Machine de dos locutores en Noise Golf sin
+mezclar sus bancos/algoritmos con la lógica central del juego y manteniendo
+autoridad del host en online.
+
+ARCHIVOS
+--------
+🆕 announcer/data/commentator.json
+🆕 announcer/data/informant.json
+🆕 announcer/persona-data.js
+🆕 announcer/config.json
+🆕 announcer/config-data.js
+🆕 announcer/engine.js
+🆕 announcer/manager.js
+🆕 announcer/ui.js
+🆕 announcer/ui.css
+🆕 announcer/README.md
+🆕 announcer/CHECKPOINTS_INTEGRACION.md
+🆕 announcer/tools/validate_integration.py
+
+✏️ index.html
+   - Botón y pantalla LOCUTORES.
+   - Solo nombre, voz, tono, velocidad y volumen compartido.
+   - Carga de la carpeta announcer/ antes de networking/menu/game.
+
+✏️ js/main.js
+   - Inicializa AnnouncerSystem y lo conecta a GolfGame.
+
+✏️ js/ui/menu.js
+   - Registra pantalla LOCUTORES y enlaza el UI dedicado.
+   - Actualiza el nombre local usado por el narrador.
+
+✏️ js/core/game.js
+   - Hooks offline: tiro, rebote, booster, portal, cañón, retroceso,
+     multiplicador, túneles, saltos de agua, hoyo/hole-in-one, agua,
+     fuera de mapa, aplastamiento, near miss y tiro largo.
+
+✏️ js/network/multiplayerSession.js
+   - Host emite cues de gameplay autoritativos.
+   - Nuevo mensaje fiable `announcer:bundle`.
+   - Inicio sincronizado por `startAtNetTime`/NetClock.
+   - Hooks de obstáculos, turnos, rondas, penalizaciones, colisiones,
+     sabotaje confirmado, fases finales y victoria Battle Royale.
+
+✏️ VERSION.txt
+   - 0012 / PATCH_LEVEL 0004.
+
+DECISIONES DE SINCRONIZACIÓN
+----------------------------
+- El host compone el texto final. Los clientes NO ejecutan selección aleatoria
+  de frases para eventos online.
+- El bloque entero Rafa→Álex→Rafa viaja como una unidad protegida.
+- El instante de inicio viaja en tiempo de red autoritativo.
+- El lead de sincronía parte de `sync.leadSeconds` y aumenta según el peor RTT conocido del host, limitado por `sync.maxLeadSeconds` y con margen `sync.jitterMarginSeconds`.
+- Voz/nombre/tono/velocidad/volumen son locales: se sincroniza contenido y
+  tiempo, no la voz instalada en el SO de cada jugador.
+- Eventos `trace` actualizan contexto y dedupe sin secuestrar el micrófono.
+- TTL recibe margen de transporte únicamente en online.
+- No se narran alianzas o traiciones como hechos si el juego no las confirma.
+
+DIST/
+-----
+El ZIP original incluye `dist/` como bundle React/TypeScript ya compilado,
+pero no incluye su árbol `src/` ni package.json/vite config necesarios para
+reconstruirlo de forma segura. Este parche actualiza la implementación
+clásica raíz (`index.html` + `js/`) que sí trae su fuente completa. No se
+modifica a ciegas el bundle minificado de `dist/assets`.
+
+VALIDACIÓN
+----------
+- JSON personas: 74 eventos compartidos.
+- Suite original Emotional Machine:
+  validate.py, test_coherence.py, test_priority.py, test_turn_lock.py,
+  test_battle_royale.py, test_dom.py.
+- `node --check` en JS nuevos/modificados.
+- `announcer/tools/validate_integration.py`.

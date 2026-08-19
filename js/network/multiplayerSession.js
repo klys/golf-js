@@ -80,6 +80,7 @@
       this.snapshotSeq = 0;
       this.lastSnapshotSeq = -1;
       this.mapChangeCooldownUntil = 0;
+      this.announcerCollisionAt = new Map();
 
       // ── Temporización ───────────────────────────────────────────────────
       // `netTime` es el reloj de simulación del host: monótono y continuo
@@ -125,6 +126,96 @@
       for (const fn of this.listeners.get(type) || []) {
         try { fn(payload); } catch (error) { console.error('[MultiplayerSession listener]', error); }
       }
+    }
+
+    makeAnnouncerTrack(ball) {
+      return {
+        impactSerial: ball?.impactSerial || 0,
+        boosterSerial: ball?.boosterSerial || 0,
+        portalSerial: ball?.portalSerial || 0,
+        cannonSerial: ball?.cannonSerial || 0,
+        reverseSerial: ball?.reverseSerial || 0,
+        multiplierSerial: ball?.multiplierSerial || 0,
+        caveSerial: ball?.caveSerial || 0,
+        caveExitSerial: ball?.caveExitSerial || 0,
+        waterSkipSerial: ball?.waterSkipSerial || 0,
+        movingWallSerial: ball?.movingWallSerial || 0,
+        spinnerSerial: ball?.spinnerSerial || 0,
+        material: '',
+        fanActive: false,
+      };
+    }
+
+    resetAnnouncerTrack(player) {
+      if (player) player.announcerTrack = this.makeAnnouncerTrack(player.ball);
+    }
+
+    announcerPlayerPayload(player, extra = {}) {
+      return {
+        playerKey: player?.playerKey || extra.playerKey || '',
+        playerName: player?.username || extra.playerName || 'Jugador',
+        strokes: Number(player?.strokes) || 0,
+        points: Number(player?.points) || 0,
+        mode: this.settings?.mode || 'turn',
+        ...extra,
+      };
+    }
+
+    emitAnnouncerCue(eventKey, player = null, extra = {}) {
+      if (this.role !== 'host' || !eventKey) return;
+      this.emit('announcercue', this.announcerPlayerPayload(player, {
+        eventKey,
+        netTime: this.netTime,
+        source: 'host-authority',
+        ...extra,
+      }));
+    }
+
+    broadcastAnnouncerBundle(bundle, startAtNetTime) {
+      if (this.role !== 'host' || !bundle) return false;
+      this.broadcastReliable({
+        type: 'announcer:bundle',
+        bundle,
+        startAtNetTime: Number(startAtNetTime) || this.netTime,
+      });
+      return true;
+    }
+
+    trackAnnouncerPhysics(player) {
+      if (this.role !== 'host' || !player?.ball) return;
+      const ball = player.ball;
+      const track = player.announcerTrack || (player.announcerTrack = this.makeAnnouncerTrack(ball));
+      const speedKmh = Math.hypot(Number(ball.vx) || 0, Number(ball.vy) || 0) * NG.CONFIG.course.metersPerPixel * 3.6;
+      const fireSerial = (field, eventKey, extra = {}) => {
+        const value = Number(ball[field]) || 0;
+        if (value <= (Number(track[field]) || 0)) return;
+        track[field] = value;
+        this.emitAnnouncerCue(eventKey, player, { speedKmh, ...extra });
+      };
+
+      fireSerial('impactSerial', 'BOUNCE', { bounces: 1 });
+      fireSerial('boosterSerial', 'BOOSTER');
+      fireSerial('portalSerial', 'PORTAL_ENTER');
+      fireSerial('cannonSerial', 'BALL_FAST');
+      fireSerial('reverseSerial', 'UNLUCKY_SHOT');
+      fireSerial('multiplierSerial', 'LUCKY_SHOT');
+      fireSerial('caveSerial', 'TUNNEL_ENTER');
+      fireSerial('caveExitSerial', 'TUNNEL_EXIT');
+      fireSerial('waterSkipSerial', 'MULTI_BOUNCE', { bounces: Math.max(2, Number(ball.waterSkips) || 2) });
+      fireSerial('movingWallSerial', 'MOVING_WALL_HIT');
+      fireSerial('spinnerSerial', 'WALL_HIT');
+
+      const material = NG.TerrainUtil?.surfaceMaterialAt?.(this.game.hole, ball.lastSurfaceId, ball.x) || '';
+      if (material !== track.material) {
+        if (track.material === 'sand' && material !== 'sand') this.emitAnnouncerCue('SAND_EXIT', player);
+        if (material === 'sand') this.emitAnnouncerCue('SAND_ENTER', player);
+        if (material === 'ice') this.emitAnnouncerCue('ICE_ENTER', player);
+        track.material = material;
+      }
+
+      const fanActive = Number(ball.fanPulse) > 0.15;
+      if (fanActive && !track.fanActive) this.emitAnnouncerCue('FAN_PUSH', player, { speedKmh });
+      track.fanActive = fanActive;
     }
 
     bindRelayEvents() {
@@ -404,6 +495,7 @@
         multiplierFound: false,
         lastMultiplierSerial: 0,
         lastCaveSerial: 0,
+        announcerTrack: this.makeAnnouncerTrack(ball),
         discoveredCaves: new Set(Array.isArray(meta.discoveredCaves) ? meta.discoveredCaves : []),
         ping: null,
       };
@@ -617,6 +709,7 @@
       if (message.type === 'session:init') this.applyInit(message);
       else if (message.type === 'session:roster') this.applyRoster(message.players || []);
       else if (message.type === 'session:event') this.emit('gameevent', message);
+      else if (message.type === 'announcer:bundle') this.emit('announcerbundle', message);
       else if (message.type === 'state:snapshot') this.applySnapshot(message);
       else if (message.type === 'map:vote:update') { this.mapVote = this.normalizeRemoteVote(message.vote); this.emit('mapvote', this.getMapVoteStatus()); }
       else if (message.type === 'map:vote:closed') { this.mapVote = null; this.emit('mapvote', this.getMapVoteStatus()); }
@@ -1003,12 +1096,20 @@
       player.strokes += 1;
       player.turnsUsed += 1;
       player.shotInProgress = true;
-      if (!this.matchStarted) {
+      const firstShotOfMatch = !this.matchStarted;
+      if (firstShotOfMatch) {
         this.matchStarted = true;
         this.startedAt = Date.now();
         this.elapsed = 0;
         this.updateDiscoveryLobby(true);
+        this.emitAnnouncerCue('MATCH_START', player);
+        this.emitAnnouncerCue('ROUND_START', player);
       }
+      const shotPower = clamp(speed / NG.CONFIG.ball.maxSpeed, 0, 1);
+      this.emitAnnouncerCue('SHOT_TAKEN', player, {
+        power: shotPower,
+        speedKmh: speed * NG.CONFIG.course.metersPerPixel * 3.6,
+      });
       this.broadcastReliable({ type: 'session:event', event: 'shot', playerKey: player.playerKey, strokes: player.strokes });
       this.syncGameToLocal();
       return true;
@@ -1226,6 +1327,7 @@
         if (!p.connected && !p.ball.moving) continue;
         p.physics.time = startTime;
         p.physics.update(p.ball, this.game.hole, dt);
+        this.trackAnnouncerPhysics(p);
         if ((p.ball.multiplierSerial || 0) > p.lastMultiplierSerial) {
           p.lastMultiplierSerial = p.ball.multiplierSerial || 0;
           p.multiplierFound = true;
@@ -1239,6 +1341,14 @@
         else if (this.game.isOutOfWorld(p.ball)) this.resetPlayerAfterEnvironment(p, NG.CONFIG.gameplay.outOfBoundsPenaltyStroke, 'Fuera del mapa');
         if (p.ball?.holed && !p.finished) this.finishPlayerHole(p);
         if (p.shotInProgress && p.ball && !p.ball.moving && !p.ball.holed && !p.ball.inWater) {
+          const cup = this.game.hole?.cup;
+          const origin = p.ball.shotOrigin;
+          if (cup && origin) {
+            const distanceMeters = Math.hypot(cup.x - p.ball.x, cup.y - p.ball.y) * NG.CONFIG.course.metersPerPixel;
+            const travelMeters = Math.hypot(p.ball.x - origin.x, p.ball.y - origin.y) * NG.CONFIG.course.metersPerPixel;
+            if (distanceMeters <= 2.2) this.emitAnnouncerCue('NEAR_MISS', p, { distanceMeters });
+            else if (travelMeters >= 95) this.emitAnnouncerCue('LONG_SHOT', p, { distanceMeters: travelMeters });
+          }
           p.shotInProgress = false;
           // Con el mundo ya cerrado no hay turno que pasar ni límite que
           // aplicar: de retirar a quien se para se encarga la prórroga.
@@ -1625,6 +1735,29 @@
       player.ball = fresh;
       player.physics.time = this.worldTime;
       player.shotInProgress = false;
+      this.resetAnnouncerTrack(player);
+
+      // Primero se narra el hecho que causó el reinicio; después puede entrar
+      // el siguiente turno. Así WATER/SABOTAGE no quedan detrás de un
+      // TURN_START generado por la misma penalización.
+      const reasonText = String(reason || '').toLowerCase();
+      if (reasonText.includes('agua')) this.emitAnnouncerCue('WATER', player, { penalty });
+      else if (reasonText.includes('fuera')) this.emitAnnouncerCue('OUT_OF_BOUNDS', player, { penalty });
+      else if (reasonText.includes('aplast')) this.emitAnnouncerCue('HARD_LANDING', player, { penalty });
+      else this.emitAnnouncerCue('RESET', player, { penalty });
+
+      if (context?.sabotageBy) {
+        const attacker = this.players.get(context.sabotageBy);
+        this.emitAnnouncerCue('SABOTAGE_SUCCESS', attacker, {
+          opponentKey: player.playerKey,
+          opponentName: player.username,
+          attackerKey: attacker?.playerKey || context.sabotageBy,
+          attackerName: attacker?.username || context.sabotageByUsername,
+          victimKey: player.playerKey,
+          victimName: player.username,
+        });
+      }
+
       if (this.graceRemaining == null) {
         if (this.turnLimitReached(player)) this.finishPlayerWithoutPoints(player, 'turn-limit');
         else if ((this.settings?.mode || 'turn') === 'turn') this.advanceTurnFrom(player.playerKey);
@@ -1650,6 +1783,21 @@
       const multiplier = player.multiplierFound ? NG.CONFIG.gameplay.scoreMultiplier : 1;
       player.holePoints = (base + raceBonus) * multiplier;
       player.points += player.holePoints;
+      this.emitAnnouncerCue(player.strokes === 1 ? 'HOLE_IN_ONE' : 'HOLE', player, {
+        finishOrder: player.finishOrder,
+        points: player.holePoints,
+      });
+      if ((this.settings?.mode || 'turn') === 'battle') {
+        const remaining = [...this.players.values()].filter((candidate) => candidate.role === 'player' && !candidate.finished && candidate.connected);
+        const phaseEvent = remaining.length === 4 ? 'FINAL_FOUR'
+          : remaining.length === 3 ? 'FINAL_THREE'
+            : remaining.length === 2 ? 'FINAL_TWO'
+              : remaining.length === 1 ? 'LAST_STAND' : '';
+        if (phaseEvent) this.emitAnnouncerCue(phaseEvent, remaining[0] || player, {
+          survivorCount: remaining.length,
+          survivors: remaining.map((candidate) => candidate.username).join(', '),
+        });
+      }
       if ((this.settings?.mode || 'turn') === 'turn') this.advanceTurnFrom(player.playerKey);
       this.broadcastReliable({
         type: 'session:event', event: 'holed', playerKey: player.playerKey, finishOrder: player.finishOrder,
@@ -1742,6 +1890,10 @@
       this.graceReason = null;
       this.transitionTimer = 0;
       this.transitionHold = 0;
+      const winner = this.players.get(winnerPlayerKey);
+      this.emitAnnouncerCue((this.settings?.mode || 'turn') === 'battle' ? 'BATTLE_ROYALE_WINNER' : 'VICTORY', winner, {
+        leader: winner?.username || '',
+      });
       this.broadcastReliable({ type: 'match:over', winnerPlayerKey });
       this.updateDiscoveryLobby(true);
       this.emit('matchover', { winnerPlayerKey, standings: this.getStandings() });
@@ -1895,9 +2047,13 @@
         p.prevX = p.ball.x;
         p.prevY = p.ball.y;
         p.presentationBall = p.ball;
+        this.resetAnnouncerTrack(p);
         p.interpolator?.reset(p.ball, this.netTime);
       }
       this.turnPlayerKey = [...this.players.values()].find((p) => p.role === 'player' && p.connected)?.playerKey || null;
+      const mapStarter = this.players.get(this.turnPlayerKey) || [...this.players.values()].find((p) => p.role === 'player' && p.connected);
+      this.emitAnnouncerCue('ROUND_START', mapStarter || null);
+      if ((this.settings?.mode || 'turn') === 'turn' && mapStarter) this.emitAnnouncerCue('TURN_START', mapStarter);
       this.broadcastReliable({ type: 'session:event', event: 'map-changed', seed: this.game.seed, holeIndex: 0, cooldownRemainingMs: NG.NET_CONFIG.mapVoteCooldownMs });
       this.broadcastRoster();
       this.broadcastSnapshot();
@@ -1913,9 +2069,14 @@
       const start = Math.max(0, all.findIndex((p) => p.playerKey === playerKey));
       for (let offset = 1; offset <= all.length; offset += 1) {
         const p = all[(start + offset) % all.length];
-        if (p.role === 'player' && p.connected && !p.finished && p.ball) { this.turnPlayerKey = p.playerKey; return; }
+        if (p.role === 'player' && p.connected && !p.finished && p.ball) {
+          this.turnPlayerKey = p.playerKey;
+          this.emitAnnouncerCue('TURN_START', p);
+          return;
+        }
       }
       this.turnPlayerKey = eligible[0].playerKey;
+      this.emitAnnouncerCue('TURN_START', eligible[0]);
     }
 
     advanceHole() {
@@ -1960,9 +2121,13 @@
         p.prevX = p.ball.x;
         p.prevY = p.ball.y;
         p.presentationBall = p.ball;
+        this.resetAnnouncerTrack(p);
         p.interpolator?.reset(p.ball, this.netTime);
       }
       this.turnPlayerKey = [...this.players.values()].find((p) => p.role === 'player' && p.connected)?.playerKey || null;
+      const roundStarter = this.players.get(this.turnPlayerKey) || [...this.players.values()].find((p) => p.role === 'player' && p.connected);
+      this.emitAnnouncerCue('ROUND_START', roundStarter || null);
+      if ((this.settings?.mode || 'turn') === 'turn' && roundStarter) this.emitAnnouncerCue('TURN_START', roundStarter);
       this.broadcastReliable({ type: 'session:event', event: 'next-hole', seed: this.game.seed, holeIndex: this.game.holeIndex });
       this.broadcastRoster();
       this.broadcastSnapshot();
@@ -2019,6 +2184,22 @@
             if (impulse >= meaningfulContact * 0.3) {
               if (aTowardB >= meaningfulContact) this.markSabotageContact(playerB, playerA);
               if (bTowardA >= meaningfulContact) this.markSabotageContact(playerA, playerB);
+              const pairKey = [playerA.playerKey, playerB.playerKey].sort().join('|');
+              const lastCue = this.announcerCollisionAt.get(pairKey) || -Infinity;
+              if (this.worldTime - lastCue >= 0.95) {
+                this.announcerCollisionAt.set(pairKey, this.worldTime);
+                const attacker = aTowardB >= bTowardA ? playerA : playerB;
+                const victim = attacker === playerA ? playerB : playerA;
+                this.emitAnnouncerCue('PLAYER_COLLISION', attacker, {
+                  opponentKey: victim.playerKey,
+                  opponentName: victim.username,
+                  attackerKey: attacker.playerKey,
+                  attackerName: attacker.username,
+                  victimKey: victim.playerKey,
+                  victimName: victim.username,
+                  speedKmh: Math.max(speedA, speedB) * NG.CONFIG.course.metersPerPixel * 3.6,
+                });
+              }
             }
           }
         }
