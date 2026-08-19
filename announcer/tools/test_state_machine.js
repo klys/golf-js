@@ -153,6 +153,89 @@ function fakeSystem() {
   assert(/typeof this\.renderer\?\.spawnWaterRipple === 'function'/.test(gameSource), 'spawnWaterRipple no está protegido');
 }
 
+// CP-8 · Presentación de mapa: líder/favorito y primer toque contextual.
+{
+  const game = { seed: 'seed-a', holeIndex: 1, hole: { par: 4 }, holes: [{}, {}], ball: { moving: false }, isIntroPlaying: () => false };
+  const ann = new NG.AnnouncerSystem(game, null);
+  ann.mapIntroData = JSON.parse(fs.readFileSync(path.join(ROOT, 'announcer/data/map-intro.json'), 'utf8'));
+  ann.runtimeConfig = { mapPresentation: { introPriority: 96, firstTouchPriority: 94, recentMemory: 8 } };
+  const standings = [
+    { rank: 1, playerKey: 'a', username: 'Alicia', points: 12, role: 'player', connected: true },
+    { rank: 2, playerKey: 'b', username: 'Bruno', points: 4, role: 'player', connected: true },
+  ];
+  ann.session = {
+    role: 'host', courseRound: 2, getStatus: () => ({ online: true }), getStandings: () => standings,
+    players: new Map([['a', { username: 'Alicia' }], ['b', { username: 'Bruno' }]]),
+  };
+  ann.favorite.commentator = 'a';
+  const intro = ann.buildMapPresentationBundle({ source: 'test' });
+  assert(intro.eventKey === 'MAP_PRESENTATION' && intro.policy.mustSpeak === true, 'Presentación de mapa no es persistente');
+  assert(intro.items[0]?.speaker === 'commentator' && /Alicia/.test(intro.items[0]?.text || ''), 'El favorito líder no fue presentado por su comentarista');
+  ann.favorite.commentator = '';
+  ann.favorite.informant = 'b';
+  const first = ann.buildMapFirstTouchBundle({ playerKey: 'b', playerName: 'Bruno', source: 'test' });
+  assert(first.eventKey === 'MAP_FIRST_TOUCH' && first.items[0]?.speaker === 'informant', 'El favorito del informante no tomó la voz en el primer toque');
+  assert(/Bruno/.test(first.items[0]?.text || ''), 'El primer toque no menciona al jugador correcto');
+}
+
+// CP-9 · Postmatch nunca vuelve a abrir una pausa informativa.
+{
+  const game = { holeIndex: 0, holes: [{}], hole: { par: 4, cup: { x: 1, y: 1 } }, ball: { x: 0, y: 0, moving: false }, isIntroPlaying: () => false };
+  const ann = new NG.AnnouncerSystem(game, null);
+  ann.ready = true; ann.enabled = true; ann.matchActive = true; ann.narrativePhase = 'postmatch'; ann.informativeDelivered = true;
+  ann.runtimeConfig = { dialogue: { allowQuietFiller: true }, stateMachine: { postMatchSummaryMax: 0, idleAfterMs: 1 } };
+  ann.director = { isBusy: () => false };
+  let delivered = 0;
+  ann.deliverBundle = () => { delivered += 1; return { accepted: true }; };
+  ann.lastMeaningfulAt = Date.now() - 10000;
+  ann.maybeFillSilence();
+  assert(delivered === 0, 'Postmatch abrió narración informativa o resumen pese a max=0');
+  assert(ann.narrativePhase === 'postmatch' && ann.informativeDelivered === true, 'Postmatch rearmó la pausa informativa');
+}
+
+// CP-10 · HOLE/HIO saltan delante de presentaciones mustSpeak aún no iniciadas.
+{
+  const director = new NG.AnnouncerSpeechDirector(fakeSystem());
+  director.currentBundle = { id: 'busy', source: 'game', policy: { class: 'important' }, items: [{ text: 'ocupado', speaker: 'commentator' }] };
+  const intro = { id: 'intro', eventKey: 'MAP_PRESENTATION', policy: { class: 'critical', mustSpeak: true }, items: [{ text: 'intro', speaker: 'commentator' }] };
+  const hole = { id: 'hole-priority', guaranteeKey: 'HOLE:p1:m1', eventKey: 'HOLE', policy: { class: 'supercritical', guaranteed: true }, items: [{ text: 'hoyo', speaker: 'commentator' }] };
+  director.submitBundle(intro);
+  director.submitBundle(hole);
+  assert(director.guaranteedQueue[0]?.eventKey === 'HOLE', 'HOLE no saltó delante del mustSpeak pendiente');
+  assert(director.guaranteedQueue[1]?.eventKey === 'MAP_PRESENTATION', 'La presentación mustSpeak se perdió al priorizar HOLE');
+}
+
+// CP-11 · Un MAP_PRESENTATION del host saca al cliente de postmatch antes de programar audio.
+{
+  const game = { ball: { moving: false }, isIntroPlaying: () => false };
+  const ann = new NG.AnnouncerSystem(game, null);
+  ann.matchActive = true;
+  ann.narrativePhase = 'postmatch';
+  ann.informativeDelivered = true;
+  ann.session = { role: 'client' };
+  let scheduled = null;
+  ann.scheduleBundle = (bundle) => { scheduled = bundle; return { accepted: true }; };
+  ann.receiveNetworkBundle({
+    startAtNetTime: 10,
+    bundle: { eventKey: 'MAP_PRESENTATION', mapSignature: 'online:3:seed:0', policy: { class: 'critical', mustSpeak: true }, items: [{ text: 'mapa', speaker: 'commentator' }] },
+  });
+  assert(ann.narrativePhase === 'gameplay', 'Cliente siguió atrapado en postmatch al recibir mapa nuevo');
+  assert(ann.mapIntroState.firstTouchArmed === true, 'Cliente no armó el primer toque al recibir presentación');
+  assert(scheduled?.eventKey === 'MAP_PRESENTATION', 'Cliente no programó la presentación recibida');
+}
+
+// CP-12 · Al cambiar mapa/postmatch una conversación vieja cede tras la línea actual, sin cortar HOLE.
+{
+  const director = new NG.AnnouncerSpeechDirector(fakeSystem());
+  director.currentBundle = { id: 'old-shot', eventKey: 'SHOT_STRONG', source: 'game', policy: { class: 'important' }, items: [{ text: 'a', speaker: 'commentator' }, { text: 'b', speaker: 'informant' }] };
+  director.discardNonGuaranteedPending(['HOLE', 'HOLE_IN_ONE']);
+  assert(director.yieldCurrentAfterLine === true, 'Conversación vieja no cede tras la línea actual');
+  const protectedDirector = new NG.AnnouncerSpeechDirector(fakeSystem());
+  protectedDirector.currentBundle = { id: 'hole-current', eventKey: 'HOLE', guaranteeKey: 'h', source: 'game', policy: { class: 'supercritical', guaranteed: true }, items: [{ text: 'hoyo', speaker: 'commentator' }] };
+  protectedDirector.discardNonGuaranteedPending(['HOLE', 'HOLE_IN_ONE']);
+  assert(protectedDirector.yieldCurrentAfterLine === false, 'HOLE en curso fue marcado para truncarse');
+}
+
 console.log('ANNOUNCER STATE MACHINE TEST OK');
 console.log(' - supercritical HOLE/HIO persistent queue');
 console.log(' - informative -> gameplay handoff');
@@ -161,3 +244,8 @@ console.log(' - late network guarantee');
 console.log(' - aiming/moving activity gate');
 console.log(' - informative one-shot until real action');
 console.log(' - renderer optional API guards');
+console.log(' - map presentation leader/favorite + contextual first touch');
+console.log(' - no informative pause after postmatch');
+console.log(' - HOLE priority over pending mustSpeak map lines');
+console.log(' - network MAP_PRESENTATION exits client postmatch');
+console.log(' - stale conversations yield after current line; HOLE remains protected');

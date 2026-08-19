@@ -74,3 +74,17 @@ El apuntado online también forma parte del estado autoritativo: el cliente info
 - Se eliminaron las frases meta repetitivas sobre “mapa estable” o “sin acción en curso”.
 - `game.js` protege `spawnShockwave()` y `spawnWaterRipple()` para que una caché de renderer antigua no rompa el bucle principal.
 - `index.html` fuerza una versión nueva de los scripts críticos del renderer/juego/manager para evitar mezclas de caché.
+
+## PATCH 0008 · Presentación de mapa y primer toque
+
+La locución de cada mapa/hoyo tiene ahora una sección propia, separada del comentario normal de gameplay:
+
+1. **MAP_PRESENTATION** se dispara una sola vez cuando cambia el mapa. Es `mustSpeak`: espera su turno y no se pierde por un micrófono ocupado, pero sigue por debajo de `HOLE`/`HOLE_IN_ONE` supercríticos.
+2. Si existe un líder real por puntos, la presentación lo nombra con sarcasmo. Si no existe un líder claro, usa una bienvenida absurda.
+3. Los favoritos persistentes de Rafa/Álex se cruzan con el líder. Si uno de los locutores tiene como favorito al líder, ese locutor toma la voz. Si los favoritos son distintos, se añade una puya de rivalidad de cabina.
+4. Después de la presentación queda armado **MAP_FIRST_TOUCH**. `TURN_START`, `AIMING` y `RISKY_AIM` actualizan el estado, pero no hablan antes del primer tiro del mapa.
+5. El primer tiro se comenta una sola vez según la posición del jugador: líder, último, favorito del comentarista, favorito del informante o apertura general. Después el estado pasa a `consumed` y el resto del mapa vuelve a la narrativa normal.
+6. En online el host decide presentación, favorito, posición, texto y `startAtNetTime`; los clientes solo reproducen el bundle. Un `MAP_PRESENTATION` nuevo también saca a los clientes de `postmatch`.
+7. En `postmatch` no se vuelve a abrir una pausa informativa. Solo sobreviven `HOLE`/`HOLE_IN_ONE`, victoria/cierre y los resúmenes post-partida explícitos.
+
+Los textos exclusivos de esta sección viven en `announcer/data/map-intro.json` y su fallback `announcer/map-intro-data.js`. El banco incorpora 257 frases/fragmentos dedicados a bienvenida, líder, favoritos, rivalidad y primer toque, sin modificar los 74 eventos originales de `commentator.json` / `informant.json`.

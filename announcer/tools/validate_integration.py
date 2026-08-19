@@ -16,8 +16,8 @@ def require(condition, message):
 
 for rel in [
     "announcer/engine.js", "announcer/manager.js", "announcer/ui.js", "announcer/ui.css",
-    "announcer/config.json", "announcer/config-data.js",
-    "announcer/data/commentator.json", "announcer/data/informant.json",
+    "announcer/config.json", "announcer/config-data.js", "announcer/map-intro-data.js",
+    "announcer/data/commentator.json", "announcer/data/informant.json", "announcer/data/map-intro.json",
     "js/network/profile.js", "js/network/clientEnv.js", "config.json", "config.example.json",
 ]:
     require((ROOT / rel).is_file(), f"Falta {rel}")
@@ -28,6 +28,7 @@ try:
     client_example = json.loads((ROOT / "config.example.json").read_text(encoding="utf-8"))
     commentator = json.loads((ANN / "data/commentator.json").read_text(encoding="utf-8"))
     informant = json.loads((ANN / "data/informant.json").read_text(encoding="utf-8"))
+    map_intro = json.loads((ANN / "data/map-intro.json").read_text(encoding="utf-8"))
     require(cfg.get("schema") == "noise-golf-announcer-runtime-v1", "Schema de config inesperado")
     require("defaults" not in cfg, "Los defaults de usuario no deben permanecer en announcer/config.json")
     state_cfg = cfg.get("stateMachine") or {}
@@ -35,6 +36,18 @@ try:
     require(int(state_cfg.get("idleAfterMs", 0)) >= 1000, "idleAfterMs inválido")
     require("informativeCooldownMs" not in state_cfg, "La pausa informativa no debe usar cooldown periódico")
     require(int(state_cfg.get("postMatchSummaryMax", -1)) >= 1, "Falta resumen post-partida")
+    require(state_cfg.get("informativeAfterPostMatch") is False, "Postmatch no debe abrir pausa informativa")
+    map_cfg = cfg.get("mapPresentation") or {}
+    require(map_cfg.get("enabled") is True, "Presentación de mapa desactivada")
+    require(map_cfg.get("silencePreFirstTouch") is True, "Debe silenciarse AIM/TURN antes del primer toque")
+    require(map_intro.get("schema") == "noise-golf-map-intro-v1", "Schema map-intro inesperado")
+    def count_strings(value):
+        if isinstance(value, str): return 1
+        if isinstance(value, list): return sum(count_strings(item) for item in value)
+        if isinstance(value, dict): return sum(count_strings(item) for item in value.values())
+        return 0
+    require(count_strings(map_intro.get("presentation", {})) >= 100, "Banco de presentaciones demasiado pequeño")
+    require(count_strings(map_intro.get("firstTouch", {})) >= 80, "Banco de primer toque demasiado pequeño")
     require(isinstance(client_cfg.get("announcerUserDefaults"), dict), "Falta announcerUserDefaults en config.json general")
     require(isinstance(client_example.get("announcerUserDefaults"), dict), "Falta announcerUserDefaults en config.example.json")
     require(set(commentator.get("events", {})) == set(informant.get("events", {})), "Eventos de personas no coinciden")
@@ -62,6 +75,7 @@ for ident in [
 script_order = [
     "./announcer/persona-data.js",
     "./announcer/config-data.js",
+    "./announcer/map-intro-data.js",
     "./announcer/engine.js",
     "./announcer/manager.js",
     "./announcer/ui.js",
@@ -96,13 +110,15 @@ for token in [
     "favoriteScores", "receiveNetworkBundle", "notifySpeechLine",
     "supercritical", "guaranteed", "postmatch", "INFORMATIVE_STATE",
     "POST_MATCH_SUMMARY", "hasLiveGameplayActivity", "onOfflineMatchEnd",
-    "getAnnouncerSettings", "announcerUserDefaults",
+    "MAP_PRESENTATION", "MAP_FIRST_TOUCH", "buildMapPresentationBundle", "buildMapFirstTouchBundle",
+    "firstTouchArmed", "getAnnouncerSettings", "announcerUserDefaults",
 ]:
     require(token in manager or token in profile or token in client_env, f"Integración incompleta: {token}")
 
 require("notifySpeechLine?.(item, text, 'start')" in engine, "El director TTS no publica el inicio de la línea")
 require("notifySpeechLine?.(item, text, 'end')" in engine, "El director TTS no publica el final de la línea")
 require("guaranteedQueue" in engine and "enqueueGuaranteed" in engine, "Falta cola supercrítica persistente")
+require("mustSpeak" in engine, "Falta persistencia mustSpeak para presentación/primer toque")
 require("discardNonGuaranteedPending" in engine, "Falta limpieza de cola al entrar en post-partida")
 require("class AnnouncerTranscriptUI" in ui and "captionsCollapsed" in ui, "Ventana plegable de locución incompleta")
 require("setAnnouncerSettings" in profile and "getAnnouncerSettings" in profile, "PlayerProfile no guarda preferencias de locución")
@@ -151,7 +167,9 @@ print(" - Preferencias TTS: dentro de PlayerProfile + defaults en config.json ge
 print(" - Migración: noiseGolf.announcer.v1 -> noiseGolf.profile.v1/announcer")
 print(" - Ventana de locución: plegable + historial de líneas realmente reproducidas")
 print(" - Online: host-authority + announcer:bundle + startAtNetTime + aim state")
-print(" - Máquina narrativa: gameplay / informative one-shot / postmatch")
+print(" - Máquina narrativa: gameplay / informative one-shot / postmatch sin pausa informativa")
+print(" - Presentación de mapa: líder/favoritos/rivalidad + primer toque contextual mustSpeak")
+print(f" - Frases dedicadas mapa/primer toque: {count_strings(map_intro.get('presentation', {})) + count_strings(map_intro.get('firstTouch', {}))}")
 print(" - Renderer: guards defensivos para shockwave/water ripple + cache-bust en HTML")
 print(" - Supercrítico: HOLE + HOLE_IN_ONE persistentes hasta reproducción")
 print(" - Offline/Battle hooks: presentes")

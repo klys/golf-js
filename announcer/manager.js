@@ -11,6 +11,8 @@
   const { clamp, chance, clone } = NG.AnnouncerUtils;
   const GUARANTEED_EVENTS = new Set(['HOLE', 'HOLE_IN_ONE']);
   const POST_MATCH_ALLOWED_EVENTS = new Set(['HOLE', 'HOLE_IN_ONE', 'VICTORY', 'BATTLE_ROYALE_WINNER']);
+  const MAP_SHOT_EVENTS = new Set(['SHOT_TAKEN', 'SHOT_WEAK', 'SHOT_STRONG', 'SHOT_PERFECT', 'SHOT_BAD']);
+  const MAP_PREFIRST_SILENT_EVENTS = new Set(['TURN_START', 'AIMING', 'RISKY_AIM']);
 
   const merge = (base, value) => {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return clone(base);
@@ -71,19 +73,24 @@
       this.postMatchSummaryCount = 0;
       this.lastPostMatchSummaryAt = 0;
       this.informativeDelivered = false;
+      this.mapIntroData = null;
+      this.mapIntroState = { stage: 'idle', signature: '', introDelivered: false, firstTouchArmed: false, firstTouchConsumed: false };
+      this.mapIntroRecent = new Map();
     }
 
     async init() {
       const fallbackConfig = window.NOISE_GOLF_ANNOUNCER_CONFIG || {};
       const fallbackPersonas = window.EMOTIONAL_MACHINE_PERSONAS || null;
-      const [runtime, commentator, informant] = await Promise.all([
+      const [runtime, commentator, informant, mapIntroData] = await Promise.all([
         this.fetchJson('./announcer/config.json', fallbackConfig),
         this.fetchJson('./announcer/data/commentator.json', fallbackPersonas?.commentator),
         this.fetchJson('./announcer/data/informant.json', fallbackPersonas?.informant),
+        this.fetchJson('./announcer/data/map-intro.json', window.NOISE_GOLF_MAP_INTRO_DATA || null),
       ]);
       if (!commentator || !informant) throw new Error('No se pudieron cargar los JSON internos de locución.');
       this.runtimeConfig = merge(fallbackConfig, runtime || {});
       this.personas = { commentator, informant };
+      this.mapIntroData = mapIntroData || window.NOISE_GOLF_MAP_INTRO_DATA || { presentation: {}, firstTouch: {} };
       this.enabled = this.runtimeConfig.enabled !== false;
       this.language = this.runtimeConfig.language || 'es-ES';
       this.composer = new NG.AnnouncerComposer(this.personas, this.runtimeConfig);
@@ -238,6 +245,7 @@
       this.sessionUnsub.push(session.on('announcerbundle', (packet) => this.receiveNetworkBundle(packet)));
       this.sessionUnsub.push(session.on('announceractivity', (activity) => this.handleNetworkActivity(activity)));
       this.sessionUnsub.push(session.on('matchover', (info) => this.enterPostMatch({ ...info, source: 'online-matchover' })));
+      if (this.matchActive && session.role === 'host') this.scheduleMapPresentation({ source: 'online-session-attach' }, 320);
     }
 
     setNarrativePhase(phase, reason = '') {
@@ -310,9 +318,12 @@
       this.setNarrativePhase('gameplay', 'entered-match');
       const online = !!this.session?.getStatus?.().online;
       if (!online) {
-        this.announceEvent('MATCH_START', { playerName: this.localPlayerName, source: 'offline-match' });
         this.lastHoleSignature = this.offlineHoleSignature();
-        this.announceEvent('ROUND_START', { playerName: this.localPlayerName, source: 'offline-round' });
+        this.presentCurrentMap({ playerName: this.localPlayerName, source: 'offline-match-entry' });
+      } else if (this.session?.role === 'host') {
+        // El host presenta el mapa antes del primer toque. El ROUND_START que
+        // pueda llegar después se deduplica por firma de mapa.
+        this.scheduleMapPresentation({ source: 'online-match-entry' }, 320);
       }
     }
 
@@ -331,6 +342,8 @@
       this.postMatchSummaryCount = 0;
       this.lastPostMatchSummaryAt = 0;
       this.informativeDelivered = false;
+      this.mapIntroState = { stage: 'idle', signature: '', introDelivered: false, firstTouchArmed: false, firstTouchConsumed: false };
+      this.mapIntroRecent.clear();
       this.composer?.reset();
       this.director?.stop();
     }
@@ -350,7 +363,7 @@
       const signature = this.offlineHoleSignature();
       if (signature && signature === this.lastHoleSignature) return;
       this.lastHoleSignature = signature;
-      this.announceEvent('ROUND_START', { playerName: this.localPlayerName, source: 'offline-round' });
+      this.presentCurrentMap({ playerName: this.localPlayerName, source: 'offline-round' });
     }
 
     onAimStart(power = 0) {
@@ -416,7 +429,29 @@
 
     receiveNetworkBundle(packet) {
       if (!packet?.bundle || this.session?.role === 'host') return;
-      this.scheduleBundle(packet.bundle, Number(packet.startAtNetTime));
+      const bundle = packet.bundle;
+      if (bundle.eventKey === 'MAP_PRESENTATION') {
+        // Un mapa nuevo rompe explícitamente el postmatch también en clientes.
+        // El host sigue siendo la única autoridad: el cliente solo refleja el
+        // estado narrativo transportado dentro del bundle.
+        this.postMatchInfo = null;
+        this.postMatchSummaryCount = 0;
+        this.lastPostMatchSummaryAt = 0;
+        this.informativeDelivered = false;
+        this.mapIntroState = {
+          stage: 'awaiting-first-touch', signature: String(bundle.mapSignature || ''), introDelivered: true,
+          firstTouchArmed: true, firstTouchConsumed: false,
+        };
+        this.setNarrativePhase('gameplay', 'network-map-presentation');
+        this.lastMeaningfulAt = Date.now();
+      } else if (bundle.eventKey === 'MAP_FIRST_TOUCH') {
+        this.mapIntroState.stage = 'consumed';
+        this.mapIntroState.firstTouchArmed = false;
+        this.mapIntroState.firstTouchConsumed = true;
+        this.setNarrativePhase('gameplay', 'network-map-first-touch');
+        this.lastMeaningfulAt = Date.now();
+      }
+      this.scheduleBundle(bundle, Number(packet.startAtNetTime));
     }
 
     enterPostMatch(info = {}) {
@@ -426,6 +461,11 @@
       this.postMatchSummaryCount = 0;
       this.lastPostMatchSummaryAt = 0;
       this.lastMeaningfulAt = Date.now();
+      // Nunca se abre una pausa informativa después del cierre. Solo quedan
+      // HOLE/HIO pendientes y los resúmenes post-partida explícitos.
+      this.informativeDelivered = true;
+      this.mapIntroState.stage = 'closed';
+      this.mapIntroState.firstTouchArmed = false;
       this.setNarrativePhase('postmatch', info.source || 'match-over');
       this.director?.discardNonGuaranteedPending?.([...POST_MATCH_ALLOWED_EVENTS]);
     }
@@ -439,13 +479,19 @@
       if (!this.matchActive || this.session?.getStatus?.().online) return;
       this.resetNarrativeState();
       this.setNarrativePhase('gameplay', 'offline-new-course');
-      this.announceEvent('MATCH_START', { playerName: this.localPlayerName, source: 'offline-new-course' });
+      this.lastHoleSignature = this.offlineHoleSignature();
+      this.presentCurrentMap({ playerName: this.localPlayerName, source: 'offline-new-course' });
     }
 
     announceEvent(eventKey, payload = {}) {
       if (!this.ready || !this.enabled || !eventKey) return { accepted: false, reason: 'not-ready' };
       const online = !!this.session?.getStatus?.().online;
       if (online && this.session?.role === 'client') return { accepted: false, reason: 'client-not-authority' };
+
+      // ROUND_START ya no usa el banco genérico: inaugura la sección dedicada
+      // de presentación de mapa. Esto también saca al narrador de postmatch si
+      // el host acaba de cargar un mapa nuevo tras una partida terminada.
+      if (eventKey === 'ROUND_START') return this.presentCurrentMap(payload);
       if (this.narrativePhase === 'postmatch' && !POST_MATCH_ALLOWED_EVENTS.has(eventKey)) {
         return { accepted: false, reason: 'postmatch-gameplay-suppressed' };
       }
@@ -455,6 +501,14 @@
       const guaranteed = (this.runtimeConfig.stateMachine?.guaranteedEvents || [...GUARANTEED_EVENTS]).includes(eventKey);
       const now = Date.now();
       this.markGameplayActivity(eventKey, playerKey);
+
+      // La presentación de mapa reemplaza al MATCH_START genérico. Evita que
+      // el primer mapa reciba dos bienvenidas antes de que alguien toque bola.
+      if (eventKey === 'MATCH_START' && this.runtimeConfig.mapPresentation?.suppressGenericMatchStart !== false) {
+        this.applyCueToContext(eventKey, payload);
+        return { accepted: true, reason: 'map-presentation-replaces-match-start' };
+      }
+
       const dedupeKey = `${playerKey}:${eventKey}`;
       const last = this.lastByPlayerEvent.get(dedupeKey) || 0;
       const dedupeMs = Math.max(0, Number(policy.dedupeMs || 0));
@@ -462,6 +516,28 @@
       this.lastByPlayerEvent.set(dedupeKey, now);
 
       const context = this.applyCueToContext(eventKey, payload);
+
+      // Tras cambiar de mapa dejamos limpia la escena sonora: TURN_START y
+      // AIMING actualizan estado, pero no hablan antes del primer toque. El
+      // primer tiro tendrá su propio comentario contextual y se consumirá una vez.
+      if (this.mapIntroState.firstTouchArmed && MAP_PREFIRST_SILENT_EVENTS.has(eventKey)
+        && this.runtimeConfig.mapPresentation?.silencePreFirstTouch !== false) {
+        this.lastMeaningfulAt = now;
+        return { accepted: true, reason: 'map-prefirst-state-only' };
+      }
+
+      if (this.mapIntroState.firstTouchArmed && MAP_SHOT_EVENTS.has(eventKey)) {
+        const firstTouchBundle = this.buildMapFirstTouchBundle({ ...payload, playerKey, eventKey });
+        this.mapIntroState.stage = 'consumed';
+        this.mapIntroState.firstTouchArmed = false;
+        this.mapIntroState.firstTouchConsumed = true;
+        // El tiro sigue alimentando favoritos/estadísticas, pero su locución
+        // genérica se sustituye por la línea especial de salida del mapa.
+        this.updateFavorites(eventKey, payload, context);
+        this.lastMeaningfulAt = now;
+        return this.deliverBundle(firstTouchBundle);
+      }
+
       if (policy.mode === 'trace') {
         this.lastMeaningfulAt = now;
         return { accepted: true, reason: 'trace-folded' };
@@ -644,6 +720,245 @@
       return changed;
     }
 
+    currentMapSignature() {
+      const online = !!this.session?.getStatus?.().online;
+      if (online) {
+        return `online:${Number(this.session?.courseRound) || 0}:${this.game?.seed || ''}:${Number(this.game?.holeIndex) || 0}`;
+      }
+      return `offline:${this.offlineHoleSignature()}`;
+    }
+
+    mapStandings() {
+      if (!this.session?.getStatus?.().online) return [];
+      return (this.session?.getStandings?.() || []).filter((entry) => entry?.role === 'player' && entry?.connected !== false);
+    }
+
+    mapLeaderSnapshot(standings = this.mapStandings()) {
+      const ordered = Array.isArray(standings) ? standings : [];
+      const leader = ordered[0] || null;
+      const second = ordered[1] || null;
+      const meaningful = Boolean(leader && second && Number(leader.points || 0) > Number(second.points || 0));
+      const gap = meaningful ? Math.max(0, Number(leader.points || 0) - Number(second.points || 0)) : 0;
+      return { leader, second, meaningful, gap };
+    }
+
+    mapTemplateContext(extra = {}) {
+      const standings = extra.standings || this.mapStandings();
+      const { leader, meaningful, gap } = this.mapLeaderSnapshot(standings);
+      const mapNumber = Math.max(1, Number(this.game?.holeIndex || 0) + 1);
+      const hole = this.game?.hole;
+      return {
+        player: extra.player?.username || extra.playerName || this.localPlayerName || 'Jugador',
+        leader: meaningful ? leader.username : 'nadie todavía',
+        leader_points: meaningful ? Math.round(Number(leader.points) || 0) : 0,
+        gap: meaningful ? Math.round(gap) : 0,
+        rank: Number(extra.player?.rank || 0) || 0,
+        total: standings.length || 1,
+        points: Math.round(Number(extra.player?.points) || 0),
+        map_number: mapNumber,
+        hole: mapNumber,
+        par: Math.max(1, Number(hole?.par || 0)),
+        favorite: extra.favoriteName || this.playerNameForKey(this.favorite.commentator) || this.playerNameForKey(this.favorite.informant) || 'el favorito de la cabina',
+        rafa_favorite: this.playerNameForKey(this.favorite.commentator) || 'todavía sin favorito',
+        alex_favorite: this.playerNameForKey(this.favorite.informant) || 'todavía sin favorito',
+      };
+    }
+
+    fillMapTemplate(text, ctx = {}) {
+      return String(text || '').replace(/\{([a-z_]+)\}/gi, (match, key) => ctx[key] ?? match)
+        .replace(/\s+/g, ' ').replace(/\s+([,.;:!?])/g, '$1').trim();
+    }
+
+    pickMapPhrase(poolKey, list) {
+      if (!Array.isArray(list) || !list.length) return '';
+      const memory = Math.max(3, Number(this.runtimeConfig.mapPresentation?.recentMemory || 8));
+      const recent = this.mapIntroRecent.get(poolKey) || [];
+      const blocked = new Set(recent.slice(-memory));
+      let candidates = list.filter((item) => typeof item === 'string' && !blocked.has(item));
+      if (!candidates.length) candidates = list.filter((item) => typeof item === 'string');
+      if (!candidates.length) return '';
+      const value = candidates[Math.floor(Math.random() * candidates.length)];
+      recent.push(value);
+      if (recent.length > memory * 3) recent.splice(0, recent.length - memory * 2);
+      this.mapIntroRecent.set(poolKey, recent);
+      return value;
+    }
+
+    buildMapPresentationBundle(payload = {}) {
+      const presentation = this.mapIntroData?.presentation || {};
+      const standings = this.mapStandings();
+      const { leader, meaningful } = this.mapLeaderSnapshot(standings);
+      const rafaFav = String(this.favorite.commentator || '');
+      const alexFav = String(this.favorite.informant || '');
+      const splitFavorites = Boolean(rafaFav && alexFav && rafaFav !== alexFav);
+      const sharedFavorite = Boolean(rafaFav && alexFav && rafaFav === alexFav);
+      const ctx = this.mapTemplateContext({ standings });
+      const items = [];
+
+      if (meaningful) {
+        const leaderKey = String(leader.playerKey || '');
+        const rafaOwns = leaderKey && leaderKey === rafaFav;
+        const alexOwns = leaderKey && leaderKey === alexFav;
+        let speaker = 'commentator';
+        let poolKey = 'presentation.leaderGeneral';
+        let pool = presentation.leaderGeneral;
+        if (rafaOwns && !alexOwns) {
+          speaker = 'commentator'; poolKey = 'presentation.leaderCommentatorFavorite'; pool = presentation.leaderCommentatorFavorite;
+        } else if (alexOwns && !rafaOwns) {
+          speaker = 'informant'; poolKey = 'presentation.leaderInformantFavorite'; pool = presentation.leaderInformantFavorite;
+        } else if (rafaOwns && alexOwns) {
+          const leaderLine = this.pickMapPhrase('presentation.leaderGeneral', presentation.leaderGeneral);
+          const shared = this.pickMapPhrase('presentation.sharedFavorite', presentation.sharedFavorite);
+          if (leaderLine) items.push({ speaker: 'commentator', text: this.fillMapTemplate(leaderLine, ctx), eventLabel: 'Presentación · líder' });
+          if (shared) items.push({ speaker: 'informant', text: this.fillMapTemplate(shared, { ...ctx, favorite: leader.username }), eventLabel: 'Presentación · favorito compartido' });
+        }
+        if (!items.length) {
+          const phrase = this.pickMapPhrase(poolKey, pool) || `{leader} llega al nuevo mapa como líder. Que empiece la defensa del primer puesto.`;
+          items.push({ speaker, text: this.fillMapTemplate(phrase, ctx), eventLabel: 'Presentación · líder' });
+        }
+      } else if (splitFavorites) {
+        const duels = Array.isArray(presentation.splitFavoriteDuels) ? presentation.splitFavoriteDuels : [];
+        if (duels.length) {
+          const duel = duels[Math.floor(Math.random() * duels.length)];
+          const c = this.fillMapTemplate(duel?.commentator, ctx);
+          const i = this.fillMapTemplate(duel?.informant, ctx);
+          if (c) items.push({ speaker: 'commentator', text: c, eventLabel: 'Presentación · rivalidad de favoritos' });
+          if (i) items.push({ speaker: 'informant', text: i, eventLabel: 'Presentación · respuesta rival' });
+        }
+      } else if (sharedFavorite) {
+        const phrase = this.pickMapPhrase('presentation.sharedFavorite', presentation.sharedFavorite);
+        if (phrase) items.push({ speaker: 'commentator', text: this.fillMapTemplate(phrase, { ...ctx, favorite: ctx.rafa_favorite }), eventLabel: 'Presentación · favorito compartido' });
+      } else {
+        const phrase = this.pickMapPhrase('presentation.noLeader', presentation.noLeader) || '¡Mapa nuevo! Nadie manda todavía, así que todos conservan unos segundos de optimismo reglamentario.';
+        items.push({ speaker: 'commentator', text: this.fillMapTemplate(phrase, ctx), eventLabel: 'Presentación · nuevo mapa' });
+      }
+
+      if (!meaningful && !splitFavorites && !sharedFavorite) {
+        const soleFavKey = rafaFav || alexFav;
+        if (soleFavKey) {
+          const favoriteName = this.playerNameForKey(soleFavKey);
+          const pool = rafaFav ? presentation.singleFavoriteCommentator : presentation.singleFavoriteInformant;
+          const poolKey = rafaFav ? 'presentation.singleFavoriteCommentator' : 'presentation.singleFavoriteInformant';
+          const line = this.pickMapPhrase(poolKey, pool);
+          if (line) items.push({
+            speaker: rafaFav ? 'commentator' : 'informant',
+            text: this.fillMapTemplate(line, { ...ctx, favorite: favoriteName || ctx.favorite }),
+            eventLabel: 'Presentación · favorito',
+          });
+        }
+      }
+
+      // Si ya existe un líder, añadimos una sola puya social sobre los favoritos.
+      // No convertimos la presentación en una conversación interminable.
+      if (meaningful && splitFavorites) {
+        const stingers = Array.isArray(presentation.splitFavoriteStingers) ? presentation.splitFavoriteStingers : [];
+        if (stingers.length) {
+          const primarySpeaker = items[0]?.speaker || 'commentator';
+          const opposite = stingers.filter((entry) => entry?.speaker && entry.speaker !== primarySpeaker);
+          const candidates = opposite.length ? opposite : stingers;
+          const stinger = candidates[Math.floor(Math.random() * candidates.length)];
+          const line = this.fillMapTemplate(stinger?.text, ctx);
+          if (line) items.push({ speaker: stinger?.speaker === 'informant' ? 'informant' : 'commentator', text: line, eventLabel: 'Presentación · rivalidad de favoritos' });
+        }
+      } else if (meaningful && !sharedFavorite && !splitFavorites) {
+        const soleFavKey = rafaFav || alexFav;
+        if (soleFavKey && soleFavKey !== String(leader?.playerKey || '')) {
+          const favoriteName = this.playerNameForKey(soleFavKey);
+          const pool = rafaFav ? presentation.singleFavoriteCommentator : presentation.singleFavoriteInformant;
+          const poolKey = rafaFav ? 'presentation.singleFavoriteCommentator' : 'presentation.singleFavoriteInformant';
+          const line = this.pickMapPhrase(poolKey, pool);
+          if (line) items.push({
+            speaker: rafaFav ? 'commentator' : 'informant',
+            text: this.fillMapTemplate(line, { ...ctx, favorite: favoriteName || ctx.favorite }),
+            eventLabel: 'Presentación · favorito perseguidor',
+          });
+        }
+      }
+
+      const bundle = this.runtimeBundle('MAP_PRESENTATION', items.slice(0, 2), {
+        class: 'critical', priority: Number(this.runtimeConfig.mapPresentation?.introPriority || 96),
+        ttlMs: 20000, mode: 'opportunistic', mustSpeak: true,
+      }, payload.source || 'map-presentation');
+      bundle.mapSignature = this.currentMapSignature();
+      return bundle;
+    }
+
+    buildMapFirstTouchBundle(payload = {}) {
+      const pools = this.mapIntroData?.firstTouch || {};
+      const standings = this.mapStandings();
+      const playerKey = String(payload.playerKey || payload.playerName || this.localPlayerName || 'local');
+      let player = standings.find((entry) => String(entry.playerKey) === playerKey) || null;
+      if (!player && !standings.length) {
+        player = { playerKey, username: payload.playerName || this.localPlayerName || 'Jugador', rank: 1, points: 0 };
+      }
+      const { leader, meaningful } = this.mapLeaderSnapshot(standings);
+      const total = Math.max(1, standings.length || 1);
+      const isLeader = Boolean(meaningful && player && String(player.playerKey) === String(leader.playerKey));
+      const last = standings[standings.length - 1] || null;
+      const isRealLast = Boolean(meaningful && player && last && String(player.playerKey) === String(last.playerKey) && Number(player.points || 0) < Number(leader.points || 0));
+      const rafaOwns = Boolean(player && String(player.playerKey) === String(this.favorite.commentator || ''));
+      const alexOwns = Boolean(player && String(player.playerKey) === String(this.favorite.informant || ''));
+      let poolKey = 'general';
+      let speaker = 'commentator';
+
+      if (isRealLast && rafaOwns && alexOwns) { poolKey = 'lastPlaceCommentatorFavorite'; speaker = 'commentator'; }
+      else if (isRealLast && rafaOwns && !alexOwns) { poolKey = 'lastPlaceCommentatorFavorite'; speaker = 'commentator'; }
+      else if (isRealLast && alexOwns && !rafaOwns) { poolKey = 'lastPlaceInformantFavorite'; speaker = 'informant'; }
+      else if (isRealLast) { poolKey = 'lastPlaceGeneral'; speaker = 'commentator'; }
+      else if (isLeader && rafaOwns && alexOwns) { poolKey = 'leaderCommentatorFavorite'; speaker = 'commentator'; }
+      else if (isLeader && rafaOwns && !alexOwns) { poolKey = 'leaderCommentatorFavorite'; speaker = 'commentator'; }
+      else if (isLeader && alexOwns && !rafaOwns) { poolKey = 'leaderInformantFavorite'; speaker = 'informant'; }
+      else if (isLeader) { poolKey = 'leaderGeneral'; speaker = 'commentator'; }
+      else if (rafaOwns && !alexOwns) { poolKey = 'favoriteCommentator'; speaker = 'commentator'; }
+      else if (alexOwns && !rafaOwns) { poolKey = 'favoriteInformant'; speaker = 'informant'; }
+      else if (rafaOwns && alexOwns) { poolKey = 'favoriteCommentator'; speaker = 'commentator'; }
+
+      const ctx = this.mapTemplateContext({ standings, player, playerName: player?.username || payload.playerName });
+      ctx.total = total;
+      const phrase = this.pickMapPhrase(`firstTouch.${poolKey}`, pools[poolKey])
+        || '¡Primer toque del mapa para {player}! Que la física abra oficialmente el expediente.';
+      const label = poolKey.startsWith('lastPlace') ? 'Primer toque · remontada'
+        : poolKey.startsWith('leader') ? 'Primer toque · líder'
+          : poolKey.startsWith('favorite') ? 'Primer toque · favorito' : 'Primer toque · apertura';
+      const bundle = this.runtimeBundle('MAP_FIRST_TOUCH', [
+        { speaker, text: this.fillMapTemplate(phrase, ctx), eventLabel: label, tone: 'sarcastic' },
+      ], {
+        class: 'critical', priority: Number(this.runtimeConfig.mapPresentation?.firstTouchPriority || 94),
+        ttlMs: 18000, mode: 'opportunistic', mustSpeak: true,
+      }, payload.source || 'map-first-touch');
+      bundle.mapSignature = this.currentMapSignature();
+      return bundle;
+    }
+
+    presentCurrentMap(payload = {}) {
+      if (!this.matchActive) return { accepted: false, reason: 'match-inactive' };
+      const online = !!this.session?.getStatus?.().online;
+      if (online && this.session?.role === 'client') return { accepted: false, reason: 'client-not-authority' };
+      const signature = this.currentMapSignature();
+      if (this.mapIntroState.introDelivered && signature && signature === this.mapIntroState.signature) {
+        return { accepted: false, reason: 'map-presentation-dedupe' };
+      }
+      this.postMatchInfo = null;
+      this.postMatchSummaryCount = 0;
+      this.lastPostMatchSummaryAt = 0;
+      this.informativeDelivered = false;
+      this.setNarrativePhase('gameplay', payload.source || 'map-presentation');
+      this.markGameplayActivity('map-presentation');
+      this.mapIntroState = { stage: 'awaiting-first-touch', signature, introDelivered: true, firstTouchArmed: true, firstTouchConsumed: false };
+      this.director?.discardNonGuaranteedPending?.(['HOLE', 'HOLE_IN_ONE']);
+      const bundle = this.buildMapPresentationBundle(payload);
+      return this.deliverBundle(bundle);
+    }
+
+    scheduleMapPresentation(payload = {}, delayMs = 260) {
+      const timer = window.setTimeout(() => {
+        this.pendingTimers.delete(timer);
+        if (this.matchActive) this.presentCurrentMap(payload);
+      }, Math.max(0, Number(delayMs) || 0));
+      this.pendingTimers.add(timer);
+      return timer;
+    }
+
     runtimeBundle(eventKey, items, policy = {}, source = 'runtime') {
       const now = Date.now();
       const normalized = (items || []).filter((item) => item?.text).map((item) => ({
@@ -770,8 +1085,8 @@
       // cambiar la prioridad relativa ni permitir interrupciones.
       const allowance = Math.ceil(lead * 1000) + Math.max(500, Number(this.runtimeConfig.sync?.lateGraceMs || 900));
       const packetBundle = clone(bundle);
-      const guaranteed = packetBundle.policy?.guaranteed === true || packetBundle.policy?.class === 'supercritical';
-      if (!guaranteed) {
+      const persistent = packetBundle.policy?.guaranteed === true || packetBundle.policy?.class === 'supercritical' || packetBundle.policy?.mustSpeak === true;
+      if (!persistent) {
         packetBundle.expiresAt = Number(packetBundle.expiresAt || Date.now()) + allowance;
         packetBundle.conversationExpiresAt = Number(packetBundle.conversationExpiresAt || packetBundle.expiresAt) + allowance;
       }
@@ -799,9 +1114,9 @@
       const now = this.authoritativeTime();
       const deltaMs = Number.isFinite(startAtNetTime) ? (startAtNetTime - now) * 1000 : 0;
       const grace = Math.max(0, Number(this.runtimeConfig.sync?.lateGraceMs || 900));
-      const guaranteed = bundle?.policy?.guaranteed === true || bundle?.policy?.class === 'supercritical';
-      if (!guaranteed && Number.isFinite(startAtNetTime) && deltaMs < -grace) return { accepted: false, reason: 'too-late' };
-      const delay = guaranteed && deltaMs < 0 ? 0 : Math.max(0, deltaMs);
+      const persistent = bundle?.policy?.guaranteed === true || bundle?.policy?.class === 'supercritical' || bundle?.policy?.mustSpeak === true;
+      if (!persistent && Number.isFinite(startAtNetTime) && deltaMs < -grace) return { accepted: false, reason: 'too-late' };
+      const delay = persistent && deltaMs < 0 ? 0 : Math.max(0, deltaMs);
       if (delay < 18) return this.director.submitBundle(bundle);
       const timer = window.setTimeout(() => {
         this.pendingTimers.delete(timer);

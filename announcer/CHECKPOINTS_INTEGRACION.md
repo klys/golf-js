@@ -62,3 +62,59 @@
 - [x] solo una acción real rearma otra futura pausa.
 - [x] eliminadas frases meta de mapa estable/sin acción.
 - [x] test de one-shot y guardas visuales añadido.
+
+---
+
+## PATCH 0008 · Checkpoints de presentación competitiva
+
+### CP-0008-01 · Postmatch sin pausa informativa
+- `enterPostMatch()` bloquea/retiñe `informativeDelivered=true`.
+- `maybeFillSilence()` no entra en `INFORMATIVE_STATE` durante `postmatch`.
+- Se conservan únicamente supercríticos y resúmenes explícitos.
+
+### CP-0008-02 · Estado de mapa dedicado
+`mapIntroState.stage` usa:
+- `idle`
+- `awaiting-first-touch`
+- `consumed`
+- `closed`
+
+Cada firma de mapa se presenta una sola vez.
+
+### CP-0008-03 · MAP_PRESENTATION
+- Siempre al cargar mapa/hoyo.
+- Líder real: exige ventaja por puntos sobre el segundo.
+- Sin líder: bienvenida absurda.
+- Favorito del líder: habla el locutor propietario del favorito.
+- Favoritos distintos: rivalidad sarcástica de cabina.
+- `mustSpeak`, pero HOLE/HIO pueden saltar delante mientras aún esté en cola.
+
+### CP-0008-04 · Primer toque
+Antes del primer tiro:
+- `TURN_START`, `AIMING`, `RISKY_AIM` = estado solamente.
+
+Primer tiro:
+- líder + favorito de Rafa;
+- líder + favorito de Álex;
+- líder general;
+- último + favorito de Rafa;
+- último + favorito de Álex;
+- último general con motivación absurda;
+- favorito intermedio de Rafa/Álex;
+- caso general.
+
+Después: `firstTouchArmed=false`, `stage=consumed`.
+
+### CP-0008-05 · Online autoritativo
+- Host construye `MAP_PRESENTATION` y `MAP_FIRST_TOUCH`.
+- Bundle incluye `mapSignature` y `startAtNetTime`.
+- Cliente que estaba en `postmatch` vuelve a `gameplay` al recibir una presentación nueva.
+
+### CP-0008-06 · Banco dedicado
+- `announcer/data/map-intro.json`
+- `announcer/map-intro-data.js`
+- 257 frases/fragmentos de mapa/primer toque.
+- Los bancos originales de 74 eventos no cambian.
+
+### CP-0008-07 · Corte limpio entre mapas
+Al cargar un mapa o entrar en postmatch, una conversación vieja no supercrítica termina la **línea ya iniciada** y cede el micrófono antes de continuar con líneas secundarias. `HOLE`/`HOLE_IN_ONE` en curso nunca se truncan.

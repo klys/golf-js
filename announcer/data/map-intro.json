@@ -1,0 +1,349 @@
+{
+  "schema": "noise-golf-map-intro-v1",
+  "version": "1.0.0",
+  "presentation": {
+    "noLeader": [
+      "¡Mapa nuevo, dignidad antigua y cero garantías de que alguien recuerde cómo funciona una pared! Arranca el espectáculo.",
+      "Bienvenidos a otro mapa diseñado con precisión científica y una cantidad sospechosa de malas intenciones.",
+      "Se abre un mapa nuevo. Las bolas están limpias, el marcador respira y la física ya está afilando los cuchillos.",
+      "¡Nuevo mapa! Nadie manda todavía, así que por unos gloriosos segundos todos pueden fingir que tienen un plan.",
+      "Terreno nuevo, oportunidades nuevas y exactamente la misma capacidad humana para mandar una bola al lugar equivocado.",
+      "Atención, caballeros, damas y proyectiles esféricos: comienza otro episodio de decisiones cuestionables con césped de fondo.",
+      "Mapa recién estrenado. No hay líder claro, no hay excusas claras y eso nos parece un equilibrio precioso.",
+      "¡Que ruede el caos! El mapa llega sin historial, pero con suficiente geometría para fabricar uno muy rápido.",
+      "Empieza una nueva batalla contra pendientes, bordes y el optimismo desmedido de quien cree que este tiro será fácil.",
+      "Nuevo mapa en pantalla. Todo parece tranquilo porque todavía nadie ha tenido tiempo de arruinarlo.",
+      "La copa está allá, las bolas están aquí y entre ambas existe una colección de problemas con licencia oficial.",
+      "¡Presentamos el mapa del día! Cero víctimas confirmadas, cero líderes y un futuro estadísticamente preocupante.",
+      "Arranca otra ronda. El marcador está tan abierto que hasta la peor idea del vestuario conserva opciones matemáticas.",
+      "Mapa nuevo, marcador neutral y una física que no ha firmado ningún tratado de paz con los jugadores.",
+      "Bienvenidos al siguiente mapa: una elegante composición de suelo, trampas y futuros arrepentimientos.",
+      "Todavía no hay nadie al frente. Disfruten este raro momento de igualdad antes de que alguien cometa una genialidad o un delito deportivo.",
+      "¡Comienza otro mapa! El césped parece amable, lo cual es exactamente lo que diría un césped que prepara una emboscada.",
+      "Mapa nuevo. La estrategia oficial consiste en llegar al hoyo; la estrategia real la conoceremos después del primer desastre.",
+      "Se reinicia el escenario, no las rivalidades. Por ahora nadie lidera y la cabina aprovecha para declarar una paz de aproximadamente ocho segundos.",
+      "Luces, cámara y trayectoria parabólica. Nadie va primero, así que el ego colectivo empieza esta ronda perfectamente hidratado."
+    ],
+    "leaderGeneral": [
+      "Nuevo mapa y {leader} llega en cabeza con {leader_points} puntos. El resto ya puede empezar a redactar excusas con buena ortografía.",
+      "Se abre el mapa y {leader} sigue arriba. No sabemos si es talento, pacto con la gravedad o una combinación fiscalmente dudosa.",
+      "Atención al marcador: {leader} entra como líder. La corona es provisional, pero el tamaño del ego probablemente ya sea permanente.",
+      "Mapa nuevo, mismo problema para los perseguidores: {leader} conserva la cima y parece demasiado cómodo allí.",
+      "{leader} aterriza en este mapa con ventaja. El resto trae palos; {leader} aparentemente trajo documentación de propietario.",
+      "Comienza la ronda con {leader} al frente. Hay {gap} puntos de diferencia y una cantidad incalculable de resentimiento deportivo detrás.",
+      "El mapa cambia, la tabla no: {leader} manda con {leader_points}. Queda oficialmente abierta la temporada de caza.",
+      "{leader} entra primero en la clasificación y ahora cada obstáculo tiene dos trabajos: frenar bolas y fabricar esperanza para los demás.",
+      "Nuevo escenario, líder conocido: {leader}. La física tiene la oportunidad de mostrarnos si acepta sobornos emocionales.",
+      "{leader} conserva la cabeza. El resto necesita golf, milagros o una combinación industrial de ambas cosas.",
+      "Se presenta el mapa {map_number} con {leader} arriba. Nadie ha disparado y ya existe presión atmosférica adicional.",
+      "{leader} manda antes del primer toque. Técnicamente eso es ventaja; psicológicamente es una invitación pública al sabotaje.",
+      "Mapa fresco, marcador caliente: {leader} sigue primero y los perseguidores ya miran cada rebote como una oportunidad sindical.",
+      "La ronda nace con {leader} en lo alto. Que nadie se preocupe: un solo mapa puede convertir una ventaja preciosa en arqueología.",
+      "{leader} cruza la puerta de este mapa como líder. Detrás viene una fila ordenada de personas deseando que descubra el agua.",
+      "Nuevo mapa y {leader} al frente. La ventaja existe, pero también existen bordes, ventiladores y decisiones humanas.",
+      "{leader} lidera con {leader_points}. El mapa acaba de recibir instrucciones no oficiales de complicarle la biografía.",
+      "Hay líder y se llama {leader}. El resto empieza esta ronda con una misión sencilla: convertir esa frase en material histórico."
+    ],
+    "leaderCommentatorFavorite": [
+      "¡MAPA NUEVO Y MI FAVORITO {leader} SIGUE ARRIBA! Objetividad impecable: si gana, era inevitable; si falla, claramente fue sabotaje geológico.",
+      "{leader} llega como líder y, casualmente, también es mi favorito. Coincidencia absoluta. No acepto auditorías.",
+      "¡Miren quién sigue primero! {leader}, orgullo de esta cabina y principal amenaza para mi capacidad de parecer neutral.",
+      "Nuevo mapa, {leader} en cabeza. Yo no digo que el mapa deba inclinarse a su favor; digo que sería educado.",
+      "{leader} manda y yo sonrío con profesionalidad totalmente objetiva. Álex puede presentar una protesta por escrito.",
+      "¡Mi elegido {leader} entra de líder! Si alguien quiere bajarlo, adelante: la humillación pública también necesita voluntarios.",
+      "{leader} conserva el liderato. Mi análisis técnico es simple: magnífico, perfecto y científicamente superior porque lo digo yo.",
+      "Mapa nuevo y {leader} al frente. He revisado los datos con cuidado: todos confirman que mi favoritismo tenía razón desde el principio.",
+      "¡{leader} primero! Señoras y señores, esto no es sesgo; es una relación profesional entre la verdad y mi excelente criterio.",
+      "La cima sigue ocupada por {leader}. Qué casualidad que mi favorito también sepa jugar; casi parece que elegí bien.",
+      "{leader} abre este mapa como líder y yo como comentarista completamente imparcial que acaba de pedir una estatua.",
+      "¡Que empiece la ronda! {leader} sigue arriba y mi confianza ya alcanzó niveles que deberían requerir licencia municipal.",
+      "{leader} lidera con {leader_points}. Hoy la cabina no tiene favorito: tiene una inversión emocional de alto riesgo.",
+      "Nuevo mapa, misma bandera: {leader} arriba. Si esto continúa, voy a tener que cobrar derechos por haberlo apoyado antes de que fuera cómodo.",
+      "{leader} manda. Yo celebro con moderación: apenas he reservado el desfile, el monumento y tres documentales."
+    ],
+    "leaderInformantFavorite": [
+      "Dato objetivo con una pequeña catástrofe de imparcialidad: {leader}, mi favorito, entra líder con {leader_points} puntos.",
+      "{leader} conserva la cima y también mi respaldo. Según mis cálculos, eso aumenta un cero por ciento su precisión y cien por ciento mi satisfacción.",
+      "Nuevo mapa: {leader} va primero. Rafa puede gritar lo que quiera; los números, con elegante crueldad, siguen de mi lado.",
+      "{leader} lidera y sí, es mi favorito. No es favoritismo si las estadísticas colaboran voluntariamente.",
+      "La clasificación coloca a {leader} arriba. Yo simplemente tuve la cortesía científica de elegirlo antes de que fuera obvio.",
+      "Mapa nuevo y {leader} conserva el mando. Mi informe técnico incluye una nota: excelente elección por parte de quien redactó este informe.",
+      "{leader} llega líder. No voy a presumir de favorito; voy a limitarme a repetir el dato hasta que Rafa se irrite.",
+      "{leader} primero con {leader_points}. El margen es {gap}; mi nivel de satisfacción estadística, innecesariamente alto.",
+      "La ronda empieza con {leader} arriba. Lo llamaría tendencia, pero Rafa lo llamará conspiración porque no es su favorito.",
+      "{leader} sigue mandando. La evidencia respalda mi elección y, por una vez, la evidencia tiene excelente gusto.",
+      "Nuevo escenario, mismo líder: {leader}. Los números no celebran, así que me veo obligado a hacerlo discretamente por ellos.",
+      "{leader} entra primero y mi hoja de cálculo acaba de desarrollar una sonrisa. Fenómeno preocupante, pero comprensible.",
+      "{leader} conserva la cabeza. Objetivamente, buen rendimiento. Subjetivamente, Rafa debería empezar a aceptar la realidad.",
+      "Mapa {map_number}: {leader} líder. Mi favorito no necesita discurso; trae datos, que suelen ser bastante más incómodos.",
+      "{leader} manda. La estadística recomienda prudencia; yo recomiendo que los demás empiecen a preocuparse."
+    ],
+    "splitFavoriteDuels": [
+      {
+        "commentator": "Mapa nuevo y seguimos divididos: yo voy con {rafa_favorite}, Álex insiste con {alex_favorite}. Uno de los dos va a quedar intelectualmente arruinado.",
+        "informant": "Correcto. Y he preparado espacio suficiente en el informe para registrar tu futura explicación creativa."
+      },
+      {
+        "commentator": "¡Arranca otra ronda! {rafa_favorite} lleva mi bandera; {alex_favorite} carga con la sospechosa confianza de Álex.",
+        "informant": "La diferencia es que mi confianza viene con números. La tuya viene con volumen."
+      },
+      {
+        "commentator": "Nueva arena, vieja guerra de cabina: {rafa_favorite} contra {alex_favorite}. Esto ya parece una custodia compartida del marcador.",
+        "informant": "Custodia no. Comparativa experimental. Y tu muestra sigue haciendo demasiado ruido."
+      },
+      {
+        "commentator": "Yo sigo apostando por {rafa_favorite}. Álex sigue abrazado a {alex_favorite}. El mapa decidirá quién cena humildad.",
+        "informant": "Perfecto. He reservado una ración doble por precaución metodológica."
+      },
+      {
+        "commentator": "Mapa nuevo y ni siquiera hemos disparado: {rafa_favorite} ya tiene mi fe y {alex_favorite} tiene la calculadora de Álex.",
+        "informant": "Una calculadora es menos romántica, pero suele sobrevivir mejor a los resultados."
+      },
+      {
+        "commentator": "¡Que empiece la rivalidad! {rafa_favorite} es espectáculo; {alex_favorite}, según Álex, es eficiencia con piernas.",
+        "informant": "Y la eficiencia tiene una costumbre desagradable: llegar al marcador antes que el espectáculo."
+      },
+      {
+        "commentator": "Seguimos sin acuerdo: yo con {rafa_favorite}, Álex con {alex_favorite}. La amistad de esta cabina pende de una pelota diminuta.",
+        "informant": "La amistad está bien. La evidencia está mejor."
+      },
+      {
+        "commentator": "Nuevo mapa. Mi favorito {rafa_favorite} entra con hambre; el de Álex, {alex_favorite}, entra con una auditoría encima.",
+        "informant": "Auditoría que, por cierto, aprobó. No puedo decir lo mismo de tus argumentos."
+      },
+      {
+        "commentator": "{rafa_favorite} contra {alex_favorite}, capítulo siguiente. Yo traigo pasión; Álex trae gráficos que nadie pidió.",
+        "informant": "Los gráficos tampoco pidieron existir y aun así explican por qué estás nervioso."
+      },
+      {
+        "commentator": "Mapa nuevo y la cabina vuelve a fracturarse: {rafa_favorite} es mi elegido; {alex_favorite}, el del departamento de contabilidad emocional.",
+        "informant": "Departamento que funciona, a diferencia de tu sistema de selección basado en gritar nombres."
+      },
+      {
+        "commentator": "Yo digo {rafa_favorite}. Álex dice {alex_favorite}. La física dice que ambos pueden acabar en el agua y cerrar el debate por nosotros.",
+        "informant": "Finalmente una hipótesis tuya con posibilidades estadísticas."
+      },
+      {
+        "commentator": "¡Nueva ronda de nuestra guerra absurda! {rafa_favorite} lleva mi respaldo; {alex_favorite} el de Álex.",
+        "informant": "Y esta vez intentaré no disfrutar demasiado cuando los datos decidan. Intentaré."
+      }
+    ],
+    "sharedFavorite": [
+      "Situación alarmante: los dos tenemos a {favorite} como favorito. La cabina acaba de alcanzar un nivel de consenso que debería investigarse.",
+      "Nuevo mapa y Rafa y yo coincidimos en {favorite}. Estadísticamente, esta paz es mucho más rara que un buen rebote.",
+      "{favorite} entra con apoyo unánime de la cabina. Eso puede ser una bendición o una maldición con dos micrófonos.",
+      "Por una vez no hay guerra interna: ambos respaldamos a {favorite}. El jugador debería preocuparse por semejante responsabilidad.",
+      "Mapa nuevo, favorito compartido: {favorite}. La objetividad acaba de salir discretamente por la puerta lateral.",
+      "Los dos elegimos a {favorite}. Si esto sale mal, ya hemos acordado culpar al terreno por razones administrativas.",
+      "Consenso histórico: {favorite} tiene dos comentaristas de su lado y absolutamente ninguna protección extra contra el agua.",
+      "{favorite} une a la cabina. No sabemos cuánto durará esta paz, pero el cronómetro ya está corriendo.",
+      "Nuevo escenario y un favorito común: {favorite}. El resto acaba de recibir una motivación completamente innecesaria.",
+      "Rafa y yo coincidimos en {favorite}. Guardemos este momento; seguramente no sobreviva al primer desastre."
+    ],
+    "singleFavoriteCommentator": [
+      "Mapa nuevo y yo mantengo una pequeña inversión emocional en {favorite}. Álex todavía finge que no tiene sentimientos.",
+      "Mi favorito sigue siendo {favorite}. No lidera necesariamente, pero la épica no siempre consulta la tabla antes de empezar.",
+      "{favorite} tiene mi respaldo para este mapa. El resto tiene mi respeto, que vale bastante menos y ocupa menos espacio.",
+      "Arranca la ronda y {favorite} conserva mi voto. Puede que sea una apuesta brillante o el inicio de una disculpa larguísima.",
+      "Yo voy con {favorite}. Sí, otra vez. La coherencia también es una forma elegante de cavar tu propia tumba.",
+      "Nuevo mapa, misma fe irracionalmente bien presentada: {favorite} sigue siendo mi elegido.",
+      "{favorite}, tienes un comentarista de tu lado y cero ventajas reglamentarias. Francamente, una oferta terrible.",
+      "La ronda empieza y mi favorito {favorite} sigue bajo observación cariñosa y totalmente poco objetiva.",
+      "{favorite} carga con mi apoyo. Que quede claro: no incluye garantía, seguro ni devolución.",
+      "Mapa nuevo. Yo respaldo a {favorite}; la física, como siempre, se niega a declarar afiliación."
+    ],
+    "singleFavoriteInformant": [
+      "Mi favorito para este mapa sigue siendo {favorite}. Rafa todavía selecciona candidatos mediante decibelios.",
+      "{favorite} conserva mi respaldo. Es una preferencia basada en rendimiento, no en la cantidad de veces que Rafa pronuncia su nombre.",
+      "Nuevo mapa y sigo observando a {favorite}. Los datos todavía justifican la apuesta; mi orgullo agradece la cooperación.",
+      "{favorite} es mi elección. No garantiza victoria, pero sí me permite corregir a Rafa con mayor entusiasmo.",
+      "La ronda comienza y {favorite} sigue en mi columna de confianza. La columna de milagros permanece disponible para los demás.",
+      "Mi favorito es {favorite}. Una decisión estadística que Rafa convertirá, inevitablemente, en una cuestión personal.",
+      "Mapa nuevo. {favorite} mantiene mi respaldo y, de momento, mi reputación profesional.",
+      "{favorite} sigue siendo mi apuesta. Si falla, lo llamaré variabilidad; Rafa lo llamará justicia poética.",
+      "Comienza la ronda con {favorite} bajo mi lupa. Es una lupa científica, aunque admito cierto cariño metodológico.",
+      "{favorite} recibe mi voto. El resto recibe exactamente la misma gravedad, así que nadie puede presentar una queja seria."
+    ],
+    "splitFavoriteStingers": [
+      {
+        "speaker": "informant",
+        "text": "Rafa puede seguir ondeando la bandera de {rafa_favorite}; yo mantengo a {alex_favorite}. El mapa tendrá la amabilidad de humillar a uno de nosotros."
+      },
+      {
+        "speaker": "commentator",
+        "text": "Álex sigue protegiendo a {alex_favorite} con estadísticas. Yo sigo con {rafa_favorite} y una cantidad de fe que no cabe en una hoja de cálculo."
+      },
+      {
+        "speaker": "informant",
+        "text": "La cabina sigue partida: {rafa_favorite} para Rafa, {alex_favorite} para mí. Excelente forma de convertir un marcador en un conflicto doméstico."
+      },
+      {
+        "speaker": "commentator",
+        "text": "Que conste en acta: yo voy con {rafa_favorite}; Álex con {alex_favorite}. El que pierda deberá fingir madurez profesional."
+      },
+      {
+        "speaker": "informant",
+        "text": "Mi candidato sigue siendo {alex_favorite}; el de Rafa, {rafa_favorite}. Dos favoritos, un mapa y una futura explicación incómoda."
+      },
+      {
+        "speaker": "commentator",
+        "text": "Rivalidad de cabina confirmada: {rafa_favorite} contra {alex_favorite}. Yo ya he preparado el discurso de victoria y también uno para negar todo si sale mal."
+      },
+      {
+        "speaker": "informant",
+        "text": "Rafa insiste con {rafa_favorite}; yo con {alex_favorite}. La física, sabiamente, ha decidido no afiliarse a ninguno."
+      },
+      {
+        "speaker": "commentator",
+        "text": "Mi bandera sigue con {rafa_favorite}; la calculadora de Álex con {alex_favorite}. Que el mapa haga de juez y, preferiblemente, no de verdugo."
+      },
+      {
+        "speaker": "informant",
+        "text": "Seguimos en desacuerdo: {alex_favorite} tiene mi respaldo y {rafa_favorite} el de Rafa. El resultado decidirá quién reescribe su teoría después."
+      },
+      {
+        "speaker": "commentator",
+        "text": "{rafa_favorite} es mi apuesta, {alex_favorite} la de Álex. Esto dejó de ser análisis deportivo y ya parece una guerra civil con pelotas pequeñas."
+      },
+      {
+        "speaker": "informant",
+        "text": "Dos favoritos distintos y una sola clasificación. Matemáticamente, alguien en esta cabina va a tener un día desagradable."
+      },
+      {
+        "speaker": "commentator",
+        "text": "{rafa_favorite} contra {alex_favorite}. Yo traigo entusiasmo; Álex trae precisión. El mapa trae paredes y probablemente sea el más peligroso de los tres."
+      }
+    ]
+  },
+  "firstTouch": {
+    "leaderCommentatorFavorite": [
+      "¡Y EL PRIMERO EN SALIR ES {player}, LÍDER Y MI FAVORITO! Esto ya no es un tiro: es una entrada con banda sonora ilegalmente triunfal.",
+      "{player} abre el fuego desde la cima. Mi favorito toma el primer toque y yo ya estoy siendo insoportablemente optimista.",
+      "¡Sale {player}! Primero en la tabla, primero en golpear y primero en mi lista de decisiones emocionalmente cuestionables.",
+      "{player} lidera y además inaugura el mapa. Si esto sale perfecto diré que lo sabía; si sale mal negaré esta grabación.",
+      "Primer toque para {player}, dueño provisional del marcador y propietario permanente de mi favoritismo irresponsable.",
+      "¡{player} abre la ronda desde el primer puesto! Adelante, campeón: demuestra que mi falta de neutralidad tenía fundamentos.",
+      "Sale {player}, líder con {points} puntos. Yo ya he encendido la maquinaria de exagerar cualquier cosa que ocurra a continuación.",
+      "{player} toma el primer disparo como líder. Toda la presión del mapa y, peor aún, toda mi confianza innecesaria encima.",
+      "¡Primer golpe para {player}! La cima abre la ronda y mi favorito recibe exactamente cero ayuda reglamentaria, pero toneladas de ruido.",
+      "{player} inaugura el mapa desde arriba. Que empiece la defensa del trono con una pelota, una pendiente y mi reputación en juego.",
+      "El líder {player} sale primero. Si atraviesa medio mapa, genial; si toca una pared a tres centímetros, lo llamaremos reconocimiento táctico.",
+      "{player} abre como número uno. La cabina se prepara para una demostración o para una reinterpretación creativa del fracaso."
+    ],
+    "leaderInformantFavorite": [
+      "Primer toque para {player}: líder, mi favorito y ahora responsable de mantener intacta una cantidad poco saludable de confianza estadística.",
+      "{player} abre la ronda desde el primer puesto. Los datos dicen calma; mi satisfacción dice algo bastante menos profesional.",
+      "Sale {player}, líder y mi elección. Excelente momento para que la realidad coopere con el informe.",
+      "{player} inaugura el mapa con {points} puntos y el liderato. Rafa hará ruido; yo observaré si la trayectoria merece realmente el ruido.",
+      "Primer golpe de {player}. La cima del marcador toma la iniciativa y mi modelo acaba de solicitar que nadie improvise demasiado.",
+      "{player} sale primero siendo líder. Una posición eficiente, una presión considerable y una oportunidad magnífica de arruinar mis estadísticas.",
+      "El primer toque es de {player}, mi favorito y líder actual. Nada puede salir mal salvo, técnicamente, casi todo.",
+      "{player} abre la ronda desde arriba. Tengo confianza en sus números y cero confianza en que el mapa respete los números.",
+      "Primer disparo para {player}. El líder entra antes que nadie en el experimento y yo ya estoy tomando notas con excesivo interés.",
+      "{player} toma el primer golpe siendo número uno. Si funciona, tendencia; si falla, muestra insuficiente. La ciencia es maravillosa.",
+      "Sale {player}. Liderato, favorito y primer toque: tres variables excelentes para fabricar presión sin necesidad de maquinaria.",
+      "{player} inaugura el mapa. La tabla lo respalda, yo también y la gravedad se ha negado a responder correos."
+    ],
+    "leaderGeneral": [
+      "¡Abre {player}, el líder! El número uno toma el primer toque y el resto observa con esa mezcla saludable de respeto y deseo de catástrofe.",
+      "{player} sale primero desde la cima. El mapa tiene la primera oportunidad de convertir confianza en material educativo.",
+      "Primer golpe para {player}, líder con {points} puntos. Empieza la defensa del trono y no hay barandilla alrededor.",
+      "El líder {player} inaugura la ronda. Nada dice tranquilidad como ser el primero mientras todos esperan que falles.",
+      "Sale {player}, número uno. El marcador lo admira; los rivales probablemente estén negociando con cada obstáculo.",
+      "{player} abre desde el liderato. Un toque para marcar territorio o para regalar esperanza, sin término medio emocional.",
+      "Primer disparo del mapa: {player}, el que todos persiguen. Que comience oficialmente la cacería con modales deportivos.",
+      "{player} toma el primer golpe siendo líder. La ventaja es suya; la posibilidad de hacer el ridículo sigue siendo patrimonio universal.",
+      "El primero en salir es {player}, líder actual. Un comienzo perfecto para recordar que las clasificaciones no empujan la pelota.",
+      "{player} abre el mapa desde arriba. El trono viene con corona, presión y cero protección contra ventiladores.",
+      "Primer toque para {player}. El líder pone la referencia y el resto decidirá si la imita o presenta una demanda contra el terreno.",
+      "{player} inaugura la acción con el primer puesto a cuestas. Mucho rango, poca inmunidad."
+    ],
+    "lastPlaceCommentatorFavorite": [
+      "¡Y SALE {player}, MI FAVORITO, DESDE EL ÚLTIMO PUESTO! Magnífico: empezamos la remontada desde el sótano para ahorrar escaleras.",
+      "{player} abre el mapa siendo último y mi elegido. No es una crisis; es una narrativa heroica extremadamente mal financiada.",
+      "Primer toque para {player}. Sí, va último. Sí, sigue siendo mi favorito. La lealtad también puede ser una enfermedad profesional.",
+      "¡Vamos {player}! Desde el fondo solo hay dos direcciones: hacia arriba o hacia un agujero geográfico todavía más profundo.",
+      "{player}, último y favorito mío, inaugura la ronda. Nada de presión: solo necesitamos una remontada, un milagro y quizá una pequeña reforma de la física.",
+      "Sale {player} desde la cola. Yo lo apoyo porque alguien en esta cabina debe creer antes de que existan motivos razonables.",
+      "{player} toma el primer golpe desde último lugar. Perfecto escenario para una remontada épica o una comedia documental.",
+      "¡Mi favorito {player} sale último! Técnicamente estamos mal; narrativamente estamos exactamente donde nacen las películas.",
+      "{player} abre desde abajo. Que nadie lo llame desesperación: es una estrategia de acumulación agresiva de potencial dramático.",
+      "Primer toque para {player}, último en la tabla y primero en mi corazón profesionalmente comprometido. Vamos a fingir que eso ayuda."
+    ],
+    "lastPlaceInformantFavorite": [
+      "{player} sale primero desde el último puesto y sigue siendo mi favorito. Los datos actuales son hostiles; el experimento continúa.",
+      "Primer toque para {player}. Va último, sí. Eso solo significa que la dirección estadísticamente recomendable está muy clara: arriba.",
+      "{player}, mi favorito, inaugura el mapa desde el fondo. Excelente oportunidad para demostrar que una mala posición no es una sentencia, solo un informe incómodo.",
+      "Sale {player} desde último lugar. Mi confianza no desaparece; simplemente ha entrado en modo de recuperación de emergencia.",
+      "{player} abre la ronda desde abajo. Para remontar necesita puntos; para callar a Rafa necesitaría bastantes más.",
+      "Primer golpe para {player}, último y todavía respaldado por mí. La estadística permite remontadas; mi reputación exige una.",
+      "{player} toma el primer toque desde la cola. No es el escenario ideal, pero sí uno con una dirección estratégica extraordinariamente sencilla.",
+      "Sale {player}. Último puesto, favorito mío y una oportunidad preciosa de convertir una tabla desagradable en evidencia histórica.",
+      "{player} arranca desde el fondo. El margen existe, pero también existe el resto del mapa; por desgracia, eso funciona en ambos sentidos.",
+      "Primer toque para {player}. Mi favorito necesita remontar y yo necesito que la palabra 'favorito' deje de parecer una decisión administrativa dudosa."
+    ],
+    "lastPlaceGeneral": [
+      "¡Abre {player} desde el último puesto! Nada como empezar la ronda con una remontada pendiente y absolutamente ninguna deuda emocional adicional.",
+      "Primer toque para {player}, último en la tabla. Desde aquí cualquier avance parece una revolución y cualquier retroceso requiere excavadora.",
+      "Sale {player} desde el fondo. Buenas noticias: tiene delante literalmente a toda la competencia para usarla como motivación visual.",
+      "{player} inaugura el mapa siendo último. Esto no es presión; es libertad absoluta de sorprender porque las expectativas ya están cómodamente en el suelo.",
+      "Primer golpe para {player}. Va último, pero el mapa acaba de reiniciarse y todavía acepta solicitudes de milagro.",
+      "{player} sale desde la cola. Si quería una historia de remontada, el guion ha sido extraordinariamente generoso.",
+      "Último puesto para {player}, primer toque del mapa. Geométricamente abajo; narrativamente peligrosísimo.",
+      "{player} abre la ronda desde el sótano del marcador. Que empiece la operación 'subir sin romper demasiadas ventanas'.",
+      "Sale {player}, último actual. Una posición humilde con potencial para convertirse en épica o en una colección premium de excusas.",
+      "Primer golpe para {player}. El marcador dice último; nosotros decimos oportunidad de fabricar una remontada tan absurda que necesite subtítulos.",
+      "{player} toma el primer turno desde el fondo. Cada punto ahora vale también como pequeña venganza administrativa.",
+      "Abre {player}. Va último, pero todavía conserva todas las extremidades, una pelota y acceso legal al campo: hay partido.",
+      "{player} inaugura el mapa desde abajo. Si esto sale bien será inspiración; si sale mal, al menos ya venía con contexto.",
+      "Primer toque para {player}, cola de la tabla. La misión es simple: avanzar. La implementación probablemente incluya gritos.",
+      "Sale {player} desde último lugar. El mapa no discrimina por posición, lo cual es una forma elegante de decir que puede maltratar a todos por igual."
+    ],
+    "favoriteCommentator": [
+      "¡Primer toque para mi favorito {player}! No va primero, pero las leyendas tampoco preguntan su posición antes de hacer una entrada ridículamente dramática.",
+      "Sale {player}, mi elegido. Puesto {rank} de {total}; suficiente espacio para subir y suficiente orgullo para hacerlo con ruido.",
+      "{player} abre la ronda y tiene mi respaldo. El marcador todavía no se ha enterado de la magnitud emocional de esta decisión.",
+      "Primer disparo para {player}, mi favorito. Vamos a convertir ese puesto {rank} en algo que obligue a Álex a recalcular.",
+      "¡{player} inaugura el mapa! Mi favorito entra antes que nadie y mi imparcialidad acaba de fingir una llamada telefónica.",
+      "Sale {player}. No lidera todavía, detalle administrativo que espero corregir con entusiasmo completamente desproporcionado.",
+      "{player} toma el primer golpe. Mi apuesta personal entra al campo y el resto puede empezar a sentirse injustificadamente observado.",
+      "Primer toque para {player}, favorito de esta mitad ruidosa de la cabina. Haz algo épico o al menos algo defendible.",
+      "{player} abre la acción desde el puesto {rank}. Yo ya lo veo como protagonista; la tabla, con su habitual frialdad, pide pruebas.",
+      "Sale {player}, mi favorito. Tenemos un mapa entero para demostrar que mi criterio es brillante y no un accidente con micrófono."
+    ],
+    "favoriteInformant": [
+      "Primer toque para {player}, mi favorito. Puesto {rank} de {total}: los números permiten ambición sin necesidad de superstición.",
+      "{player} abre la ronda bajo mi respaldo. No lidera, pero la distancia al líder es una variable, no una profecía.",
+      "Sale {player}, mi elección. Hora de transformar confianza estadística en algo que también aparezca en el marcador.",
+      "Primer disparo para {player}. Mi favorito ocupa el puesto {rank}; excelente lugar para mejorar sin que Rafa pueda declarar victoria anticipada.",
+      "{player} inaugura el mapa. Lo respaldo por rendimiento, aunque admito que sería conveniente que el rendimiento siguiera colaborando.",
+      "Sale {player}, favorito mío. No va primero todavía; la palabra importante es 'todavía', y la repito por motivos completamente científicos.",
+      "Primer toque para {player}. La tabla lo coloca en {rank}; mi evaluación sigue siendo más optimista y bastante más difícil de auditar en directo.",
+      "{player} abre la acción. Tiene mi voto y una oportunidad inmediata de evitar que Rafa convierta esto en material de burla.",
+      "Sale {player}. Mi favorito entra al mapa con trabajo pendiente y una estadística muy saludable de oportunidades restantes.",
+      "Primer golpe para {player}. No lidera, pero ningún modelo serio concede un campeonato antes del próximo rebote absurdo."
+    ],
+    "general": [
+      "¡PRIMER TOQUE DEL MAPA PARA {player}! Que la física reciba oficialmente la primera mala idea del día.",
+      "Sale {player} y queda inaugurado el expediente balístico de esta ronda.",
+      "Primer golpe para {player}. El mapa estaba impecable hasta este preciso momento.",
+      "{player} abre la acción. Una pelota, un objetivo y demasiadas maneras creativas de complicar la línea recta.",
+      "¡Arranca {player}! El primer toque siempre tiene algo especial: principalmente porque todavía nadie sabe qué tan mal puede ponerse todo.",
+      "Sale {player} primero. Que quede registrada la trayectoria para futuras investigaciones y posibles disculpas.",
+      "Primer disparo del mapa para {player}. Oficialmente comienza la negociación entre habilidad y geometría hostil.",
+      "{player} inaugura la ronda. El resto observa en silencio profesional y con esperanza privada de que toque una pared.",
+      "Primer toque: {player}. Ya tenemos protagonista temporal; ahora falta descubrir si será héroe, víctima o proyectil administrativo.",
+      "Sale {player}. El mapa abre sus puertas y la bola entra sin haber leído los términos y condiciones.",
+      "{player} toma el primer golpe. Toda gran ronda comienza con una decisión; algunas incluso son buenas.",
+      "¡Primera bola en marcha: {player}! La paz del mapa ha durado exactamente lo previsto por nadie.",
+      "{player} inaugura el escenario. No hay presión, salvo la clasificación, los rivales, la física y dos personas narrándolo todo.",
+      "Primer toque para {player}. Desde este segundo cualquier cosa que ocurra puede ser llamada estrategia retrospectivamente.",
+      "Sale {player}. La ronda ya tiene su primera línea en el historial y todavía no hemos necesitado un abogado.",
+      "{player} abre la acción. Que empiece el noble arte de intentar que una esfera obedezca planes humanos.",
+      "Primer golpe del mapa para {player}. El césped parece tranquilo; no confiamos en ninguno de los dos.",
+      "Sale {player} y empieza oficialmente el caos reglamentado. Buena suerte a todos los objetos con masa.",
+      "{player} toma el primer toque. Es temprano para hablar de destino, pero nunca es temprano para exagerarlo.",
+      "¡Comienza {player}! El mapa ya no está nuevo: ahora tiene antecedentes."
+    ]
+  }
+}

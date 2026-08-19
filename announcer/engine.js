@@ -374,6 +374,7 @@
       this.guaranteedQueue = [];
       this.guaranteedKeys = new Set();
       this.yieldInformativeAfterLine = false;
+      this.yieldCurrentAfterLine = false;
       this.session = 0;
       this.estimatedBundleEndAt = 0;
       this.stats = { spoken: 0, expired: 0, replaced: 0, folded: 0 };
@@ -389,9 +390,10 @@
       if (!bundle?.items?.length || !this.system.enabled) return { accepted: false, reason: 'disabled-or-empty' };
       const policy = bundle.policy || {};
       const guaranteed = policy.guaranteed === true || policy.class === 'supercritical';
+      const mustSpeak = policy.mustSpeak === true;
       const now = Date.now();
       if (!guaranteed && now > Number(bundle.expiresAt || Infinity)) return this.drop(bundle, 'expired');
-      if (guaranteed) return this.enqueueGuaranteed(bundle);
+      if (guaranteed || mustSpeak) return this.enqueueGuaranteed(bundle);
       if (!this.currentBundle) {
         this.startBundle(bundle);
         return { accepted: true, reason: 'idle' };
@@ -418,14 +420,20 @@
       const key = String(bundle.guaranteeKey || bundle.id || '');
       if (key && this.guaranteedKeys.has(key)) return { accepted: false, reason: 'guaranteed-dedupe' };
       if (key) this.guaranteedKeys.add(key);
-      // Nunca interrumpe una frase ya empezada: espera a que termine el bloque
-      // actual y después toma el micrófono antes que cualquier hot-slot normal.
+      const supercritical = bundle.policy?.guaranteed === true || bundle.policy?.class === 'supercritical';
+      // Nunca interrumpe una frase ya empezada. HOLE/HIO sí saltan por delante
+      // de presentaciones mustSpeak que todavía NO han empezado, manteniendo la
+      // semántica supercrítica sin cortar audio en curso.
       if (!this.currentBundle) {
         this.startBundle(bundle);
-        return { accepted: true, reason: 'guaranteed-idle' };
+        return { accepted: true, reason: supercritical ? 'guaranteed-idle' : 'must-speak-idle' };
       }
-      this.guaranteedQueue.push(bundle);
-      return { accepted: true, reason: 'guaranteed-queued' };
+      if (supercritical) {
+        const index = this.guaranteedQueue.findIndex((queued) => queued?.policy?.guaranteed !== true && queued?.policy?.class !== 'supercritical');
+        if (index >= 0) this.guaranteedQueue.splice(index, 0, bundle);
+        else this.guaranteedQueue.push(bundle);
+      } else this.guaranteedQueue.push(bundle);
+      return { accepted: true, reason: supercritical ? 'guaranteed-queued' : 'must-speak-queued' };
     }
 
     setHot(bundle) {
@@ -446,7 +454,8 @@
 
     startBundle(bundle) {
       if (!bundle) return;
-      if (bundle.policy?.guaranteed !== true && bundle.policy?.class !== 'supercritical' && Date.now() > Number(bundle.expiresAt || Infinity)) return this.startNextAvailable();
+      if (bundle.policy?.guaranteed !== true && bundle.policy?.class !== 'supercritical' && bundle.policy?.mustSpeak !== true
+        && Date.now() > Number(bundle.expiresAt || Infinity)) return this.startNextAvailable();
       this.session += 1;
       const token = this.session;
       this.currentBundle = bundle;
@@ -466,6 +475,11 @@
         if (token !== this.session) return;
         this.stats.spoken += 1;
         this.current = null;
+        if (this.yieldCurrentAfterLine) {
+          this.yieldCurrentAfterLine = false;
+          this.yieldInformativeAfterLine = false;
+          break;
+        }
         if (this.yieldInformativeAfterLine && bundle.source === 'idle-information') {
           this.yieldInformativeAfterLine = false;
           break;
@@ -553,6 +567,7 @@
       this.guaranteedQueue.length = 0;
       this.guaranteedKeys.clear();
       this.yieldInformativeAfterLine = false;
+      this.yieldCurrentAfterLine = false;
       this.currentBundle = null;
       this.current = null;
       this.estimatedBundleEndAt = 0;
@@ -562,7 +577,23 @@
     discardNonGuaranteedPending(keepEventKeys = []) {
       const keep = new Set(Array.isArray(keepEventKeys) ? keepEventKeys : []);
       if (this.hotSlot && !keep.has(String(this.hotSlot.eventKey || ''))) this.hotSlot = null;
+      // Los mustSpeak de presentación/primer toque no sobreviven al cierre si
+      // todavía estaban esperando. HOLE/HIO sí sobreviven por guaranteed=true.
+      this.guaranteedQueue = this.guaranteedQueue.filter((bundle) => {
+        const eventKey = String(bundle?.eventKey || '');
+        return bundle?.policy?.guaranteed === true || bundle?.policy?.class === 'supercritical' || keep.has(eventKey);
+      });
+      const retainedKeys = this.guaranteedQueue.map((bundle) => String(bundle?.guaranteeKey || bundle?.id || '')).filter(Boolean);
+      if (this.currentBundle?.policy?.guaranteed === true || this.currentBundle?.policy?.class === 'supercritical') {
+        const currentKey = String(this.currentBundle?.guaranteeKey || this.currentBundle?.id || '');
+        if (currentKey) retainedKeys.push(currentKey);
+      }
+      this.guaranteedKeys = new Set(retainedKeys);
       if (this.currentBundle?.source === 'idle-information') this.yieldInformativeAfterLine = true;
+      const currentEvent = String(this.currentBundle?.eventKey || '');
+      const currentProtected = this.currentBundle?.policy?.guaranteed === true
+        || this.currentBundle?.policy?.class === 'supercritical' || keep.has(currentEvent);
+      if (this.currentBundle && !currentProtected) this.yieldCurrentAfterLine = true;
     }
 
     pause() { if ('speechSynthesis' in window) window.speechSynthesis.pause(); }
