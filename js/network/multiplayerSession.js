@@ -2270,6 +2270,19 @@
       };
     }
 
+    /**
+     * Quién manda en la cámara ahora mismo.
+     *
+     * Compañero de `getCameraBall`: hay cosas que se enganchan a la bola
+     * enfocada (la mezcla de la música) y otras que llegan como evento con un
+     * `playerKey` dentro (las penalizaciones). Sin esto no se pueden cruzar.
+     */
+    getCameraPlayerKey() {
+      if (this.role === 'offline') return this.localPlayerKey;
+      const p = this.getSpectateTarget() || this.autoCameraPlayer();
+      return p?.playerKey || this.localPlayerKey;
+    }
+
     getCameraBall() {
       if (this.role === 'offline') return this.game.ball;
       const p = this.getSpectateTarget() || this.autoCameraPlayer();

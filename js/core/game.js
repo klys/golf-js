@@ -230,6 +230,26 @@
      * siguen su curso, así que saltarla no cambia el estado de la partida.
      */
     /**
+     * Lo poco que la música necesita saber de la partida.
+     *
+     * Se calcula aquí y no dentro del reproductor para que ese módulo no
+     * tenga que conocer el juego: recibe números, no el mundo.
+     *
+     * La bola es la que tiene el FOCO DE LA CÁMARA, no la local. Casi siempre
+     * son la misma, pero cuando se mira a otro jugador —turno ajeno, modo
+     * espectador— la música tiene que ir con lo que se está viendo: si sonara
+     * la tensión de una bola fuera de plano, el efecto se leería como un fallo.
+     */
+    musicScene() {
+      const ball = this.networkSession?.getCameraBall?.() || this.ball;
+      if (!ball || !this.hole?.cup) return null;
+      return {
+        distanceToCup: Math.hypot(ball.x - this.hole.cup.x, ball.y - this.hole.cup.y),
+        moving: !!ball.moving && !ball.holed && !ball.inWater,
+      };
+    }
+
+    /**
      * Mapa nuevo, pista desde el principio. Solo si ya se está jugando: al
      * arrancar el juego se genera un campo con el menú delante, y ahí no debe
      * sonar nada.
@@ -714,7 +734,7 @@
       this.renderer.update(viewDt);
       this.particles.update(viewDt);
       this.hud.tick(viewDt);
-      this.music?.update(viewDt);
+      this.music?.update(viewDt, this.musicScene());
       if (this.ball.boosterPulse > 0) this.ball.boosterPulse = Math.max(0, this.ball.boosterPulse - viewDt * 3.4);
       if (this.ball.gravityPulse > 0) this.ball.gravityPulse = Math.max(0, this.ball.gravityPulse - viewDt * 2.2);
 
@@ -755,10 +775,12 @@
             sizeMax: 5,
           });
           this.strokes += CONFIG.gameplay.waterPenaltyStroke;
+          this.music?.hit('water');
           this.hud.flashStatus(`Agua · +${CONFIG.gameplay.waterPenaltyStroke}`, 'penalty', 1.0);
           this.resetBall(false);
         } else if (this.isOutOfWorld(this.ball)) {
           this.strokes += CONFIG.gameplay.outOfBoundsPenaltyStroke;
+          this.music?.hit('lost');
           this.hud.flashStatus(`Fuera del mapa · +${CONFIG.gameplay.outOfBoundsPenaltyStroke}`, 'penalty', 1.05);
           this.resetBall(false);
         }

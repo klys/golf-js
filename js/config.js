@@ -193,6 +193,67 @@
       // que la entrada porque al salir el jugador ya está mirando otra cosa.
       fadeInSeconds: 1.2,
       fadeOutSeconds: 0.5,
+
+      // — Mezcla viva —
+      // TODO lo que sigue se mueve dentro del volumen del jugador: su ajuste
+      // es el techo, no el nivel. Por eso el reposo está por debajo de 1, para
+      // que quede sitio donde crecer sin pasarse nunca de lo que pidió.
+      baseLevel: 0.58,
+      baseCutoff: 20000,
+      baseReverb: 0.10,
+      maxReverb: 0.55,
+      // Cuánto se aparta el sonido seco para dejar sitio al reverb. Sin esto,
+      // mojar la mezcla se percibe como un subidón de volumen.
+      dryDuck: 0.45,
+      // Suavizados (1/s). El nivel manda: demasiado rápido suena a automático
+      // de radio, demasiado lento y el efecto llega cuando ya no viene a cuento.
+      levelResponse: 2.4,
+      bassResponse: 1.6,
+      cutoffResponse: 5.5,
+      // Mientras dura un golpe la mezcla reacciona mucho más rápido. Es lo
+      // mismo que hace un compresor de verdad: ataque corto y recuperación
+      // larga. Con el suavizado musical, el hundimiento del agua llegaba a
+      // media caída justo cuando el sobre ya estaba subiendo, y en vez de un
+      // chapuzón se oía un bajón vago.
+      impactResponse: 9,
+
+      // Cercanía al hoyo — solo cuenta NUESTRA bola.
+      // Radio generoso para que se note la entrada, con una curva que guarda
+      // casi todo el efecto para los últimos metros: acercarse se insinúa,
+      // llegar suena a final.
+      holeRange: 950,
+      holeCurve: 1.8,
+      holeLevel: 1.0,
+      holeReverb: 0.44,
+
+      // Vuelo largo. Una bola que sigue viva pasados unos segundos es una bola
+      // a la que está pasando algo: graves que crecen y algo más de cuerpo.
+      rallySeconds: 5,
+      rallyRampSeconds: 4,
+      rallyBassDb: 9,
+      rallyLevel: 0.16,
+      rallyReverb: 0.16,
+      // Al pararse, la tensión se deshace más rápido de lo que se acumuló: si
+      // se vaciara al mismo ritmo, el tiro siguiente empezaría cargado.
+      rallyReleaseRate: 3.5,
+      bassFrequency: 160,
+
+      // Golpes de ambiente. `curve` alta = el hundimiento es inmediato y la
+      // recuperación lenta, que es como suena de verdad caerse al agua.
+      impactCurve: 1.6,
+      impacts: Object.freeze({
+        // Agua: se hunde. Filtro cerrado, casi sin volumen y la sala se apaga.
+        water: Object.freeze({ level: 0.20, cutoff: 380, reverb: 0.05, bassDb: -3, seconds: 1.8 }),
+        // Fuera del mapa: no se hunde, se aleja. Menos filtro y más sala, como
+        // si la música se quedara atrás con el resto del mundo.
+        lost: Object.freeze({ level: 0.26, cutoff: 1100, reverb: 0.50, bassDb: 0, seconds: 1.5 }),
+      }),
+
+      // Cola del reverb generado. Se sintetiza al vuelo: un impulso de sala es
+      // ruido que se apaga, y traerlo como archivo sería otro asset que
+      // mantener para algo que nadie distinguiría.
+      reverbSeconds: 2.6,
+      reverbDecay: 2.4,
     }),
 
     shot: Object.freeze({

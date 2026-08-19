@@ -497,9 +497,11 @@
       // Si el navegador bloqueó el audio, decirlo: si no, parece que el juego
       // no tiene música y el jugador toquetea el volumen sin resultado.
       if (hint) {
-        hint.textContent = music.isBlocked()
-          ? 'El navegador bloqueó el audio · toca la pantalla para activarlo.'
-          : 'Suena durante la partida y vuelve a empezar en cada mapa.';
+        if (music.isBlocked()) hint.textContent = 'El navegador bloqueó el audio · toca la pantalla para activarlo.';
+        // Sin Web Audio la pista suena, pero plana. Decirlo evita que alguien
+        // busque por qué no se le abre el hoyo como a los demás.
+        else if (music.isPlaying() && !music.hasEffects()) hint.textContent = 'Sonando · este navegador no admite los efectos de mezcla.';
+        else hint.textContent = 'Reacciona al juego: crece cerca del hoyo y se apaga al caer al agua.';
       }
     }
 
@@ -752,6 +754,14 @@
       });
       session.on('mapvote', () => this.renderMapVote());
       session.on('gameevent', (event) => {
+        // El golpe de ambiente va con la bola que tiene el foco de cámara, la
+        // misma que gobierna el resto de la mezcla. Online la penalización la
+        // resuelve el host y llega como evento: el `inWater` de esa bola puede
+        // no aparecer en ningún snapshot, así que hay que engancharse aquí.
+        if (event?.event === 'penalty' && event.playerKey === session.getCameraPlayerKey?.()) {
+          if (event.reason === 'Agua') this.game.music?.hit('water');
+          else if (event.reason === 'Fuera del mapa') this.game.music?.hit('lost');
+        }
         if (event?.event === 'map-changed') this.game.hud.flashStatus('Mapa cambiado por votación unánime', 'good', 1.35);
         else if (event?.event === 'next-hole') this.game.hud.flashStatus('Nuevo hoyo', 'good', 1.1);
         else if (event?.event === 'finish-countdown') {
