@@ -217,7 +217,9 @@
     startHoleIntro() {
       if (!this.holeIntro || !this.hole || !this.ball) return false;
       this.dragging = false;
-      return this.holeIntro.start(this.hole, () => this.onHoleIntroEnd());
+      // El viewport entra aquí porque el ritmo del barrido se calibra midiendo
+      // píxeles de PANTALLA, no de mundo.
+      return this.holeIntro.start(this.hole, this.viewport(), () => this.onHoleIntroEnd());
     }
 
     onHoleIntroEnd() {
@@ -688,9 +690,10 @@
 
       // Mientras dura la presentación manda el guion: la cámara va donde dice
       // el recorrido, no donde esté la bola.
-      const introFrame = this.holeIntro?.isActive() ? this.holeIntro.update(viewDt) : null;
+      const introFrame = this.holeIntro?.isActive() ? this.holeIntro.update(viewDt, this.viewport()) : null;
       if (introFrame) {
-        this.camera.frame(introFrame, this.hole, this.viewport(), introFrame.zoom, introFrame.anchorX, introFrame.anchorY);
+        // El propio encuadre lleva zoom, anclaje y suelo de zoom.
+        this.camera.frame(introFrame, this.hole, this.viewport(), introFrame);
       } else {
         const cameraBall = online ? (this.networkSession?.getCameraBall?.() || view) : view;
         const cameraAimPower = !online || this.networkSession?.isCameraFollowingLocal?.() ? this.aimPower() : 0;

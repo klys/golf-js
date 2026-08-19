@@ -80,10 +80,16 @@
      * Deja el estado del muelle a cero para que el traspaso a la cámara normal
      * arranque limpio en vez de heredar una velocidad inventada.
      */
-    frame(point, hole, viewport, zoom, anchorX, anchorY) {
+    frame(point, hole, viewport, options = {}) {
       if (!point || !hole || viewport.width <= 0 || viewport.height <= 0) return;
       const cfg = CONFIG.camera;
-      this.zoom = clamp(Number(zoom) || cfg.restZoom, cfg.minZoom, cfg.maxZoom);
+      // El guion puede pedir un plano más abierto que el mínimo de juego: la
+      // panorámica del mapa entero vive muy por debajo de `minZoom`. El suelo
+      // lo pone quien encuadra, no el seguimiento.
+      const floor = Number.isFinite(options.minZoom) ? Math.min(options.minZoom, cfg.minZoom) : cfg.minZoom;
+      const anchorX = options.anchorX;
+      const anchorY = options.anchorY;
+      this.zoom = clamp(Number(options.zoom) || cfg.restZoom, floor, cfg.maxZoom);
       this.targetZoom = this.zoom;
       const worldW = viewport.width / this.zoom;
       const worldH = viewport.height / this.zoom;
@@ -98,7 +104,26 @@
       // update() de juego mediría un salto enorme y lo tomaría por un corte.
       this.lastFocusX = point.x;
       this.lastFocusY = point.y;
-      this.clampToBounds(hole, viewport);
+
+      // Recorte a los límites del mundo, dosificado.
+      //
+      // Aplicarlo a saco rompe una panorámica: mientras el mapa cabe entero en
+      // pantalla, `boundsFor` CENTRA el eje e ignora a dónde apunta el guion,
+      // así que la cámara se queda clavada; y en cuanto el mapa deja de caber,
+      // el recorte la suelta de golpe donde el guion ya había llegado. Ese
+      // salto medía más de cien píxeles por frame en los mapas largos.
+      //
+      // Por eso quien encuadra decide cuánto recorte quiere: cero mientras el
+      // plano es general, y entrando poco a poco en el aterrizaje, de modo que
+      // el último frame coincide exactamente con el encuadre de juego.
+      const blend = options.clamp == null ? 1 : clamp(Number(options.clamp) || 0, 0, 1);
+      if (blend > 0) {
+        const limits = this.boundsFor(hole, worldW, worldH);
+        const boundedX = limits.centerX != null ? limits.centerX : clamp(this.x, limits.minX, limits.maxX);
+        const boundedY = limits.centerY != null ? limits.centerY : clamp(this.y, limits.minY, limits.maxY);
+        this.x = lerp(this.x, boundedX, blend);
+        this.y = lerp(this.y, boundedY, blend);
+      }
       this.initialized = true;
     }
 

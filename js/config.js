@@ -126,14 +126,49 @@
     // ni red— y se salta con cualquier tecla o clic.
     holeIntro: Object.freeze({
       enabled: true,
-      // Quieto sobre la copa.
+
+      // 1 · Panorámica: el mapa entero en pantalla.
+      panoramaSeconds: 1.5,
+      // Se abre un pelín de más y se cierra despacio hasta el encuadre exacto.
+      // Un plano completamente fijo no se lee como una cámara.
+      panoramaOvershoot: 0.93,
+      // Margen que queda alrededor del mapa al encuadrarlo entero.
+      panoramaFit: 0.94,
+      // Suelo de zoom durante la presentación, muy por debajo del de juego.
+      // Los mapas grandes rondan los 11.000 px de ancho: con un suelo alto la
+      // "panorámica" se quedaba sin enseñar el mapa entero, que es su motivo
+      // de existir. Solo es un tope de seguridad.
+      panoramaMinZoom: 0.07,
+
+      // 2 · Bajada del plano general hasta la bandera.
+      approachSeconds: 1.8,
+      // 3 · Quieto sobre la copa, abriendo plano.
       holdSeconds: 0.85,
-      // Barrido de la copa a la salida.
-      travelSeconds: 1.75,
-      // Aterrizaje en el encuadre de juego.
-      settleSeconds: 0.55,
+      // 4 · Recorrido de la copa a la salida siguiendo el relieve.
+      // Es un SUELO, no una duración fija: el recorrido se alarga en los mapas
+      // largos para que el barrido se vea siempre al mismo ritmo. Con duración
+      // fija, un mapa de 11.000 px salía disparado y uno corto se arrastraba.
+      travelSeconds: 3.0,
+      travelMaxSeconds: 4.6,
+      // Velocidad aparente máxima del barrido, en píxeles de PANTALLA por
+      // segundo. Es lo que de verdad percibe el ojo, y de ahí sale la duración.
+      travelPeakScreenSpeed: 1380,
+      // 5 · Aterrizaje en el encuadre de juego.
+      settleSeconds: 0.8,
+
       cupZoom: 1.02,
       travelZoom: 0.72,
+      // Cuánto se abre el plano en mitad del recorrido, como fracción de
+      // `travelZoom`. Abrir ahí cumple dos funciones: deja leer el trazado
+      // entero y, sobre todo, reduce la velocidad APARENTE del barrido, que
+      // es lo que separa una panorámica de un latigazo. Vuelve a 1 en los dos
+      // extremos, así que el enlace con la bandera y con el aterrizaje sigue
+      // siendo continuo.
+      travelBreath: 0.55,
+      // Suelo de esa apertura. En los mapas más largos el tope de tiempo se
+      // queda corto y el respiro se abre solo hasta aquí para mantener el
+      // ritmo sin alargar más la presentación.
+      travelBreathMin: 0.2,
     }),
 
     gameplay: Object.freeze({
