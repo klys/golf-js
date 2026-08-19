@@ -41,6 +41,9 @@
       this.handledMultiplierSerial = 0;
       this.handledCaveSerial = 0;
       this.handledCaveExitSerial = 0;
+      // Último `holeSerial` visto por jugador. Es lo que dispara el anillo de
+      // la onda expansiva sin necesidad de un mensaje de red propio.
+      this.handledShockSerials = new Map();
       this.networkSession = null;
       this.inputLocked = true;
       // La simulación local avanza en pasos fijos: los FPS ya no cambian el
@@ -193,6 +196,7 @@
       this.handledMultiplierSerial = 0;
       this.handledCaveSerial = 0;
       this.handledCaveExitSerial = 0;
+      this.handledShockSerials.clear();
       this.camera = new Camera2D();
       this.camera.snapTo(this.ball, this.hole, this.viewport());
       this.lastTimestamp = 0;
@@ -577,6 +581,32 @@
       }
     }
 
+    /**
+     * Anillo de la onda expansiva de cada bola que emboca.
+     *
+     * Se deduce del `holeSerial`, que ya viaja en los snapshots, así que
+     * funciona igual offline que online sin añadir un mensaje al protocolo.
+     * A un jugador que entra con el hoyo empezado no se le enseña la onda de
+     * alguien que embocó antes de que llegara: solo se anuncian los cambios
+     * de serial vistos desde dentro.
+     */
+    trackHoleShockwaves() {
+      const balls = this.networkSession?.getRenderBalls?.()
+        || (this.ball ? [{ playerKey: 'offline', color: '#eaf6ff', ball: this.ball }] : []);
+      for (const item of balls) {
+        const key = item?.playerKey;
+        const ball = item?.ball;
+        if (!key || !ball) continue;
+        const serial = Number(ball.holeSerial) || 0;
+        const known = this.handledShockSerials.has(key);
+        const seen = this.handledShockSerials.get(key) || 0;
+        this.handledShockSerials.set(key, serial);
+        if (!known || serial <= seen) continue;
+        this.renderer.spawnShockwave(this.hole.cup.x, this.hole.cup.y, item.color || this.hole.theme.accent);
+        this.camera.addShake(5.5);
+      }
+    }
+
     update(dt) {
       if (!this.ball || !this.hole) return;
       // Presentación: un frame perdido no debe teletransportar la cámara ni
@@ -603,6 +633,7 @@
         this.updateRenderBall();
       } else this.renderBall = this.ball;
       this.handleEffects();
+      this.trackHoleShockwaves();
 
       if (!online) {
         if (this.ball.crushed) {

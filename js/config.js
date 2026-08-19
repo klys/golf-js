@@ -144,6 +144,35 @@
       crushSupportGap: 5,
       holeRadius: 22,
       cupDepth: 17,
+
+      // — Succión de la copa —
+      // Imán corto pero decidido. El radio es pequeño a propósito: no está
+      // para corregir tiros malos, sino para que rozar el borde termine
+      // dentro en vez de pasar de largo por dos píxeles.
+      holeSuctionRadius: 76,
+      holeSuctionStrength: 1500,
+      // Exponente de caída. Alto = casi todo el tirón vive pegado al borde.
+      holeSuctionFalloff: 1.8,
+      // Por encima de esta velocidad la bola lleva demasiada energía para que
+      // el imán la doble: pasa de largo, como debe ser.
+      holeSuctionMaxSpeed: 640,
+      holeSuctionMinFactor: 0.14,
+      // Captura por succión: radial (más redonda que la entrada clásica) y algo
+      // más permisiva, para que un roce lento no se escape por el ángulo.
+      holeCaptureRadius: 19,
+      holeCaptureSpeed: 250,
+      // Una bola YA PARADA dentro de este radio se despierta y cae dentro.
+      // Es el labio de la copa: quedarse clavado ahí es lo que más frustra de
+      // un putt. Se mantiene corto para que no regale hoyos desde lejos.
+      holeSettleRadius: 34,
+
+      // — Onda expansiva al embocar —
+      // Un frente que se expande desde la copa y empuja a quien siga en juego.
+      // Con impulso 0 queda desactivada sin tocar nada más.
+      shockwaveRadius: 340,
+      shockwaveSpeed: 900,
+      shockwaveImpulse: 430,
+      shockwaveLift: 155,
       steepHoleEntryDegrees: 50,
       resetDelaySeconds: 0.16,
       safeRestSeconds: 0.16,

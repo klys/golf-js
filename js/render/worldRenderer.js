@@ -7,10 +7,53 @@
   class WorldRenderer {
     constructor() {
       this.time = 0;
+      // Anillos de la onda expansiva. Son puramente visuales: el empujón lo
+      // aplica el host: aquí solo se dibuja lo que ya ha pasado.
+      this.shockwaves = [];
     }
 
     update(dt) {
       this.time += dt;
+      for (const wave of this.shockwaves) wave.age += dt;
+      // Vive lo que tarda el frente en recorrer su alcance, más un margen para
+      // que el anillo se apague en vez de desaparecer de golpe.
+      const life = CONFIG.gameplay.shockwaveRadius / Math.max(1, CONFIG.gameplay.shockwaveSpeed) + 0.35;
+      if (this.shockwaves.length) this.shockwaves = this.shockwaves.filter((wave) => wave.age < life);
+    }
+
+    spawnShockwave(x, y, color) {
+      this.shockwaves.push({ x, y, age: 0, color: color || '#ffffff' });
+    }
+
+    /**
+     * Frente expansivo desde la copa.
+     * Dos anillos con un desfase pequeño: uno solo se lee como un círculo que
+     * crece, y dos dan la sensación de golpe de aire que se propaga.
+     */
+    drawShockwaves(ctx) {
+      if (!this.shockwaves.length) return;
+      const cfg = CONFIG.gameplay;
+      const life = cfg.shockwaveRadius / Math.max(1, cfg.shockwaveSpeed) + 0.35;
+      ctx.save();
+      for (const wave of this.shockwaves) {
+        const t = clamp(wave.age / life, 0, 1);
+        const fade = Math.pow(1 - t, 1.6);
+        for (const [delay, width, alpha] of [[0, 6, 0.85], [0.075, 2.4, 0.45]]) {
+          const radius = Math.max(0, (wave.age - delay)) * cfg.shockwaveSpeed;
+          if (radius <= 1) continue;
+          ctx.strokeStyle = wave.color;
+          // Halo: sin él, sobre un fondo claro (glaciar, cueva submarina) el
+          // anillo se pierde justo cuando más falta hace verlo.
+          ctx.shadowColor = wave.color;
+          ctx.shadowBlur = 14 * fade;
+          ctx.globalAlpha = fade * alpha;
+          ctx.lineWidth = width * (0.4 + fade * 0.6);
+          ctx.beginPath();
+          ctx.arc(wave.x, wave.y, radius, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
     }
 
     draw(ctx, game) {
@@ -37,6 +80,7 @@
       this.drawCup(ctx, game, w, h);
       this.drawTrail(ctx, game.trail || []);
       particles.draw(ctx, visible);
+      this.drawShockwaves(ctx);
       const renderBalls = game.networkSession?.getRenderBalls?.()
         || [{ ball: game.renderBall || ball, color: '#f7fbff', username: '', local: true, turn: false, battleLocal: false }];
       // Prioridad de presentación:
@@ -1071,6 +1115,7 @@
       // Nunca dibujamos media copa/asta cortada por el viewport. Mientras no quepa
       // completa, el indicador de borde es la única representación del objetivo.
       if (screen.x < 88 || screen.x > viewportW - 88 || screen.y < 158 || screen.y > viewportH - 82) return;
+      this.drawSuctionRing(ctx, game);
       ctx.save();
       ctx.fillStyle = '#071914';
       ctx.beginPath();
@@ -1092,6 +1137,50 @@
       ctx.lineTo(x + 2, y - 82);
       ctx.closePath();
       ctx.fill();
+      ctx.restore();
+    }
+
+    /**
+     * Alcance de la succión, dibujado siempre en tenue y encendido cuando hay
+     * una bola dentro. Una fuerza invisible que decide tiros es una fuerza
+     * injusta: si el imán existe, tiene que verse dónde empieza.
+     */
+    drawSuctionRing(ctx, game) {
+      const radius = CONFIG.gameplay.holeSuctionRadius;
+      if (!(radius > 0)) return;
+      const cup = game.hole.cup;
+      const target = { x: cup.x, y: cup.y - CONFIG.ball.radius };
+      // Intensidad = la de la bola más metida en el radio, sea de quien sea.
+      let closeness = 0;
+      const balls = game.networkSession?.getRenderBalls?.()
+        || (game.renderBall || game.ball ? [{ ball: game.renderBall || game.ball }] : []);
+      for (const item of balls) {
+        const b = item?.ball;
+        if (!b || b.holed) continue;
+        const d = Math.hypot(b.x - target.x, b.y - target.y);
+        if (d < radius) closeness = Math.max(closeness, 1 - d / radius);
+      }
+      const pulse = 0.5 + 0.5 * Math.sin(this.time * 3.2);
+      ctx.save();
+      ctx.translate(target.x, target.y);
+      ctx.strokeStyle = game.hole.theme.accent;
+      ctx.globalAlpha = 0.10 + closeness * 0.5;
+      ctx.lineWidth = 1.2 + closeness * 1.8;
+      ctx.setLineDash([7, 9]);
+      ctx.lineDashOffset = -this.time * 26;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      // Con la bola dentro, un segundo anillo se cierra hacia la copa: lee como
+      // aspiración, no como un simple círculo iluminado.
+      if (closeness > 0.02) {
+        ctx.setLineDash([]);
+        ctx.globalAlpha = closeness * 0.45;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * (1 - pulse * 0.72), 0, Math.PI * 2);
+        ctx.stroke();
+      }
       ctx.restore();
     }
 
@@ -1321,17 +1410,34 @@
       const topMargin = 158;
       if (cupScreen.x >= margin && cupScreen.x <= w - margin && cupScreen.y >= topMargin && cupScreen.y <= h - margin) return;
 
-      const cx = w / 2;
-      const cy = h / 2;
-      const dx = cupScreen.x - cx;
-      const dy = cupScreen.y - cy;
-      const angle = Math.atan2(dy, dx);
-      const rx = Math.max(50, w / 2 - margin);
-      const ry = Math.max(50, h / 2 - margin);
-      const denom = Math.sqrt((Math.cos(angle) ** 2) / (rx ** 2) + (Math.sin(angle) ** 2) / (ry ** 2)) || 1;
-      const d = 1 / denom;
-      const tx = clamp(cx + Math.cos(angle) * d, margin, w - margin);
-      const ty = clamp(cy + Math.sin(angle) * d, topMargin, h - margin);
+      // El ángulo sale de la BOLA, no del centro de la pantalla. La cámara
+      // ancla la bola fuera del centro, así que medir desde el centro daba una
+      // flecha que apuntaba varios grados al lado del hoyo de verdad: justo el
+      // error que más se nota cuando el objetivo está casi alineado.
+      const from = camera.worldToScreen(focusBall);
+      const angle = Math.atan2(cupScreen.y - from.y, cupScreen.x - from.x);
+
+      // Punto del borde donde se posa la flecha: se recorta el rayo que sale
+      // de la bola contra el marco visible, así que la posición del indicador
+      // también señala por dónde está el hoyo, no solo su rotación.
+      const left = margin;
+      const right = w - margin;
+      const top = topMargin;
+      const bottom = h - margin;
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      let travel = Infinity;
+      if (Math.abs(cos) > 1e-4) {
+        const tx = ((cos > 0 ? right : left) - from.x) / cos;
+        if (tx > 0) travel = Math.min(travel, tx);
+      }
+      if (Math.abs(sin) > 1e-4) {
+        const ty = ((sin > 0 ? bottom : top) - from.y) / sin;
+        if (ty > 0) travel = Math.min(travel, ty);
+      }
+      if (!Number.isFinite(travel)) travel = Math.max(w, h);
+      const tx = clamp(from.x + cos * travel, left, right);
+      const ty = clamp(from.y + sin * travel, top, bottom);
       const distanceMeters = Math.max(0, Math.hypot(hole.cup.x - focusBall.x, hole.cup.y - focusBall.y) * CONFIG.course.metersPerPixel);
 
       ctx.save();
@@ -1342,25 +1448,41 @@
       this.roundedRect(ctx, -62, -27, 124, 54, 17);
       ctx.fill();
       ctx.stroke();
+
       ctx.save();
       ctx.rotate(angle);
       ctx.fillStyle = hole.theme.accent;
       ctx.shadowColor = hole.theme.accent;
       ctx.shadowBlur = 9;
-      ctx.beginPath();
-      ctx.moveTo(38, 0);
-      ctx.lineTo(20, -10);
-      ctx.lineTo(20, 10);
-      ctx.closePath();
-      ctx.fill();
+      this.drawArrow(ctx, 14, 46, 11, 4.6);
       ctx.restore();
+
       ctx.shadowBlur = 0;
       ctx.fillStyle = '#ffffff';
       ctx.font = '800 12px system-ui, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`${distanceMeters.toFixed(0)} m`, -5, 1);
+      ctx.fillText(`${distanceMeters.toFixed(0)} m`, -8, 1);
       ctx.restore();
+    }
+
+    /**
+     * Flecha completa —astil y punta— apuntando a +X desde el origen.
+     * El triángulo suelto que había antes se leía como un pico decorativo del
+     * marco; con astil se lee como lo que es: una dirección.
+     */
+    drawArrow(ctx, fromX, toX, headLength, shaftHalf) {
+      const headStart = toX - headLength;
+      ctx.beginPath();
+      ctx.moveTo(fromX, -shaftHalf);
+      ctx.lineTo(headStart, -shaftHalf);
+      ctx.lineTo(headStart, -headLength * 0.82);
+      ctx.lineTo(toX, 0);
+      ctx.lineTo(headStart, headLength * 0.82);
+      ctx.lineTo(headStart, shaftHalf);
+      ctx.lineTo(fromX, shaftHalf);
+      ctx.closePath();
+      ctx.fill();
     }
 
     drawStar(ctx, x, y, innerRadius, outerRadius, points) {

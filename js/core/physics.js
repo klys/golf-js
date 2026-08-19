@@ -33,6 +33,7 @@
         this.resolvePlatforms(ball, hole, dt, options);
         this.resolveMovingWalls(ball, hole, dt, options);
         this.resolveSpinners(ball, hole, options);
+        this.settleIntoCup(ball, hole);
         return;
       }
 
@@ -67,6 +68,7 @@
       ball.topImpactVy = null;
 
       this.applyGravityWells(ball, hole, dt, options);
+      this.applyHoleSuction(ball, hole, dt, options);
       this.applyFanFields(ball, hole, dt, options);
 
       const wind = this.currentWind(hole.windBase);
@@ -795,6 +797,53 @@
       }
     }
 
+    /**
+     * Succión de la copa.
+     *
+     * El radio es corto a propósito: esto no está para corregir un tiro malo
+     * desde lejos, sino para resolver el caso que más frustra —la bola que
+     * roza el borde y sigue de largo por dos píxeles—. Fuera del borde
+     * inmediato apenas se nota, porque la caída es muy pronunciada.
+     *
+     * El factor de velocidad es lo que separa los dos casos: una bola lanzada
+     * lleva demasiada energía para que el imán la doble y pasa de largo; una
+     * que llega rodando se va dentro.
+     */
+    applyHoleSuction(ball, hole, dt, options) {
+      const cfg = CONFIG.gameplay;
+      const radius = cfg.holeSuctionRadius;
+      if (!(radius > 0) || !(cfg.holeSuctionStrength > 0) || ball.holed || !hole.cup) return;
+      // Se apunta al centro que tendría la bola apoyada en el borde, no al
+      // punto de la copa: si no, el tirón la empuja contra el suelo.
+      const dx = hole.cup.x - ball.x;
+      const dy = (hole.cup.y - CONFIG.ball.radius) - ball.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 0.5 || dist > radius) return;
+      const weight = Math.pow(1 - dist / radius, cfg.holeSuctionFalloff);
+      const speed = Math.hypot(ball.vx, ball.vy);
+      const speedFactor = clamp(1 - speed / Math.max(1, cfg.holeSuctionMaxSpeed), cfg.holeSuctionMinFactor, 1);
+      const accel = cfg.holeSuctionStrength * weight * speedFactor;
+      ball.vx += (dx / dist) * accel * dt;
+      ball.vy += (dy / dist) * accel * dt;
+    }
+
+    /**
+     * Bola parada en el labio de la copa.
+     *
+     * La succión solo actúa sobre bolas en movimiento, así que sin esto una
+     * bola que se detiene rozando el borde se queda ahí para siempre. Aquí se
+     * la despierta: a partir de ese momento manda `applyHoleSuction`, que la
+     * mete o la deja fuera según lo cerca que estuviera de verdad.
+     */
+    settleIntoCup(ball, hole) {
+      const radius = CONFIG.gameplay.holeSettleRadius;
+      if (!(radius > 0) || ball.holed || ball.inWater || ball.caveRide || !hole.cup) return;
+      const dx = hole.cup.x - ball.x;
+      const dy = (hole.cup.y - CONFIG.ball.radius) - ball.y;
+      if (Math.hypot(dx, dy) > radius) return;
+      ball.moving = true;
+    }
+
     resolveSecretCaves(ball, hole, options) {
       if (ball.specialCooldown > 0 || ball.caveRide) return;
       const r = CONFIG.ball.radius;
@@ -1008,7 +1057,12 @@
       const entryAngle = enteredFromAbove ? Math.atan2(impactVy, Math.abs(impactVx)) : 0;
       const steepEntryAngle = (CONFIG.gameplay.steepHoleEntryDegrees || 50) * Math.PI / 180;
       const steepEntry = enteredFromAbove && entryAngle >= steepEntryAngle;
-      if (close && nearSurface && (slowEnough || steepEntry)) {
+      // Captura por succión: quien llega rodando al borde con poca energía
+      // entra, sin depender del ángulo exacto que exige la entrada clásica.
+      const radial = Math.hypot(dx, dy);
+      const sucked = radial < CONFIG.gameplay.holeCaptureRadius
+        && Math.hypot(ball.vx, ball.vy) < CONFIG.gameplay.holeCaptureSpeed;
+      if (sucked || (close && nearSurface && (slowEnough || steepEntry))) {
         ball.x = hole.cup.x;
         ball.y = hole.cup.y + CONFIG.gameplay.cupDepth;
         ball.vx = 0;

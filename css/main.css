@@ -363,11 +363,13 @@ body[data-focus="aim"] #helpChip { opacity: 0; transform: translateY(6px); }
   fill: none; stroke: var(--mint); stroke-width: 3; stroke-linecap: round;
   transition: stroke-dashoffset .4s var(--ease), stroke .4s var(--ease);
 }
+/* Flecha completa —astil y punta—: el triángulo suelto de antes marcaba el
+   sentido, pero se leía como un chevrón del dial, no como una dirección. */
 .wind-needle {
-  width: 0; height: 0; border-left: 9px solid currentColor;
-  border-top: 5px solid transparent; border-bottom: 5px solid transparent;
-  color: #ddfcff; transform-origin: center; transition: transform .25s var(--ease);
-  filter: drop-shadow(0 0 6px rgba(180,246,255,.4));
+  width: 26px; height: 15px; display: block; overflow: visible;
+  color: #ddfcff; fill: currentColor; transform-origin: center;
+  transition: transform .25s var(--ease);
+  filter: drop-shadow(0 0 6px rgba(180,246,255,.45));
 }
 .wind-read { display: grid; gap: 2px; }
 .wind-read strong { font-size: 14px; font-variant-numeric: tabular-nums; }

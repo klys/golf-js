@@ -58,6 +58,9 @@
       // en cuanto el jugador elige a quién mirar, aquí queda su clave.
       this.spectateKey = null;
       this.finishOrder = 0;
+      // Frentes de onda vivos tras embocar alguien. Solo existen en el host:
+      // el resultado viaja ya aplicado, en las velocidades del snapshot.
+      this.shockwaves = [];
       this.snapshotAccumulator = 0;
       this.snapshotSeq = 0;
       this.lastSnapshotSeq = -1;
@@ -1242,6 +1245,7 @@
         }
         if (p.ball && !p.ball.moving && !p.ball.inWater && !p.ball.holed) this.clearSabotageAttribution(p.ball);
       }
+      this.updateShockwaves(dt);
       this.worldTime = startTime + dt;
       // Reloj de red: nunca se reinicia, ni al cambiar de hoyo ni de mapa.
       // Es la referencia con la que el cliente ordena e interpola snapshots.
@@ -1630,6 +1634,7 @@
     }
 
     finishPlayerHole(player) {
+      this.spawnHoleShockwave(player);
       player.finished = true;
       player.timedOut = false;
       player.finishReason = 'holed';
@@ -1658,6 +1663,70 @@
         this.broadcastReliable({ type: 'session:event', event: 'finish-countdown', seconds: this.finishCountdownRemaining });
         this.emit('gameevent', { event: 'finish-countdown', seconds: this.finishCountdownRemaining });
       }
+    }
+
+    /**
+     * Onda expansiva al embocar.
+     *
+     * Solo la abre el host: lo que viaja a los clientes son las velocidades ya
+     * modificadas dentro del snapshot, así que no hay un segundo camino por el
+     * que la física pueda divergir. El anillo que se ve lo dibuja cada cliente
+     * por su cuenta, a partir del `holeSerial` de la bola que entró.
+     */
+    spawnHoleShockwave(player) {
+      if (this.role !== 'host' || !player?.ball) return;
+      if (!(NG.CONFIG.gameplay.shockwaveImpulse > 0)) return;
+      const cup = this.game.hole?.cup;
+      if (!cup) return;
+      this.shockwaves.push({
+        x: cup.x,
+        y: cup.y,
+        radius: 0,
+        playerKey: player.playerKey,
+        hit: new Set([player.playerKey]),
+      });
+    }
+
+    /**
+     * Avance de los frentes activos.
+     *
+     * Cada bola recibe el empujón UNA vez, justo cuando el frente la cruza:
+     * aplicar la fuerza mientras esté dentro del radio convertiría la onda en
+     * un campo de repulsión permanente, que es otra cosa muy distinta.
+     */
+    updateShockwaves(dt) {
+      if (!this.shockwaves.length) return;
+      const cfg = NG.CONFIG.gameplay;
+      const reach = cfg.shockwaveRadius;
+      for (const wave of this.shockwaves) {
+        const previousRadius = wave.radius;
+        wave.radius += cfg.shockwaveSpeed * dt;
+        for (const p of this.players.values()) {
+          if (p.role !== 'player' || !p.ball || p.finished || p.ball.holed || p.ball.inWater) continue;
+          if (wave.hit.has(p.playerKey)) continue;
+          const dx = p.ball.x - wave.x;
+          const dy = p.ball.y - wave.y;
+          const distance = Math.hypot(dx, dy);
+          // El frente la cruza en este paso, ni antes ni después.
+          if (distance < previousRadius || distance > wave.radius) continue;
+          wave.hit.add(p.playerKey);
+          if (distance > reach) continue;
+          const falloff = Math.pow(1 - distance / reach, 1.35);
+          const nx = distance > 0.5 ? dx / distance : 0;
+          const ny = distance > 0.5 ? dy / distance : -1;
+          p.ball.vx += nx * cfg.shockwaveImpulse * falloff;
+          // Algo de componente hacia arriba: una onda que solo empuja en
+          // horizontal contra el suelo casi no se nota.
+          p.ball.vy += ny * cfg.shockwaveImpulse * falloff - cfg.shockwaveLift * falloff;
+          p.ball.moving = true;
+          p.physics?.resetMotionGuard?.(p.ball);
+          // Si el empujón acaba en agua o fuera del mapa, la penalización se
+          // le atribuye a quien embocó, igual que un choque en Battle Royale.
+          const author = this.players.get(wave.playerKey);
+          if (author) this.markSabotageContact(p, author);
+        }
+      }
+      this.shockwaves = this.shockwaves.filter((wave) => wave.radius <= reach);
     }
 
     finishMatch(winnerPlayerKey) {
@@ -1793,6 +1862,7 @@
       this.graceRemaining = null;
       this.graceReason = null;
       this.finishOrder = 0;
+      this.shockwaves.length = 0;
       this.transitionTimer = 0;
       this.transitionHold = 0;
       this.mapChangeCooldownUntil = Date.now() + NG.NET_CONFIG.mapVoteCooldownMs;
@@ -1846,6 +1916,7 @@
 
     advanceHole() {
       if (this.matchOver) return;
+      this.shockwaves.length = 0;
       this.finishOrder = 0;
       this.transitionTimer = 0;
       this.transitionHold = 0;
