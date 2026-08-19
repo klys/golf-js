@@ -41,6 +41,8 @@
       this.handledMultiplierSerial = 0;
       this.handledCaveSerial = 0;
       this.handledCaveExitSerial = 0;
+      this.handledWaterSkipSerial = 0;
+      this.handledReverseSerial = 0;
       // Último `holeSerial` visto por jugador. Es lo que dispara el anillo de
       // la onda expansiva sin necesidad de un mensaje de red propio.
       this.handledShockSerials = new Map();
@@ -174,12 +176,18 @@
         holeSerial: 0,
         portalSerial: 0,
         cannonSerial: 0,
+        reverseSerial: 0,
         multiplierSerial: 0,
         caveSerial: 0,
         caveExitSerial: 0,
         gravityPulse: 0,
+        gravityHold: 0,
         movingWallSerial: 0,
         spinnerSerial: 0,
+        waterSkips: 0,
+        waterSkipZone: null,
+        waterSkipSerial: 0,
+        reverseCannonSpent: false,
         lastPortalPairId: null,
         lastPortalExitIndex: null,
         caveRide: null,
@@ -196,6 +204,8 @@
       this.handledMultiplierSerial = 0;
       this.handledCaveSerial = 0;
       this.handledCaveExitSerial = 0;
+      this.handledWaterSkipSerial = 0;
+      this.handledReverseSerial = 0;
       this.handledShockSerials.clear();
       this.camera = new Camera2D();
       this.camera.snapTo(this.ball, this.hole, this.viewport());
@@ -288,6 +298,9 @@
         this.ball.moving = true;
         this.ball.inWater = false;
         this.ball.lastImpactSpeed = 0;
+        this.ball.waterSkips = 0;
+        this.ball.waterSkipZone = null;
+        this.ball.reverseCannonSpent = false;
         this.strokes += 1;
       }
       this.trail.length = 0;
@@ -368,6 +381,10 @@
       this.ball.crushed = false;
       this.ball.boosterPulse = 0;
       this.ball.gravityPulse = 0;
+      this.ball.gravityHold = 0;
+      this.ball.waterSkips = 0;
+      this.ball.waterSkipZone = null;
+      this.ball.reverseCannonSpent = false;
       this.ball.lastPortalPairId = null;
       this.ball.lastPortalExitIndex = null;
       this.ball.lastSurfaceId = safe.surfaceId || this.hole.tee.surfaceId;
@@ -529,6 +546,30 @@
         });
       }
 
+      // Retroceso: se anuncia como penalización, no como truco. El jugador
+      // acaba de perder medio hoyo y el aviso tiene que decírselo con esa cara,
+      // aunque no le cueste ningún golpe.
+      if ((ball.reverseSerial || 0) > this.handledReverseSerial) {
+        this.handledReverseSerial = ball.reverseSerial;
+        this.hud.flashStatus('¡RETROCESO!', 'penalty', 1.25);
+        this.camera.addShake(9);
+        this.particles.emitBurst(ball.x, ball.y, {
+          count: 26,
+          angle: Math.atan2(ball.vy, ball.vx),
+          spread: 0.8,
+          speedMin: 95,
+          speedMax: 300,
+          gravity: 120,
+          lifeMin: 0.24,
+          lifeMax: 0.66,
+          colors: ['#ff8a5c', '#ffd08a', '#ffffff'],
+          sizeMin: 2,
+          sizeMax: 5,
+          glow: 10,
+          shape: 'spark',
+        });
+      }
+
       if ((ball.multiplierSerial || 0) > this.handledMultiplierSerial) {
         this.handledMultiplierSerial = ball.multiplierSerial;
         this.hud.flashStatus(`¡MULTIPLICADOR x${CONFIG.gameplay.scoreMultiplier}!`, 'good', 1.35);
@@ -562,6 +603,32 @@
           lifeMin: 0.25, lifeMax: 0.65,
           colors: ['#7bffdc', '#7d6cff', '#ffffff'],
           sizeMin: 1.6, sizeMax: 4.0, glow: 8,
+        });
+      }
+
+      // Picado en el agua: el chapoteo se dibuja en la LÁMINA, no en la bola,
+      // que a esa velocidad ya está varios píxeles más allá cuando se lee.
+      if ((ball.waterSkipSerial || 0) > this.handledWaterSkipSerial) {
+        this.handledWaterSkipSerial = ball.waterSkipSerial;
+        const skipX = Number.isFinite(ball.lastWaterSkipX) ? ball.lastWaterSkipX : ball.x;
+        const skipY = Number.isFinite(ball.lastWaterSkipY) ? ball.lastWaterSkipY : ball.y;
+        const chained = (ball.waterSkips || 1) > 1;
+        this.renderer.spawnWaterRipple(skipX, skipY, this.hole.theme.water);
+        this.hud.flashStatus(chained ? '¡DOBLE REBOTE EN EL AGUA!' : '¡Rebote en el agua!', 'boost', chained ? 1.1 : 0.8);
+        this.camera.addShake(chained ? 4.2 : 2.8);
+        this.particles.emitBurst(skipX, skipY, {
+          count: chained ? 22 : 16,
+          angle: -Math.PI / 2,
+          spread: Math.PI * 0.5,
+          speedMin: 70,
+          speedMax: 235,
+          gravity: 430,
+          lifeMin: 0.20,
+          lifeMax: 0.52,
+          colors: ['#e2fdff', this.hole.theme.water, '#ffffff'],
+          sizeMin: 1.4,
+          sizeMax: 3.6,
+          glow: 5,
         });
       }
 

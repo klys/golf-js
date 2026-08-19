@@ -2,7 +2,7 @@
   'use strict';
 
   const { CONFIG, TerrainUtil } = NG;
-  const { clamp, normalize, dot } = NG.MathUtil;
+  const { clamp, lerp, smoothstep, normalize, dot } = NG.MathUtil;
 
   class PhysicsEngine {
     constructor() {
@@ -102,7 +102,7 @@
       // Segunda pasada estática: las correcciones de superficies/obstáculos dinámicos
       // no pueden volver a introducir la bola dentro de un lateral de isla/techo.
       this.resolveSolidWalls(ball, hole, options);
-      this.resolveWater(ball, hole);
+      this.resolveWater(ball, hole, options);
       this.resolveHole(ball, hole, options);
 
       if (![ball.x, ball.y, ball.vx, ball.vy].every(Number.isFinite)) {
@@ -776,25 +776,90 @@
       }
     }
 
+    /**
+     * Pozos de gravedad.
+     *
+     * Repulsión y atracción no son el mismo campo con el signo cambiado, y
+     * tratarlas igual es justo lo que los volvía o inofensivos o injugables.
+     * Empujar hacia fuera es seguro por construcción —por muy fuerte que sea,
+     * un repulsor no puede quedarse con la bola—, así que va a plena potencia.
+     * Atraer no lo es: un tirón radial fuerte termina con la bola orbitando el
+     * centro hasta que alguien resetea, y eso no es un obstáculo, es una
+     * partida colgada.
+     *
+     * Por eso la atracción se aplica casi toda PERPENDICULAR a la velocidad,
+     * que es la componente que dobla el vuelo sin cambiar la rapidez, y su
+     * parte radial solo actúa mientras la bola se ACERCA: acelera al entrar y
+     * no le cobra esa energía al salir, así que la bola se va siempre con algo
+     * más de la que traía. Escapar no depende del azar, sale de la forma del
+     * campo. Encima van dos seguros más —un núcleo sin fuerza y un tiempo
+     * máximo de agarre— para que el caso raro tampoco atrape a nadie.
+     */
     applyGravityWells(ball, hole, dt, options) {
+      const cfg = CONFIG.gravityWell;
+      // El agarre acumulado se lee del frame anterior y se actualiza al final:
+      // así todos los pozos de la misma pasada ven el mismo valor.
+      const hold = Number(ball.gravityHold) || 0;
+      const release = 1 - smoothstep((hold - cfg.holdReleaseSeconds) / Math.max(0.01, cfg.holdFadeSeconds));
+      let pulling = false;
       for (const well of hole.hazards) {
         if (well.type !== 'gravity-well') continue;
         const dx = well.x - ball.x;
         const dy = well.y - ball.y;
         const dist = Math.hypot(dx, dy);
-        const influence = well.radius * 1.35;
-        if (dist < 2 || dist > influence) continue;
-        const weight = Math.pow(1 - dist / influence, 1.55);
+        const influence = well.radius * cfg.influenceScale;
+        if (dist < 1 || dist > influence) continue;
         const nx = dx / dist;
         const ny = dy / dist;
-        const accel = well.strength * weight;
-        ball.vx += nx * accel * dt;
-        ball.vy += ny * accel * dt;
-        const swirl = Math.abs(well.strength) * 0.18 * weight * (well.spin || 1);
-        ball.vx += -ny * swirl * dt;
-        ball.vy += nx * swirl * dt;
+        const reach = 1 - dist / influence;
+        const power = Math.abs(well.strength);
+        const spin = well.spin || 1;
+        let weight = 0;
+
+        if (well.strength < 0) {
+          weight = Math.pow(reach, cfg.repelFalloff);
+          const accel = power * cfg.repelScale * weight;
+          ball.vx -= nx * accel * dt;
+          ball.vy -= ny * accel * dt;
+          const swirl = power * cfg.repelSwirl * weight * spin;
+          ball.vx += -ny * swirl * dt;
+          ball.vy += nx * swirl * dt;
+        } else {
+          const speed = Math.hypot(ball.vx, ball.vy);
+          if (speed <= cfg.attractMinSpeed) continue;
+          // Seguro 1: el núcleo no tira. Sin fondo al que caer, la bola cruza
+          // el centro recta en vez de quedarse dando vueltas dentro.
+          const core = smoothstep(dist / Math.max(1, well.radius * cfg.attractCoreRatio));
+          // Seguro 3: cuanto más lenta llega la bola, menos la agarra el pozo.
+          const fast = smoothstep((speed - cfg.attractMinSpeed) / Math.max(1, cfg.attractFullSpeed - cfg.attractMinSpeed));
+          weight = Math.pow(reach, cfg.attractFalloff) * core * fast * release;
+          if (weight <= 0.001) continue;
+          const accel = power * cfg.attractScale * weight;
+          const ux = ball.vx / speed;
+          const uy = ball.vy / speed;
+          // Descomposición del tirón respecto a la marcha de la bola.
+          const along = nx * ux + ny * uy;
+          ball.vx += (nx - ux * along) * accel * dt;
+          ball.vy += (ny - uy * along) * accel * dt;
+          // Seguro 2: la parte radial solo mientras se acerca.
+          if (along > 0) {
+            const pull = accel * along * cfg.attractPullScale;
+            ball.vx += ux * pull * dt;
+            ball.vy += uy * pull * dt;
+          }
+          const swirl = power * cfg.attractSwirl * weight * spin;
+          ball.vx += -ny * swirl * dt;
+          ball.vy += nx * swirl * dt;
+          if (weight > 0.02) pulling = true;
+        }
+
         if (!options.preview && weight > 0.16) ball.gravityPulse = Math.max(ball.gravityPulse || 0, weight);
       }
+      // El contador solo corre con atractores encima: la repulsión no necesita
+      // válvula de escape, y sumarla ahí apagaría el imán del pozo siguiente.
+      ball.gravityHold = pulling
+        ? hold + dt
+        : Math.max(0, hold - dt * 2.5);
     }
 
     /**
@@ -990,11 +1055,30 @@
       }
     }
 
+    /**
+     * Cañones, en sus dos sabores.
+     *
+     * El normal te dispara hacia el hoyo. El de retroceso hace exactamente lo
+     * contrario y con más fuerza: es la única pieza del mapa que quita
+     * progreso, y por eso solo hay una por mundo.
+     *
+     * Comparten disparador —pisar la placa estando apoyado— y eso es
+     * deliberado: si uno saltara al rozarlo y el otro no, el jugador no podría
+     * predecir ninguno de los dos. La diferencia tiene que estar en lo que
+     * hacen y en cómo se ven, nunca en cuándo se activan.
+     */
     resolveCannons(ball, hole, options) {
       if (ball.specialCooldown > 0 || !ball.onSurface) return;
       const r = CONFIG.ball.radius;
       for (const cannon of hole.hazards) {
-        if (cannon.type !== 'cannon') continue;
+        const reverse = cannon.type === 'reverse-cannon';
+        if (!reverse && cannon.type !== 'cannon') continue;
+        // El de retroceso solo dispara UNA vez por golpe. Sin esto, la bola
+        // que sale despedida y luego vuelve rodando cuesta abajo se vuelve a
+        // meter dentro: medido en simulación, hasta seis disparos seguidos en
+        // el mismo tiro. Deja de leerse como un obstáculo y pasa a parecer un
+        // fallo. Se recarga con el siguiente golpe.
+        if (reverse && ball.reverseCannonSpent) continue;
         const surface = TerrainUtil.findSurface(hole, cannon.surfaceId);
         if (!surface) continue;
         const surfaceY = TerrainUtil.sampleSurface(surface, cannon.x);
@@ -1004,7 +1088,11 @@
         ball.vy = Math.sin(cannon.angle) * cannon.power;
         ball.moving = true;
         ball.specialCooldown = CONFIG.gameplay.specialCooldownSeconds;
-        if (!options.preview) ball.cannonSerial = (ball.cannonSerial || 0) + 1;
+        if (reverse) ball.reverseCannonSpent = true;
+        if (!options.preview) {
+          if (reverse) ball.reverseSerial = (ball.reverseSerial || 0) + 1;
+          else ball.cannonSerial = (ball.cannonSerial || 0) + 1;
+        }
         break;
       }
     }
@@ -1025,20 +1113,73 @@
       }
     }
 
-    resolveWater(ball, hole) {
+    resolveWater(ball, hole, options = {}) {
       const r = CONFIG.ball.radius;
-      for (const water of hole.hazards) {
+      for (let index = 0; index < hole.hazards.length; index += 1) {
+        const water = hole.hazards[index];
         if (water.type !== 'water') continue;
         if (ball.x < water.x - water.width / 2 || ball.x > water.x + water.width / 2) continue;
         const surfaceY = water.surfaceY;
         if (ball.y + r < surfaceY) continue;
         if (ball.y - r > surfaceY + water.depth + 80) continue;
+        if (this.trySkipOnWater(ball, water, index, options)) return;
         ball.inWater = true;
         ball.moving = false;
         ball.vx = 0;
         ball.vy = 0;
         return;
       }
+    }
+
+    /**
+     * Piedra picada sobre el agua.
+     *
+     * Una bola que llega RASA y RÁPIDA no se hunde: toca la lámina y sale
+     * despedida, como una piedra lanzada de canto. Es lo que convierte la
+     * charca en una apuesta —cruzarla por arriba— en vez de un muro que solo
+     * castiga, y exige las dos cosas a la vez, porque cualquiera de ellas
+     * sola es un tiro normal: ángulo rasante y velocidad de verdad.
+     *
+     * La ventana de ángulo se ensancha con la velocidad, igual que en el agua
+     * real: un misil raso perdona un picado que un globo no.
+     *
+     * El límite de picados es POR CHARCA, no por tiro: cruzar dos estanques
+     * en el mismo golpe da dos oportunidades, pero rebotar tres veces en el
+     * mismo nunca. Al tercer contacto gana el agua.
+     */
+    trySkipOnWater(ball, water, zoneIndex, options) {
+      const cfg = CONFIG.water;
+      if (!(cfg.skipMaxBounces > 0)) return false;
+      // Solo pica quien llega desde arriba y bajando. Una bola que ya está
+      // dentro, o que sube, no tiene nada contra lo que rebotar.
+      if (!(ball.vy > 0)) return false;
+      const r = CONFIG.ball.radius;
+      const surfaceY = water.surfaceY;
+      const previousBottom = (Number.isFinite(ball.prevY) ? ball.prevY : ball.y) + r;
+      if (previousBottom > surfaceY + cfg.skipEntryTolerance) return false;
+      const speed = Math.hypot(ball.vx, ball.vy);
+      if (speed < cfg.skipMinSpeed) return false;
+      const reach = clamp((speed - cfg.skipMinSpeed) / Math.max(1, cfg.skipFullSpeed - cfg.skipMinSpeed), 0, 1);
+      const maxAngle = lerp(cfg.skipMinAngleDegrees, cfg.skipMaxAngleDegrees, reach) * Math.PI / 180;
+      if (Math.atan2(ball.vy, Math.abs(ball.vx)) > maxAngle) return false;
+      const used = ball.waterSkipZone === zoneIndex ? (Number(ball.waterSkips) || 0) : 0;
+      if (used >= cfg.skipMaxBounces) return false;
+
+      ball.y = surfaceY - r - cfg.skipClearance;
+      ball.vx *= cfg.skipHorizontalKeep;
+      // El suelo de impulso es lo que separa un picado de un roce: sin él, una
+      // entrada casi horizontal sale tan pegada a la lámina que vuelve a tocar
+      // al instante y gasta los dos picados en el mismo palmo de agua.
+      ball.vy = -Math.max(ball.vy * cfg.skipVerticalBounce, cfg.skipMinLift);
+      ball.waterSkipZone = zoneIndex;
+      ball.waterSkips = used + 1;
+      ball.inWater = false;
+      if (!options.preview) {
+        ball.waterSkipSerial = (ball.waterSkipSerial || 0) + 1;
+        ball.lastWaterSkipX = ball.x;
+        ball.lastWaterSkipY = surfaceY;
+      }
+      return true;
     }
 
     resolveHole(ball, hole, options) {
@@ -1087,6 +1228,10 @@
         lastSafe: { x: start.x, y: start.y, surfaceId: start.lastSurfaceId || start.surfaceId },
         lastSurfaceId: start.lastSurfaceId || start.surfaceId,
         inWater: false,
+        waterSkips: 0,
+        waterSkipZone: null,
+        gravityHold: 0,
+        reverseCannonSpent: false,
       };
       const path = [];
       const savedTime = this.time;

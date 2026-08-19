@@ -359,8 +359,9 @@
         lastSafe: { x: hole.tee.x, y: hole.tee.y, surfaceId: hole.tee.surfaceId },
         shotOrigin: { x: hole.tee.x, y: hole.tee.y, surfaceId: hole.tee.surfaceId },
         lastSurfaceId: hole.tee.surfaceId, impactSerial: 0, boosterSerial: 0, holeSerial: 0, portalSerial: 0,
-        cannonSerial: 0, multiplierSerial: 0, caveSerial: 0, caveExitSerial: 0, gravityPulse: 0,
-        movingWallSerial: 0, spinnerSerial: 0, lastPortalPairId: null, lastPortalExitIndex: null, lastCaveId: null,
+        cannonSerial: 0, reverseSerial: 0, multiplierSerial: 0, caveSerial: 0, caveExitSerial: 0, gravityPulse: 0, gravityHold: 0,
+        movingWallSerial: 0, spinnerSerial: 0, waterSkips: 0, waterSkipZone: null, waterSkipSerial: 0, reverseCannonSpent: false,
+        lastPortalPairId: null, lastPortalExitIndex: null, lastCaveId: null,
         sabotageByPlayerKey: null, sabotageTouchAt: 0, caveRide: null,
       };
     }
@@ -996,6 +997,9 @@
       player.ball.inWater = false;
       player.ball.crushed = false;
       player.ball.lastImpactSpeed = 0;
+      player.ball.waterSkips = 0;
+      player.ball.waterSkipZone = null;
+      player.ball.reverseCannonSpent = false;
       player.strokes += 1;
       player.turnsUsed += 1;
       player.shotInProgress = true;

@@ -4,17 +4,27 @@
   const { CONFIG, TerrainUtil, ARCHETYPES } = NG;
   const { clamp, lerp } = NG.MathUtil;
 
+  // Lo que tarda en apagarse el anillo de un picado en el agua.
+  const WATER_RIPPLE_LIFE = 0.7;
+
   class WorldRenderer {
     constructor() {
       this.time = 0;
       // Anillos de la onda expansiva. Son puramente visuales: el empujón lo
       // aplica el host: aquí solo se dibuja lo que ya ha pasado.
       this.shockwaves = [];
+      // Anillos del picado en el agua. Igual que la onda de la copa: solo son
+      // la huella de algo que la física ya resolvió.
+      this.waterRipples = [];
     }
 
     update(dt) {
       this.time += dt;
       for (const wave of this.shockwaves) wave.age += dt;
+      if (this.waterRipples.length) {
+        for (const ripple of this.waterRipples) ripple.age += dt;
+        this.waterRipples = this.waterRipples.filter((ripple) => ripple.age < WATER_RIPPLE_LIFE);
+      }
       // Vive lo que tarda el frente en recorrer su alcance, más un margen para
       // que el anillo se apague en vez de desaparecer de golpe.
       const life = CONFIG.gameplay.shockwaveRadius / Math.max(1, CONFIG.gameplay.shockwaveSpeed) + 0.35;
@@ -23,6 +33,39 @@
 
     spawnShockwave(x, y, color) {
       this.shockwaves.push({ x, y, age: 0, color: color || '#ffffff' });
+    }
+
+    spawnWaterRipple(x, y, color) {
+      this.waterRipples.push({ x, y, age: 0, color: color || '#6fe4ff' });
+    }
+
+    /**
+     * Huella del picado: dos elipses muy achatadas que se abren sobre la
+     * lámina. Achatadas porque el agua se ve casi de canto —un círculo se
+     * leería como una burbuja flotando— y en pareja desfasada porque un solo
+     * anillo parece un fallo de dibujo y dos, agua desplazada.
+     */
+    drawWaterRipples(ctx) {
+      if (!this.waterRipples.length) return;
+      ctx.save();
+      for (const ripple of this.waterRipples) {
+        const t = clamp(ripple.age / WATER_RIPPLE_LIFE, 0, 1);
+        for (let i = 0; i < 2; i += 1) {
+          const delay = i * 0.16;
+          if (ripple.age < delay) continue;
+          const spread = clamp((ripple.age - delay) / WATER_RIPPLE_LIFE, 0, 1);
+          const rx = 12 + spread * 84;
+          const fade = Math.pow(1 - t, 1.8) * (i === 0 ? 0.75 : 0.45);
+          if (fade <= 0.01) continue;
+          ctx.globalAlpha = fade;
+          ctx.strokeStyle = i === 0 ? '#eaffff' : ripple.color;
+          ctx.lineWidth = 2.4 - i * 0.9;
+          ctx.beginPath();
+          ctx.ellipse(ripple.x, ripple.y, rx, Math.max(1.5, rx * 0.19), 0, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
     }
 
     /**
@@ -76,6 +119,7 @@
       this.drawIslands(ctx, hole, visible);
       this.drawSurfaceZones(ctx, hole, visible);
       this.drawHazards(ctx, game, visible);
+      this.drawWaterRipples(ctx);
       this.drawDecorations(ctx, hole, visible);
       this.drawCup(ctx, game, w, h);
       this.drawTrail(ctx, game.trail || []);
@@ -745,19 +789,24 @@
         ctx.restore();
       }
 
+      // El campo se dibuja con el alcance REAL de la física, no con un radio
+      // decorativo: ahora que los pozos pegan fuerte, saber dónde empiezan a
+      // tirar es parte de poder jugarlos.
+      const wellCfg = CONFIG.gravityWell;
       for (const well of hole.hazards) {
         if (well.type !== 'gravity-well') continue;
-        if (well.x + well.radius * 1.4 < visible.minX || well.x - well.radius * 1.4 > visible.maxX || well.y + well.radius * 1.4 < visible.minY || well.y - well.radius * 1.4 > visible.maxY) continue;
+        const influence = well.radius * wellCfg.influenceScale;
+        if (well.x + influence < visible.minX || well.x - influence > visible.maxX || well.y + influence < visible.minY || well.y - influence > visible.maxY) continue;
         const repel = well.strength < 0;
         ctx.save();
         ctx.translate(well.x, well.y);
-        const field = ctx.createRadialGradient(0, 0, 4, 0, 0, well.radius * 1.15);
+        const field = ctx.createRadialGradient(0, 0, 4, 0, 0, influence);
         field.addColorStop(0, repel ? 'rgba(255,178,103,.72)' : 'rgba(142,113,255,.74)');
         field.addColorStop(0.22, repel ? 'rgba(255,113,88,.28)' : 'rgba(100,235,255,.24)');
         field.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = field;
         ctx.beginPath();
-        ctx.arc(0, 0, well.radius * 1.15, 0, Math.PI * 2);
+        ctx.arc(0, 0, influence, 0, Math.PI * 2);
         ctx.fill();
         ctx.strokeStyle = repel ? 'rgba(255,211,127,.58)' : 'rgba(158,238,255,.52)';
         ctx.lineWidth = 2;
@@ -770,6 +819,16 @@
           ctx.stroke();
         }
         ctx.setLineDash([]);
+        // El ojo del atractor no tira: es el hueco por el que se cruza recto.
+        // Marcarlo con un aro limpio es lo que convierte el pozo en algo que
+        // se puede leer y jugar, en vez de en una zona a la que no acercarse.
+        if (!repel) {
+          ctx.strokeStyle = 'rgba(206,246,255,.30)';
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.arc(0, 0, well.radius * wellCfg.attractCoreRatio, 0, Math.PI * 2);
+          ctx.stroke();
+        }
         ctx.fillStyle = repel ? '#ff9b70' : '#85efff';
         ctx.shadowColor = repel ? '#ff755f' : '#7b6dff';
         ctx.shadowBlur = 14;
@@ -966,6 +1025,76 @@
         ctx.lineTo(28, 6);
         ctx.closePath();
         ctx.fill();
+        ctx.restore();
+      }
+
+      // Cañón de retroceso. Comparte disparador con el cañón normal, así que
+      // TIENE que compartir lo mínimo posible en el dibujo: el normal es una
+      // pieza fina y turquesa que apunta al hoyo; este es un bloque rojo,
+      // ancho y anclado al suelo que apunta al revés. Un jugador debe poder
+      // distinguirlos de un vistazo y desde lejos, porque equivocarse aquí
+      // cuesta medio hoyo.
+      for (const launcher of hole.hazards) {
+        if (launcher.type !== 'reverse-cannon') continue;
+        if (launcher.x + launcher.width < visible.minX || launcher.x - launcher.width > visible.maxX) continue;
+        const pulse = 0.7 + Math.sin(this.time * 3.1) * 0.3;
+        ctx.save();
+        ctx.translate(launcher.x, launcher.y);
+
+        // Aviso en el suelo: un abanico que late bajo la pieza. Es lo que se
+        // ve antes que nada al acercarse rodando.
+        const halo = ctx.createRadialGradient(0, 6, 6, 0, 6, launcher.width * 0.85);
+        halo.addColorStop(0, `rgba(255,96,72,${0.20 + pulse * 0.16})`);
+        halo.addColorStop(1, 'rgba(255,96,72,0)');
+        ctx.fillStyle = halo;
+        ctx.beginPath();
+        ctx.ellipse(0, 6, launcher.width * 0.85, 26, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Base anclada: trapecio pesado, con pinta de estar atornillado.
+        ctx.fillStyle = '#2a1119';
+        ctx.beginPath();
+        ctx.moveTo(-launcher.width * 0.46, 8);
+        ctx.lineTo(launcher.width * 0.46, 8);
+        ctx.lineTo(launcher.width * 0.34, -13);
+        ctx.lineTo(-launcher.width * 0.34, -13);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,138,110,.42)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(255,190,120,.65)';
+        for (let i = -1; i <= 1; i += 1) {
+          ctx.beginPath();
+          ctx.arc(i * launcher.width * 0.28, 2, 2.6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Boca: corta y gruesa, girada hacia donde de verdad dispara.
+        ctx.rotate(launcher.angle);
+        const barrel = ctx.createLinearGradient(-10, 0, 40, 0);
+        barrel.addColorStop(0, '#5a1c22');
+        barrel.addColorStop(0.55, '#a8323a');
+        barrel.addColorStop(1, '#ff7a5c');
+        ctx.fillStyle = barrel;
+        this.roundedRect(ctx, -14, -13, 50, 26, 9);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,214,180,.34)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Galones que corren hacia la salida: dicen a dónde te va a mandar.
+        ctx.fillStyle = `rgba(255,226,150,${0.45 + pulse * 0.4})`;
+        for (let i = 0; i < 3; i += 1) {
+          const slide = ((this.time * 62 + i * 20) % 60) - 12;
+          ctx.beginPath();
+          ctx.moveTo(slide, -9);
+          ctx.lineTo(slide + 11, 0);
+          ctx.lineTo(slide, 9);
+          ctx.lineTo(slide + 4, 0);
+          ctx.closePath();
+          ctx.fill();
+        }
         ctx.restore();
       }
 

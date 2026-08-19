@@ -31,6 +31,8 @@
       fanZonesMax: 3,
       movingPlatformsMax: 2,
       cannonMax: 2,
+      // Uno por mundo y punto: ver abajo por qué.
+      reverseCannonMax: 1,
       secretCavesMax: 2,
       gravityWellsMax: 2,
       movingWallsMax: 3,
@@ -57,6 +59,125 @@
       maxSpeed: 1660,
       rollingGravityScale: 0.40,
     }),
+    // — Rebote en el agua (piedra picada) —
+    // El agua deja de ser un muro que castiga y pasa a ser una apuesta: un
+    // tiro RASO y RÁPIDO no se hunde al tocarla, pica y sale despedido, igual
+    // que una piedra lanzada de canto. Cruzar la charca por arriba es la
+    // jugada de riesgo, y por eso pide las dos cosas a la vez —ángulo y
+    // velocidad—: sin las dos, la bola entra al agua como siempre.
+    water: Object.freeze({
+      // Picados máximos por charca y tiro. Al siguiente contacto gana el agua.
+      skipMaxBounces: 2,
+      // Por debajo de esta velocidad no hay energía para picar.
+      skipMinSpeed: 430,
+      // Velocidad a la que la ventana de ángulo se abre del todo.
+      skipFullSpeed: 1050,
+      // Ventana de ángulo contra la lámina (grados): rasante rebota, picado se
+      // hunde. La velocidad ENSANCHA la ventana —un misil raso perdona más
+      // ángulo que un globo—, que es lo que premia tirar fuerte y plano.
+      skipMinAngleDegrees: 20,
+      skipMaxAngleDegrees: 38,
+      // Qué conserva el bote: el horizontal casi entero (picar apenas frena)
+      // y menos de la mitad del vertical, así los picados se van aplanando y
+      // el segundo sale solo si el primero fue bueno.
+      skipVerticalBounce: 0.48,
+      skipHorizontalKeep: 0.90,
+      // Empujón vertical mínimo: un roce rasante tiene que despegar de verdad
+      // en vez de quedarse rozando la lámina y gastar los dos picados en el
+      // mismo sitio.
+      skipMinLift: 96,
+      // Margen sobre la lámina al salir y tolerancia del cruce hacia abajo.
+      skipClearance: 2.5,
+      skipEntryTolerance: 8,
+    }),
+
+    // — Pozos de gravedad —
+    // Repulsión y atracción NO son el mismo campo con el signo cambiado.
+    // Empujar hacia fuera es seguro por construcción: por muy fuerte que sea,
+    // un repulsor no puede quedarse con la bola. Atraer sí es peligroso —un
+    // tirón radial fuerte acaba con la bola orbitando el centro para siempre,
+    // y eso no es un obstáculo, es una partida colgada—. Así que la atracción
+    // se diseña para DOBLAR la trayectoria, nunca para capturarla.
+    gravityWell: Object.freeze({
+      influenceScale: 1.5,
+
+      // Repulsión: radial pura y a plena potencia.
+      repelScale: 1.85,
+      repelFalloff: 1.4,
+      repelSwirl: 0.16,
+
+      // Atracción, con tres seguros contra la captura. Subir más de aquí no
+      // desvía más: al curvar antes, la bola sale antes del campo y el efecto
+      // se satura solo. Lo único que crece pasados estos valores es el tiempo
+      // que la bola pasa dentro, que es justo lo que no interesa.
+      attractScale: 2.80,
+      attractFalloff: 1.15,
+      // 1) Núcleo muerto. Dentro de esta fracción del radio el tirón se apaga:
+      //    no hay fondo al que caer, así que la bola cruza el centro recta en
+      //    vez de quedarse dando vueltas dentro.
+      attractCoreRatio: 0.55,
+      // 2) Reparto del tirón. La componente PERPENDICULAR a la velocidad —la
+      //    que curva sin cambiar la rapidez— va entera; la radial solo actúa
+      //    mientras la bola SE ACERCA. Nunca frena a la que se va, así que
+      //    cada pasada sale con más energía de la que entró: escapar está
+      //    garantizado por la propia forma del campo.
+      attractPullScale: 0.55,
+      attractSwirl: 0.09,
+      // 3) Suelo de velocidad: a una bola lenta el pozo la suelta. Sin esto,
+      //    una que llega rodando se quedaría pegada a la ladera de debajo.
+      attractMinSpeed: 105,
+      attractFullSpeed: 320,
+      // Válvula de escape final: si un pozo lleva más de este tiempo tirando
+      // de la misma bola, se apaga poco a poco. Es la red que garantiza que
+      // ninguna partida se quede colgada de un imán.
+      holdReleaseSeconds: 1.15,
+      holdFadeSeconds: 0.55,
+    }),
+
+    // — Cañón de retroceso —
+    // Un cañón montado al revés: en vez de acercarte al hoyo te devuelve campo
+    // atrás, y con bastante más fuerza que uno normal. Es la única pieza del
+    // mapa que QUITA progreso en lugar de darlo, y eso obliga a tres cosas:
+    // que haya como mucho una por mundo, que se vea desde lejos, y que su
+    // colocación esté calculada. Pisarla tiene que ser un error del jugador,
+    // nunca una emboscada.
+    reverseCannon: Object.freeze({
+      width: 104,
+      // Ángulo de disparo sobre la horizontal (grados), alrededor de los 45º
+      // que dan el alcance máximo. Arco alto a propósito: así el retroceso es
+      // un viaje largo que se puede seguir con la vista, no un empujón seco
+      // que deja al jugador sin saber qué le ha pasado.
+      minAngleDegrees: 34,
+      maxAngleDegrees: 48,
+      // Fuerza. El suelo ya supera al cañón normal (760-1060): esa es la gracia.
+      minPower: 1180,
+      maxPower: 1520,
+      // La potencia real NO es aleatoria: sale de la pista que queda por
+      // detrás. El generador mide cuánto mapa hay hacia atrás y dispara lo
+      // justo para aprovecharlo. Esta fracción es solo la parte VOLADA: medido
+      // en simulación, la bola recorre rodando y rebotando otro tanto o más
+      // después de aterrizar, así que reservar la mitad de la pista para ese
+      // segundo tramo es lo que evita que el retroceso acabe fuera del mundo.
+      runwayUsage: 0.50,
+      // Pista mínima por detrás para que la pieza pueda existir siquiera. Sin
+      // ella el retroceso acabaría fuera del mapa, y eso ya no es perder
+      // terreno: es un golpe de penalización con otro nombre.
+      minRunway: 3200,
+      runwayMargin: 260,
+      // Holgura mínima por DELANTE (el lado del hoyo). Parece innecesaria —la
+      // pieza dispara hacia el otro lado— pero medida en simulación es la
+      // causa principal de que la bola acabe fuera: sale hacia atrás, rebota
+      // contra el terreno y se escapa por el lado contrario, que es justo el
+      // que nadie había comprobado.
+      minForwardClearance: 900,
+      // Por debajo de esta dificultad no aparece: los hoyos fáciles enseñan a
+      // jugar y no son el sitio para la pieza que castiga. El valor está
+      // medido, no elegido a ojo —la dificultad generada va de 0.35 a 0.98 con
+      // mediana 0.75—, así que 0.55 deja fuera el cuarto más asequible. Un
+      // umbral por debajo de 0.35 no haría absolutamente nada.
+      minDifficulty: 0.55,
+    }),
+
     shot: Object.freeze({
       maxDrag: 220,
       powerScale: 6.15,

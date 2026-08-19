@@ -105,6 +105,7 @@
       if (hazard.type === 'gravity-well') return hazard.radius * 2;
       if (hazard.type === 'platform') return hazard.width || 0;
       if (hazard.type === 'cannon') return hazard.width || 0;
+      if (hazard.type === 'reverse-cannon') return hazard.width || 0;
       if (hazard.type === 'moving-wall') return hazard.width || 0;
       if (hazard.type === 'spinner') return (hazard.armLength || 0) * 2 + (hazard.thickness || 0);
       if (hazard.type === 'ice') return hazard.width || 0;
@@ -691,7 +692,7 @@
       const hazardWidth = (hazard) => TerrainUtil.hazardWidth(hazard);
       const conflicts = (surfaceId, x, widthValue, padding = 20, includeSoft = false) => hazards.some((h) => {
         if (h.surfaceId !== surfaceId) return false;
-        if (!includeSoft && !['water', 'booster', 'bumper', 'portal', 'fan', 'cannon', 'platform', 'moving-wall', 'spinner', 'secret-cave', 'gravity-well'].includes(h.type)) return false;
+        if (!includeSoft && !['water', 'booster', 'bumper', 'portal', 'fan', 'cannon', 'reverse-cannon', 'platform', 'moving-wall', 'spinner', 'secret-cave', 'gravity-well'].includes(h.type)) return false;
         return Math.abs(h.x - x) < (hazardWidth(h) + widthValue) * 0.5 + padding;
       });
       const safeFromEndpoints = (surface, x, widthValue) => {
@@ -912,11 +913,61 @@
         });
       }
 
+      // Cañón de retroceso: como mucho UNO por mundo, y solo si el mapa puede
+      // permitírselo. Dispara hacia ATRÁS —lejos del hoyo— y más fuerte que un
+      // cañón normal, así que su sitio no puede salir de un sorteo: necesita
+      // pista libre por detrás. Sin ella la bola acabaría fuera del mapa, y
+      // eso no es perder terreno, es un golpe de penalización disfrazado.
+      //
+      // La potencia se DEDUCE de esa pista con el alcance balístico invertido:
+      // la pieza pega lo más fuerte que el mapa aguanta y ni un píxel más.
+      const reverseCfg = CONFIG.reverseCannon;
+      if (CONFIG.generation.reverseCannonMax > 0 && difficulty >= reverseCfg.minDifficulty) {
+        for (let attempt = 0; attempt < 16; attempt += 1) {
+          const surface = chooseSurface(true);
+          if (!surface) continue;
+          const x = findX(surface, reverseCfg.width, 100, false);
+          if (x === null) continue;
+          // Hacia atrás = en dirección contraria al hoyo. Se guarda como
+          // `direction` y no como un campo propio porque `mirrorHole` ya
+          // invierte ese nombre: un campo inventado se quedaría al revés en
+          // los hoyos espejados sin que nadie se diera cuenta.
+          const direction = -(Math.sign(cup.x - x) || 1);
+          const runway = (direction < 0 ? x : width - x) - reverseCfg.runwayMargin;
+          if (runway < reverseCfg.minRunway) continue;
+          const forward = direction < 0 ? width - x : x;
+          if (forward < reverseCfg.minForwardClearance) continue;
+          const theta = randomRange(this.random, reverseCfg.minAngleDegrees, reverseCfg.maxAngleDegrees) * Math.PI / 180;
+          const reach = runway * reverseCfg.runwayUsage;
+          const ideal = Math.sqrt(reach * CONFIG.ball.gravity / Math.max(0.2, Math.sin(2 * theta)));
+          hazards.push({
+            type: 'reverse-cannon', surfaceId: surface.id, x,
+            y: TerrainUtil.sampleSurface(surface, x) - 6,
+            width: reverseCfg.width,
+            // Mismo convenio que el cañón normal: y crece hacia abajo, así que
+            // un ángulo negativo apunta hacia arriba.
+            angle: direction > 0 ? -theta : Math.PI + theta,
+            power: clamp(ideal, reverseCfg.minPower, reverseCfg.maxPower),
+            direction,
+          });
+          break;
+        }
+      }
+
 
 
 
       // Pozos de gravedad: alteran el arco en el aire. Pueden atraer o repeler,
       // pero siempre se telegraphan visualmente y nunca se colocan sobre tee/copa.
+      //
+      // Los dos signos NO comparten rango de fuerza. El repulsor empuja hacia
+      // fuera, así que da igual lo bruto que sea —nunca se queda con la bola—
+      // y puede permitirse el doble. El atractor va más contenido: la física
+      // ya está pensada para que curve en vez de capturar, pero el rango se
+      // elige para que el efecto se lea como un desvío fuerte, no como un
+      // agujero negro. Se colocan además algo más altos que antes, porque su
+      // campo de influencia creció y no interesa que amasen la bola contra el
+      // suelo justo por debajo.
       const wellCount = clamp(Math.round(hardBudget * 0.10 + difficulty * 0.8), 0, CONFIG.generation.gravityWellsMax);
       for (let i = 0; i < wellCount; i += 1) {
         const surface = chooseSurface(true);
@@ -925,10 +976,13 @@
         const x = findX(surface, radius * 1.15, 95, false);
         if (x === null) continue;
         const baseY = TerrainUtil.sampleSurface(surface, x);
-        const y = baseY - randomRange(this.random, 150, 310);
+        const y = baseY - randomRange(this.random, 190, 355);
+        const repel = this.random() < 0.30;
         hazards.push({
           type: 'gravity-well', surfaceId: surface.id, x, y, radius,
-          strength: randomRange(this.random, 460, 780) * (this.random() < 0.24 ? -1 : 1),
+          strength: repel
+            ? -randomRange(this.random, 830, 1260)
+            : randomRange(this.random, 620, 980),
           spin: this.random() < 0.5 ? -1 : 1,
         });
       }
@@ -981,7 +1035,7 @@
 
       const occupied = (x, width, hardOnly = false) => hazards.some((hazard) => {
         if (hazard.surfaceId !== cupSurface.id) return false;
-        if (hardOnly && !['water', 'booster', 'bumper', 'fan', 'cannon', 'portal', 'moving-wall', 'spinner', 'secret-cave'].includes(hazard.type)) return false;
+        if (hardOnly && !['water', 'booster', 'bumper', 'fan', 'cannon', 'reverse-cannon', 'portal', 'moving-wall', 'spinner', 'secret-cave'].includes(hazard.type)) return false;
         return Math.abs((hazard.x ?? 0) - x) < (TerrainUtil.hazardWidth(hazard) + width) * 0.5 + 24;
       });
       const validX = (x, width) => x - width / 2 > cupSurface.xMin + 20
@@ -1075,7 +1129,7 @@
       const topSurfaces = hole.surfaces.filter((surface) => surface.side === 'top');
       const candidates = [];
 
-      const blockingTypes = new Set(['water', 'bumper', 'fan', 'portal', 'cannon', 'gravity-well', 'platform', 'moving-wall', 'spinner']);
+      const blockingTypes = new Set(['water', 'bumper', 'fan', 'portal', 'cannon', 'reverse-cannon', 'gravity-well', 'platform', 'moving-wall', 'spinner']);
       const blockedByPhysicalHazard = (x, y, surfaceId) => hole.hazards.some((hazard) => {
         if (!blockingTypes.has(hazard.type)) return false;
         if (hazard.surfaceId && surfaceId && hazard.surfaceId !== surfaceId && hazard.type !== 'platform') return false;
@@ -1113,7 +1167,7 @@
           if (Math.abs(x - hole.tee.x) < 520 || Math.abs(x - hole.cup.x) < 330) continue;
           if (blockedByPhysicalHazard(x, y - 26, surface.id)) continue;
           const nearHard = hole.hazards.filter((hazard) => {
-            if (!['water', 'bumper', 'fan', 'portal', 'cannon', 'gravity-well', 'platform', 'moving-wall', 'spinner'].includes(hazard.type)) return false;
+            if (!['water', 'bumper', 'fan', 'portal', 'cannon', 'reverse-cannon', 'gravity-well', 'platform', 'moving-wall', 'spinner'].includes(hazard.type)) return false;
             return Math.hypot((hazard.x ?? x) - x, (hazard.y ?? y) - y) < 440;
           }).length;
           const verticalExtreme = Math.abs((y / Math.max(1, hole.height)) - 0.5) * 2;
@@ -1258,7 +1312,7 @@
       const dy = cup.y - tee.y;
       const meters = Math.hypot(dx, dy) * CONFIG.course.metersPerPixel;
       let par = meters < 145 ? 3 : meters < 245 ? 4 : meters < 360 ? 5 : 6;
-      const hardHazards = hazards.filter((h) => ['water', 'bumper', 'fan', 'portal', 'cannon', 'platform', 'moving-wall', 'spinner', 'secret-cave', 'gravity-well'].includes(h.type)).length;
+      const hardHazards = hazards.filter((h) => ['water', 'bumper', 'fan', 'portal', 'cannon', 'reverse-cannon', 'platform', 'moving-wall', 'spinner', 'secret-cave', 'gravity-well'].includes(h.type)).length;
       if (hardHazards >= 6 && par < 6) par += 1;
       if ((archetype === ARCHETYPES.SKY || archetype === ARCHETYPES.CAVERN || archetype === ARCHETYPES.AQUA || archetype === ARCHETYPES.GLACIER) && par < 6) par += 1;
       return clamp(par, 3, 7);

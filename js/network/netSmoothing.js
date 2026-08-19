@@ -6,8 +6,9 @@
   const BALL_KEYS = Object.freeze([
     'x', 'y', 'vx', 'vy', 'moving', 'holed', 'inWater', 'crushed', 'boosterCooldown', 'portalCooldown',
     'specialCooldown', 'boosterPulse', 'fanPulse', 'impactSerial', 'boosterSerial', 'holeSerial', 'portalSerial',
-    'cannonSerial', 'multiplierSerial', 'caveSerial', 'caveExitSerial', 'gravityPulse', 'movingWallSerial',
-    'spinnerSerial', 'lastPortalPairId', 'lastPortalExitIndex', 'lastCaveId', 'lastSurfaceId', 'lastImpactSpeed',
+    'cannonSerial', 'reverseSerial', 'multiplierSerial', 'caveSerial', 'caveExitSerial', 'gravityPulse', 'gravityHold',
+    'movingWallSerial', 'spinnerSerial', 'waterSkips', 'waterSkipZone', 'waterSkipSerial', 'reverseCannonSpent', 'lastWaterSkipX',
+    'lastWaterSkipY', 'lastPortalPairId', 'lastPortalExitIndex', 'lastCaveId', 'lastSurfaceId', 'lastImpactSpeed',
     'sabotageByPlayerKey', 'sabotageTouchAt',
   ]);
 
