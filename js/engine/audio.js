@@ -31,7 +31,13 @@
    * La mezcla va por Web Audio:
    *
    *     <audio> ─► paso bajo ─► graves ─┬─► seco ────────┐
-   *              (hundimiento)  (tensión) └─► reverb ─► húmedo ─┴─► maestro ─► limitador ─► salida
+   *              (hundimiento)  (tensión) └─► reverb ─► húmedo ─┴─► maestro ─►
+   *              ─► tapa de foco ─► limitador ─► salida
+   *
+   * El maestro y los filtros de mezcla los mueve el bucle del juego, frame a
+   * frame. La TAPA DE FOCO no: la programa el propio hilo de audio, porque el
+   * navegador congela el bucle de render en cuanto minimizas la ventana y una
+   * atenuación que dependiera de él no llegaría a aplicarse nunca.
    *
    * Si el navegador no tiene Web Audio (o lo bloquea, típico en `file://`), el
    * grafo se descarta entero y queda el volumen del elemento: se pierden los
@@ -65,7 +71,54 @@
       this.movingSeconds = 0;
       this.impact = null;
 
+      // Foco de la ventana. `focusMix` solo gobierna el camino sin Web Audio;
+      // con grafo manda la rampa programada en los nodos de la tapa.
+      this.focused = true;
+      this.focusMix = 1;
+
       this.bindUnlock();
+      this.bindFocus();
+    }
+
+    /**
+     * Ventana en segundo plano.
+     *
+     * Se escuchan las dos señales porque son cosas distintas: `visibilitychange`
+     * cubre minimizar y cambiar de pestaña, y `blur` cubre irse a otra
+     * aplicación con el navegador aún visible. En los dos casos el jugador ha
+     * dejado de mirar, que es lo único que importa aquí.
+     */
+    bindFocus() {
+      const set = (value) => this.setFocused(value);
+      window.addEventListener('blur', () => set(false));
+      window.addEventListener('focus', () => set(true));
+      if (typeof document !== 'undefined' && document.addEventListener) {
+        document.addEventListener('visibilitychange', () => set(!document.hidden));
+      }
+    }
+
+    setFocused(value) {
+      const focused = !!value;
+      if (focused === this.focused) return;
+      this.focused = focused;
+      const cfg = CONFIG.audio;
+      const seconds = focused ? cfg.returnSeconds : cfg.awaySeconds;
+      const g = this.graph;
+      if (!g) {
+        // Sin grafo no hay nada que programar: irse se aplica de golpe (el
+        // bucle está a punto de congelarse) y volver lo suaviza `update`.
+        if (!focused) this.focusMix = cfg.awayLevel;
+        this.apply();
+        return;
+      }
+      // Constante de tiempo: en 3τ se ha recorrido el ~95 % del camino, que es
+      // lo que se percibe como "ya ha llegado".
+      const tau = Math.max(0.02, seconds / 3);
+      const now = g.ctx.currentTime;
+      g.focusGain.gain.cancelScheduledValues(now);
+      g.focusMuffle.frequency.cancelScheduledValues(now);
+      g.focusGain.gain.setTargetAtTime(focused ? 1 : cfg.awayLevel, now, tau);
+      g.focusMuffle.frequency.setTargetAtTime(focused ? cfg.baseCutoff : cfg.awayCutoff, now, tau);
     }
 
     load() {
@@ -168,6 +221,15 @@
         // el seco justo cuando el maestro ya está al máximo del jugador, y sin
         // esto los picos se saldrían del rango: eso no suena a fuerza, suena a
         // distorsión. Si el navegador no trae compresor, se sigue sin él.
+        // Tapa de foco: gobernada por eventos, nunca por el bucle. Va después
+        // del maestro para que también tape la cola del reverb.
+        const focusMuffle = ctx.createBiquadFilter();
+        focusMuffle.type = 'lowpass';
+        focusMuffle.frequency.value = this.focused ? cfg.baseCutoff : cfg.awayCutoff;
+        focusMuffle.Q.value = 0.5;
+        const focusGain = ctx.createGain();
+        focusGain.gain.value = this.focused ? 1 : cfg.awayLevel;
+
         const limiter = ctx.createDynamicsCompressor ? ctx.createDynamicsCompressor() : null;
         if (limiter) {
           limiter.threshold.value = cfg.limiterThresholdDb;
@@ -184,14 +246,16 @@
         verb.connect(wet);
         dry.connect(master);
         wet.connect(master);
+        master.connect(focusMuffle);
+        focusMuffle.connect(focusGain);
         if (limiter) {
-          master.connect(limiter);
+          focusGain.connect(limiter);
           limiter.connect(ctx.destination);
-        } else master.connect(ctx.destination);
+        } else focusGain.connect(ctx.destination);
 
         // A partir de aquí el nivel lo manda el grafo, no el elemento.
         this.audio.volume = 1;
-        this.graph = { ctx, muffle, bass, verb, dry, wet, master, limiter };
+        this.graph = { ctx, muffle, bass, verb, dry, wet, master, focusMuffle, focusGain, limiter };
         return this.graph;
       } catch (_) {
         // `file://`, políticas raras o navegadores viejos. Que falte el
@@ -284,6 +348,15 @@
         if (this.impact.remaining <= 0) this.impact = null;
       }
 
+      // Regreso progresivo de la tapa. Solo hace falta calcularlo aquí en el
+      // camino SIN Web Audio: con grafo la rampa vive en el hilo de audio, que
+      // es justo lo que la hace sobrevivir a la ventana minimizada.
+      if (!this.graph) {
+        const focusTarget = this.focused ? 1 : cfg.awayLevel;
+        const focusRate = 3 / Math.max(0.02, this.focused ? cfg.returnSeconds : cfg.awaySeconds);
+        this.focusMix = expSmoothing(this.focusMix, focusTarget, focusRate, step);
+      }
+
       const target = this.computeTargets(scene);
       // Un golpe pide ataque corto; el resto de la mezcla, respiración lenta.
       // La forma de la recuperación ya la lleva el sobre, así que aquí el
@@ -345,7 +418,10 @@
       if (!this.audio) return;
       // El techo: volumen del jugador × fundido × mezcla, y la mezcla nunca
       // pasa de 1. Silenciado corta por completo sin tocar nada más.
-      const level = this.muted ? 0 : clamp(this.volume * this.gain * this.level, 0, 1);
+      // La tapa de foco solo entra en la cuenta sin grafo: con Web Audio la
+      // aplica su propio nodo, y multiplicarla aquí además la aplicaría dos veces.
+      const focus = this.graph ? 1 : this.focusMix;
+      const level = this.muted ? 0 : clamp(this.volume * this.gain * this.level * focus, 0, 1);
       const g = this.graph;
       if (!g) { this.audio.volume = level; return; }
       g.master.gain.value = level;
@@ -364,6 +440,8 @@
     isBlocked() { return this.wanted && this.blocked; }
     /** ¿Hay efectos, o el navegador dejó al reproductor sin Web Audio? */
     hasEffects() { return !!this.graph; }
+    /** ¿La ventana está en segundo plano y la música tapada? */
+    isAway() { return !this.focused; }
 
     setVolume(value) {
       this.volume = clamp(Number(value) || 0, 0, 1);

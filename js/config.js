@@ -257,6 +257,16 @@
         lost: Object.freeze({ level: 0.26, cutoff: 1100, reverb: 0.50, bassDb: 0, seconds: 1.5 }),
       }),
 
+      // — Ventana en segundo plano —
+      // Minimizar o irse a otra ventana no para la música: la TAPA. Baja
+      // mucho y se filtra, como si sonara desde la habitación de al lado.
+      // Irse es rápido (estorba en cuanto dejas de mirar) y volver es lento a
+      // propósito: el regreso progresivo es lo que hace que se note.
+      awayLevel: 0.16,
+      awayCutoff: 620,
+      awaySeconds: 0.35,
+      returnSeconds: 2.4,
+
       // Cola del reverb generado. Se sintetiza al vuelo: un impulso de sala es
       // ruido que se apaga, y traerlo como archivo sería otro asset que
       // mantener para algo que nadie distinguiría.
