@@ -4,99 +4,13 @@
   const { CONFIG, TerrainUtil, ARCHETYPES } = NG;
   const { clamp, lerp } = NG.MathUtil;
 
-  // Lo que tarda en apagarse el anillo de un picado en el agua.
-  const WATER_RIPPLE_LIFE = 0.7;
-
   class WorldRenderer {
     constructor() {
       this.time = 0;
-      // Anillos de la onda expansiva. Son puramente visuales: el empujón lo
-      // aplica el host: aquí solo se dibuja lo que ya ha pasado.
-      this.shockwaves = [];
-      // Anillos del picado en el agua. Igual que la onda de la copa: solo son
-      // la huella de algo que la física ya resolvió.
-      this.waterRipples = [];
     }
 
     update(dt) {
       this.time += dt;
-      for (const wave of this.shockwaves) wave.age += dt;
-      if (this.waterRipples.length) {
-        for (const ripple of this.waterRipples) ripple.age += dt;
-        this.waterRipples = this.waterRipples.filter((ripple) => ripple.age < WATER_RIPPLE_LIFE);
-      }
-      // Vive lo que tarda el frente en recorrer su alcance, más un margen para
-      // que el anillo se apague en vez de desaparecer de golpe.
-      const life = CONFIG.gameplay.shockwaveRadius / Math.max(1, CONFIG.gameplay.shockwaveSpeed) + 0.35;
-      if (this.shockwaves.length) this.shockwaves = this.shockwaves.filter((wave) => wave.age < life);
-    }
-
-    spawnShockwave(x, y, color) {
-      this.shockwaves.push({ x, y, age: 0, color: color || '#ffffff' });
-    }
-
-    spawnWaterRipple(x, y, color) {
-      this.waterRipples.push({ x, y, age: 0, color: color || '#6fe4ff' });
-    }
-
-    /**
-     * Huella del picado: dos elipses muy achatadas que se abren sobre la
-     * lámina. Achatadas porque el agua se ve casi de canto —un círculo se
-     * leería como una burbuja flotando— y en pareja desfasada porque un solo
-     * anillo parece un fallo de dibujo y dos, agua desplazada.
-     */
-    drawWaterRipples(ctx) {
-      if (!this.waterRipples.length) return;
-      ctx.save();
-      for (const ripple of this.waterRipples) {
-        const t = clamp(ripple.age / WATER_RIPPLE_LIFE, 0, 1);
-        for (let i = 0; i < 2; i += 1) {
-          const delay = i * 0.16;
-          if (ripple.age < delay) continue;
-          const spread = clamp((ripple.age - delay) / WATER_RIPPLE_LIFE, 0, 1);
-          const rx = 12 + spread * 84;
-          const fade = Math.pow(1 - t, 1.8) * (i === 0 ? 0.75 : 0.45);
-          if (fade <= 0.01) continue;
-          ctx.globalAlpha = fade;
-          ctx.strokeStyle = i === 0 ? '#eaffff' : ripple.color;
-          ctx.lineWidth = 2.4 - i * 0.9;
-          ctx.beginPath();
-          ctx.ellipse(ripple.x, ripple.y, rx, Math.max(1.5, rx * 0.19), 0, 0, Math.PI * 2);
-          ctx.stroke();
-        }
-      }
-      ctx.restore();
-    }
-
-    /**
-     * Frente expansivo desde la copa.
-     * Dos anillos con un desfase pequeño: uno solo se lee como un círculo que
-     * crece, y dos dan la sensación de golpe de aire que se propaga.
-     */
-    drawShockwaves(ctx) {
-      if (!this.shockwaves.length) return;
-      const cfg = CONFIG.gameplay;
-      const life = cfg.shockwaveRadius / Math.max(1, cfg.shockwaveSpeed) + 0.35;
-      ctx.save();
-      for (const wave of this.shockwaves) {
-        const t = clamp(wave.age / life, 0, 1);
-        const fade = Math.pow(1 - t, 1.6);
-        for (const [delay, width, alpha] of [[0, 6, 0.85], [0.075, 2.4, 0.45]]) {
-          const radius = Math.max(0, (wave.age - delay)) * cfg.shockwaveSpeed;
-          if (radius <= 1) continue;
-          ctx.strokeStyle = wave.color;
-          // Halo: sin él, sobre un fondo claro (glaciar, cueva submarina) el
-          // anillo se pierde justo cuando más falta hace verlo.
-          ctx.shadowColor = wave.color;
-          ctx.shadowBlur = 14 * fade;
-          ctx.globalAlpha = fade * alpha;
-          ctx.lineWidth = width * (0.4 + fade * 0.6);
-          ctx.beginPath();
-          ctx.arc(wave.x, wave.y, radius, 0, Math.PI * 2);
-          ctx.stroke();
-        }
-      }
-      ctx.restore();
     }
 
     draw(ctx, game) {
@@ -119,21 +33,16 @@
       this.drawIslands(ctx, hole, visible);
       this.drawSurfaceZones(ctx, hole, visible);
       this.drawHazards(ctx, game, visible);
-      this.drawWaterRipples(ctx);
       this.drawDecorations(ctx, hole, visible);
       this.drawCup(ctx, game, w, h);
       this.drawTrail(ctx, game.trail || []);
       particles.draw(ctx, visible);
-      this.drawShockwaves(ctx);
-      const renderBalls = game.networkSession?.getRenderBalls?.()
-        || [{ ball: game.renderBall || ball, color: '#f7fbff', username: '', local: true, turn: false, battleLocal: false }];
+      const renderBalls = game.networkSession?.getRenderBalls?.() || [{ ball, color: '#f7fbff', username: '', local: true, turn: false, battleLocal: false }];
       // Prioridad de presentación:
       // - Por Turnos: el jugador con turno queda delante.
       // - Battle Royale: la bola LOCAL de cada cliente queda delante en ESE cliente.
       // Esto evita perder la propia bola cuando varios jugadores se amontonan.
-      // El jugador que sigue la cámara libre manda sobre todo lo demás: es
-      // literalmente lo que el espectador ha pedido mirar.
-      const presentationPriority = (item) => item.spectated ? 5 : (item.battleLocal ? 4 : (item.turn ? 3 : (item.local ? 2 : 1)));
+      const presentationPriority = (item) => item.battleLocal ? 4 : (item.turn ? 3 : (item.local ? 2 : 1));
       renderBalls.sort((a, b) => presentationPriority(a) - presentationPriority(b));
       for (const item of renderBalls) this.drawBall(ctx, item.ball, hole, game, item);
       if (game.dragging && !ball.moving) this.drawAim(ctx, game);
@@ -789,24 +698,19 @@
         ctx.restore();
       }
 
-      // El campo se dibuja con el alcance REAL de la física, no con un radio
-      // decorativo: ahora que los pozos pegan fuerte, saber dónde empiezan a
-      // tirar es parte de poder jugarlos.
-      const wellCfg = CONFIG.gravityWell;
       for (const well of hole.hazards) {
         if (well.type !== 'gravity-well') continue;
-        const influence = well.radius * wellCfg.influenceScale;
-        if (well.x + influence < visible.minX || well.x - influence > visible.maxX || well.y + influence < visible.minY || well.y - influence > visible.maxY) continue;
+        if (well.x + well.radius * 1.4 < visible.minX || well.x - well.radius * 1.4 > visible.maxX || well.y + well.radius * 1.4 < visible.minY || well.y - well.radius * 1.4 > visible.maxY) continue;
         const repel = well.strength < 0;
         ctx.save();
         ctx.translate(well.x, well.y);
-        const field = ctx.createRadialGradient(0, 0, 4, 0, 0, influence);
+        const field = ctx.createRadialGradient(0, 0, 4, 0, 0, well.radius * 1.15);
         field.addColorStop(0, repel ? 'rgba(255,178,103,.72)' : 'rgba(142,113,255,.74)');
         field.addColorStop(0.22, repel ? 'rgba(255,113,88,.28)' : 'rgba(100,235,255,.24)');
         field.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = field;
         ctx.beginPath();
-        ctx.arc(0, 0, influence, 0, Math.PI * 2);
+        ctx.arc(0, 0, well.radius * 1.15, 0, Math.PI * 2);
         ctx.fill();
         ctx.strokeStyle = repel ? 'rgba(255,211,127,.58)' : 'rgba(158,238,255,.52)';
         ctx.lineWidth = 2;
@@ -819,16 +723,6 @@
           ctx.stroke();
         }
         ctx.setLineDash([]);
-        // El ojo del atractor no tira: es el hueco por el que se cruza recto.
-        // Marcarlo con un aro limpio es lo que convierte el pozo en algo que
-        // se puede leer y jugar, en vez de en una zona a la que no acercarse.
-        if (!repel) {
-          ctx.strokeStyle = 'rgba(206,246,255,.30)';
-          ctx.lineWidth = 1.4;
-          ctx.beginPath();
-          ctx.arc(0, 0, well.radius * wellCfg.attractCoreRatio, 0, Math.PI * 2);
-          ctx.stroke();
-        }
         ctx.fillStyle = repel ? '#ff9b70' : '#85efff';
         ctx.shadowColor = repel ? '#ff755f' : '#7b6dff';
         ctx.shadowBlur = 14;
@@ -880,7 +774,7 @@
       }
 
       for (const portal of hole.hazards) {
-        if (portal.type !== 'portal' || portal.consumed) continue;
+        if (portal.type !== 'portal') continue;
         if (portal.x + portal.radius < visible.minX || portal.x - portal.radius > visible.maxX) continue;
         const isEntry = portal.portalRole !== 'exit' && portal.entryEnabled !== false;
         const spin = this.time * (isEntry ? 2.6 : -1.7) + portal.portalIndex * 0.9;
@@ -1025,76 +919,6 @@
         ctx.lineTo(28, 6);
         ctx.closePath();
         ctx.fill();
-        ctx.restore();
-      }
-
-      // Cañón de retroceso. Comparte disparador con el cañón normal, así que
-      // TIENE que compartir lo mínimo posible en el dibujo: el normal es una
-      // pieza fina y turquesa que apunta al hoyo; este es un bloque rojo,
-      // ancho y anclado al suelo que apunta al revés. Un jugador debe poder
-      // distinguirlos de un vistazo y desde lejos, porque equivocarse aquí
-      // cuesta medio hoyo.
-      for (const launcher of hole.hazards) {
-        if (launcher.type !== 'reverse-cannon') continue;
-        if (launcher.x + launcher.width < visible.minX || launcher.x - launcher.width > visible.maxX) continue;
-        const pulse = 0.7 + Math.sin(this.time * 3.1) * 0.3;
-        ctx.save();
-        ctx.translate(launcher.x, launcher.y);
-
-        // Aviso en el suelo: un abanico que late bajo la pieza. Es lo que se
-        // ve antes que nada al acercarse rodando.
-        const halo = ctx.createRadialGradient(0, 6, 6, 0, 6, launcher.width * 0.85);
-        halo.addColorStop(0, `rgba(255,96,72,${0.20 + pulse * 0.16})`);
-        halo.addColorStop(1, 'rgba(255,96,72,0)');
-        ctx.fillStyle = halo;
-        ctx.beginPath();
-        ctx.ellipse(0, 6, launcher.width * 0.85, 26, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Base anclada: trapecio pesado, con pinta de estar atornillado.
-        ctx.fillStyle = '#2a1119';
-        ctx.beginPath();
-        ctx.moveTo(-launcher.width * 0.46, 8);
-        ctx.lineTo(launcher.width * 0.46, 8);
-        ctx.lineTo(launcher.width * 0.34, -13);
-        ctx.lineTo(-launcher.width * 0.34, -13);
-        ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(255,138,110,.42)';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.fillStyle = 'rgba(255,190,120,.65)';
-        for (let i = -1; i <= 1; i += 1) {
-          ctx.beginPath();
-          ctx.arc(i * launcher.width * 0.28, 2, 2.6, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        // Boca: corta y gruesa, girada hacia donde de verdad dispara.
-        ctx.rotate(launcher.angle);
-        const barrel = ctx.createLinearGradient(-10, 0, 40, 0);
-        barrel.addColorStop(0, '#5a1c22');
-        barrel.addColorStop(0.55, '#a8323a');
-        barrel.addColorStop(1, '#ff7a5c');
-        ctx.fillStyle = barrel;
-        this.roundedRect(ctx, -14, -13, 50, 26, 9);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(255,214,180,.34)';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Galones que corren hacia la salida: dicen a dónde te va a mandar.
-        ctx.fillStyle = `rgba(255,226,150,${0.45 + pulse * 0.4})`;
-        for (let i = 0; i < 3; i += 1) {
-          const slide = ((this.time * 62 + i * 20) % 60) - 12;
-          ctx.beginPath();
-          ctx.moveTo(slide, -9);
-          ctx.lineTo(slide + 11, 0);
-          ctx.lineTo(slide, 9);
-          ctx.lineTo(slide + 4, 0);
-          ctx.closePath();
-          ctx.fill();
-        }
         ctx.restore();
       }
 
@@ -1244,7 +1068,6 @@
       // Nunca dibujamos media copa/asta cortada por el viewport. Mientras no quepa
       // completa, el indicador de borde es la única representación del objetivo.
       if (screen.x < 88 || screen.x > viewportW - 88 || screen.y < 158 || screen.y > viewportH - 82) return;
-      this.drawSuctionRing(ctx, game);
       ctx.save();
       ctx.fillStyle = '#071914';
       ctx.beginPath();
@@ -1266,50 +1089,6 @@
       ctx.lineTo(x + 2, y - 82);
       ctx.closePath();
       ctx.fill();
-      ctx.restore();
-    }
-
-    /**
-     * Alcance de la succión, dibujado siempre en tenue y encendido cuando hay
-     * una bola dentro. Una fuerza invisible que decide tiros es una fuerza
-     * injusta: si el imán existe, tiene que verse dónde empieza.
-     */
-    drawSuctionRing(ctx, game) {
-      const radius = CONFIG.gameplay.holeSuctionRadius;
-      if (!(radius > 0)) return;
-      const cup = game.hole.cup;
-      const target = { x: cup.x, y: cup.y - CONFIG.ball.radius };
-      // Intensidad = la de la bola más metida en el radio, sea de quien sea.
-      let closeness = 0;
-      const balls = game.networkSession?.getRenderBalls?.()
-        || (game.renderBall || game.ball ? [{ ball: game.renderBall || game.ball }] : []);
-      for (const item of balls) {
-        const b = item?.ball;
-        if (!b || b.holed) continue;
-        const d = Math.hypot(b.x - target.x, b.y - target.y);
-        if (d < radius) closeness = Math.max(closeness, 1 - d / radius);
-      }
-      const pulse = 0.5 + 0.5 * Math.sin(this.time * 3.2);
-      ctx.save();
-      ctx.translate(target.x, target.y);
-      ctx.strokeStyle = game.hole.theme.accent;
-      ctx.globalAlpha = 0.10 + closeness * 0.5;
-      ctx.lineWidth = 1.2 + closeness * 1.8;
-      ctx.setLineDash([7, 9]);
-      ctx.lineDashOffset = -this.time * 26;
-      ctx.beginPath();
-      ctx.arc(0, 0, radius, 0, Math.PI * 2);
-      ctx.stroke();
-      // Con la bola dentro, un segundo anillo se cierra hacia la copa: lee como
-      // aspiración, no como un simple círculo iluminado.
-      if (closeness > 0.02) {
-        ctx.setLineDash([]);
-        ctx.globalAlpha = closeness * 0.45;
-        ctx.lineWidth = 1.6;
-        ctx.beginPath();
-        ctx.arc(0, 0, radius * (1 - pulse * 0.72), 0, Math.PI * 2);
-        ctx.stroke();
-      }
       ctx.restore();
     }
 
@@ -1345,21 +1124,6 @@
         ctx.beginPath();
         ctx.ellipse(shadow.x, shadow.y + 3, r * (0.72 + proximity * 0.33), r * (0.18 + proximity * 0.12), 0, 0, Math.PI * 2);
         ctx.fill();
-        ctx.restore();
-      }
-
-      // Anillo del jugador al que apunta la cámara libre: sin él, el que ya
-      // ha terminado no sabe a cuál de las bolas está siguiendo.
-      if (style?.spectated) {
-        ctx.save();
-        ctx.strokeStyle = style.color || '#a98bff';
-        ctx.globalAlpha = 0.75;
-        ctx.lineWidth = 1.6;
-        ctx.setLineDash([4, 4]);
-        ctx.lineDashOffset = -(this.time || 0) * 14;
-        ctx.beginPath();
-        ctx.arc(ball.x, ball.y, r + 6.5, 0, Math.PI * 2);
-        ctx.stroke();
         ctx.restore();
       }
 
@@ -1533,40 +1297,23 @@
 
     drawEdgeIndicator(ctx, game, w, h) {
       const { hole, ball, camera } = game;
-      const focusBall = game.networkSession?.getCameraBall?.() || game.renderBall || ball;
+      const focusBall = game.networkSession?.getCameraBall?.() || ball;
       const cupScreen = camera.worldToScreen(hole.cup);
       const margin = 88;
       const topMargin = 158;
       if (cupScreen.x >= margin && cupScreen.x <= w - margin && cupScreen.y >= topMargin && cupScreen.y <= h - margin) return;
 
-      // El ángulo sale de la BOLA, no del centro de la pantalla. La cámara
-      // ancla la bola fuera del centro, así que medir desde el centro daba una
-      // flecha que apuntaba varios grados al lado del hoyo de verdad: justo el
-      // error que más se nota cuando el objetivo está casi alineado.
-      const from = camera.worldToScreen(focusBall);
-      const angle = Math.atan2(cupScreen.y - from.y, cupScreen.x - from.x);
-
-      // Punto del borde donde se posa la flecha: se recorta el rayo que sale
-      // de la bola contra el marco visible, así que la posición del indicador
-      // también señala por dónde está el hoyo, no solo su rotación.
-      const left = margin;
-      const right = w - margin;
-      const top = topMargin;
-      const bottom = h - margin;
-      const cos = Math.cos(angle);
-      const sin = Math.sin(angle);
-      let travel = Infinity;
-      if (Math.abs(cos) > 1e-4) {
-        const tx = ((cos > 0 ? right : left) - from.x) / cos;
-        if (tx > 0) travel = Math.min(travel, tx);
-      }
-      if (Math.abs(sin) > 1e-4) {
-        const ty = ((sin > 0 ? bottom : top) - from.y) / sin;
-        if (ty > 0) travel = Math.min(travel, ty);
-      }
-      if (!Number.isFinite(travel)) travel = Math.max(w, h);
-      const tx = clamp(from.x + cos * travel, left, right);
-      const ty = clamp(from.y + sin * travel, top, bottom);
+      const cx = w / 2;
+      const cy = h / 2;
+      const dx = cupScreen.x - cx;
+      const dy = cupScreen.y - cy;
+      const angle = Math.atan2(dy, dx);
+      const rx = Math.max(50, w / 2 - margin);
+      const ry = Math.max(50, h / 2 - margin);
+      const denom = Math.sqrt((Math.cos(angle) ** 2) / (rx ** 2) + (Math.sin(angle) ** 2) / (ry ** 2)) || 1;
+      const d = 1 / denom;
+      const tx = clamp(cx + Math.cos(angle) * d, margin, w - margin);
+      const ty = clamp(cy + Math.sin(angle) * d, topMargin, h - margin);
       const distanceMeters = Math.max(0, Math.hypot(hole.cup.x - focusBall.x, hole.cup.y - focusBall.y) * CONFIG.course.metersPerPixel);
 
       ctx.save();
@@ -1577,41 +1324,25 @@
       this.roundedRect(ctx, -62, -27, 124, 54, 17);
       ctx.fill();
       ctx.stroke();
-
       ctx.save();
       ctx.rotate(angle);
       ctx.fillStyle = hole.theme.accent;
       ctx.shadowColor = hole.theme.accent;
       ctx.shadowBlur = 9;
-      this.drawArrow(ctx, 14, 46, 11, 4.6);
+      ctx.beginPath();
+      ctx.moveTo(38, 0);
+      ctx.lineTo(20, -10);
+      ctx.lineTo(20, 10);
+      ctx.closePath();
+      ctx.fill();
       ctx.restore();
-
       ctx.shadowBlur = 0;
       ctx.fillStyle = '#ffffff';
       ctx.font = '800 12px system-ui, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`${distanceMeters.toFixed(0)} m`, -8, 1);
+      ctx.fillText(`${distanceMeters.toFixed(0)} m`, -5, 1);
       ctx.restore();
-    }
-
-    /**
-     * Flecha completa —astil y punta— apuntando a +X desde el origen.
-     * El triángulo suelto que había antes se leía como un pico decorativo del
-     * marco; con astil se lee como lo que es: una dirección.
-     */
-    drawArrow(ctx, fromX, toX, headLength, shaftHalf) {
-      const headStart = toX - headLength;
-      ctx.beginPath();
-      ctx.moveTo(fromX, -shaftHalf);
-      ctx.lineTo(headStart, -shaftHalf);
-      ctx.lineTo(headStart, -headLength * 0.82);
-      ctx.lineTo(toX, 0);
-      ctx.lineTo(headStart, headLength * 0.82);
-      ctx.lineTo(headStart, shaftHalf);
-      ctx.lineTo(fromX, shaftHalf);
-      ctx.closePath();
-      ctx.fill();
     }
 
     drawStar(ctx, x, y, innerRadius, outerRadius, points) {
