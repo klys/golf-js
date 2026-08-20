@@ -13,6 +13,19 @@
   const POST_MATCH_ALLOWED_EVENTS = new Set(['HOLE', 'HOLE_IN_ONE', 'VICTORY', 'BATTLE_ROYALE_WINNER']);
   const MAP_SHOT_EVENTS = new Set(['SHOT_TAKEN', 'SHOT_WEAK', 'SHOT_STRONG', 'SHOT_PERFECT', 'SHOT_BAD']);
   const MAP_PREFIRST_SILENT_EVENTS = new Set(['TURN_START', 'AIMING', 'RISKY_AIM']);
+  const UNDERDOG_TRIGGERS = new Set(['HOLE', 'HOLE_IN_ONE', 'SHOT_PERFECT', 'SABOTAGE_SUCCESS', 'LUCKY_SHOT', 'EDGE_SAVE']);
+  // Eventos con los que se abre y se cobra una apuesta de cabina.
+  const BET_OPENERS = new Set(['RISKY_AIM', 'POWER_MAX', 'SHOT_STRONG', 'LONG_SHOT', 'BALL_HIGH']);
+  const BET_WINS = new Set(['HOLE', 'HOLE_IN_ONE', 'NEAR_MISS', 'SHOT_PERFECT', 'EDGE_SAVE', 'LUCKY_SHOT']);
+  const BET_LOSSES = new Set(['WATER', 'OUT_OF_BOUNDS', 'VOID_FALL', 'HARD_LANDING', 'SHOT_BAD', 'RESET', 'UNLUCKY_SHOT']);
+  // Penalizaciones que un jugador se inflige a sí mismo: si acaba de empujar a
+  // otro, esto deja de ser mala suerte y pasa a ser sabotaje que sale por la culata.
+  const SELF_PENALTY_EVENTS = new Set(['WATER', 'OUT_OF_BOUNDS', 'VOID_FALL', 'HARD_LANDING', 'RESET']);
+  // Contadores de memoria de partida: evento → clave de gag acumulativo.
+  const LEDGER_EVENTS = Object.freeze({
+    WATER: 'water', OUT_OF_BOUNDS: 'outOfBounds', VOID_FALL: 'outOfBounds', RESET: 'reset',
+    SAND_ENTER: 'sand', NEAR_MISS: 'nearMiss',
+  });
 
   const merge = (base, value) => {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return clone(base);
@@ -75,21 +88,38 @@
       this.mapIntroData = null;
       this.mapIntroState = { stage: 'idle', signature: '', introDelivered: false, firstTouchArmed: false, firstTouchConsumed: false };
       this.mapIntroRecent = new Map();
+
+      // ── Cabina consciente del modo, del foco y de su propia memoria ──────────
+      this.rivalryData = null;
+      this.focus = { playerKey: '', name: '', since: 0, reason: '', announcedAt: 0 };
+      this.flow = { lastBundleAt: 0, recent: [], semanticAt: new Map() };
+      this.booth = { pendingBet: null, lastBetAt: 0, lastDisagreementAt: 0, lastFavoriteBanterAt: 0 };
+      this.ledger = new Map();
+      this.gagAt = new Map();
+      this.lastGagAt = 0;
+      this.derived = {
+        timer: 0, leaderKey: '', ranks: new Map(), tieActive: false, turnKey: '', turnSince: 0,
+        lastTurnCue: 0, lastScoreUpdateAt: 0, lastScoreEventAt: 0, finalTurnDone: new Set(),
+        balls: new Map(), collisions: [], sabotage: new Map(), eliminations: [], depth: 0,
+        pendingSaves: [], contacts: new Map(), streakAt: new Map(), allies: new Map(), allyTargets: new Map(),
+      };
     }
 
     async init() {
       const fallbackConfig = window.NOISE_GOLF_ANNOUNCER_CONFIG || {};
       const fallbackPersonas = window.EMOTIONAL_MACHINE_PERSONAS || null;
-      const [runtime, commentator, informant, mapIntroData] = await Promise.all([
+      const [runtime, commentator, informant, mapIntroData, rivalryData] = await Promise.all([
         this.fetchJson('./announcer/config.json', fallbackConfig),
         this.fetchJson('./announcer/data/commentator.json', fallbackPersonas?.commentator),
         this.fetchJson('./announcer/data/informant.json', fallbackPersonas?.informant),
         this.fetchJson('./announcer/data/map-intro.json', window.NOISE_GOLF_MAP_INTRO_DATA || null),
+        this.fetchJson('./announcer/data/rivalry.json', window.NOISE_GOLF_RIVALRY_DATA || null),
       ]);
       if (!commentator || !informant) throw new Error('No se pudieron cargar los JSON internos de locución.');
       this.runtimeConfig = merge(fallbackConfig, runtime || {});
       this.personas = { commentator, informant };
       this.mapIntroData = mapIntroData || window.NOISE_GOLF_MAP_INTRO_DATA || { presentation: {}, firstTouch: {} };
+      this.rivalryData = rivalryData || window.NOISE_GOLF_RIVALRY_DATA || {};
       this.enabled = this.runtimeConfig.enabled !== false;
       this.language = this.runtimeConfig.language || 'es-ES';
       this.composer = new NG.AnnouncerComposer(this.personas, this.runtimeConfig);
@@ -103,6 +133,8 @@
         });
       }
       this.postMatchTimer = window.setInterval(() => this.maybeRunPostMatchSummary(), 1000);
+      const tickMs = Math.max(120, Number(this.runtimeConfig.derivedEvents?.tickMs || 260));
+      this.derived.timer = window.setInterval(() => this.narrativeTick(), tickMs);
       this.ready = true;
       return this;
     }
@@ -324,6 +356,32 @@
       this.lastPostMatchSummaryAt = 0;
       this.mapIntroState = { stage: 'idle', signature: '', introDelivered: false, firstTouchArmed: false, firstTouchConsumed: false };
       this.mapIntroRecent.clear();
+      this.focus = { playerKey: '', name: '', since: 0, reason: '', announcedAt: 0 };
+      this.flow = { lastBundleAt: 0, recent: [], semanticAt: new Map() };
+      this.booth = { pendingBet: null, lastBetAt: 0, lastDisagreementAt: 0, lastFavoriteBanterAt: 0 };
+      this.ledger.clear();
+      this.gagAt.clear();
+      this.lastGagAt = 0;
+      this.derived.leaderKey = '';
+      this.derived.ranks.clear();
+      this.derived.tieActive = false;
+      this.derived.turnKey = '';
+      this.derived.turnSince = 0;
+      this.derived.lastTurnCue = 0;
+      // Arrancan "recién usados": el repaso de marcador no debe sonar en el primer
+      // tick de la partida, cuando todavía no hay marcador del que hablar.
+      this.derived.lastScoreUpdateAt = Date.now();
+      this.derived.lastScoreEventAt = Date.now();
+      this.derived.finalTurnDone.clear();
+      this.derived.balls.clear();
+      this.derived.collisions.length = 0;
+      this.derived.sabotage.clear();
+      this.derived.eliminations.length = 0;
+      this.derived.pendingSaves.length = 0;
+      this.derived.contacts.clear();
+      this.derived.streakAt.clear();
+      this.derived.allies.clear();
+      this.derived.allyTargets.clear();
       this.composer?.reset();
       this.director?.stop();
     }
@@ -364,35 +422,67 @@
       else this.setAimActivity('offline', false, 0);
     }
 
+    /**
+     * Clasificación del golpe. SHOT_BAD tenía banco propio y ningún emisor: es un
+     * golpe flojo con el hoyo todavía lejos, no un golpe flojo cualquiera.
+     * POWER_MAX y POWER_LOW son lecturas del gesto, no del golpe, así que salen
+     * como línea aparte y se descartan solas si el micrófono está ocupado.
+     */
+    classifyShot(power, playerKey) {
+      const cfg = this.runtimeConfig.gameplay || {};
+      const derived = this.runtimeConfig.derivedEvents || {};
+      const distance = Number(this.contexts.get(String(playerKey))?.distance || 0);
+      let eventKey = 'SHOT_TAKEN';
+      if (power <= Number(derived.badShotPower ?? 0.2) && distance >= Number(derived.badShotDistanceMeters ?? 28)) eventKey = 'SHOT_BAD';
+      else if (power <= Number(cfg.shotWeakPower ?? 0.34)) eventKey = 'SHOT_WEAK';
+      else if (power >= Number(cfg.shotStrongPower ?? 0.84)) eventKey = 'SHOT_STRONG';
+      else if (power >= Number(cfg.shotPerfectMinPower ?? 0.62) && power <= Number(cfg.shotPerfectMaxPower ?? 0.78)) eventKey = 'SHOT_PERFECT';
+      let aside = '';
+      if (power >= Number(derived.powerMaxThreshold ?? 0.97)) aside = 'POWER_MAX';
+      else if (power <= Number(derived.powerLowThreshold ?? 0.12)) aside = 'POWER_LOW';
+      return { eventKey, aside };
+    }
+
     onShot(payload = {}) {
       if (!this.matchActive || this.session?.getStatus?.().online) return;
       this.activeAims.delete('offline');
       this.markGameplayActivity('shot', 'offline');
       const power = clamp(payload.power ?? 0, 0, 1);
-      const cfg = this.runtimeConfig.gameplay || {};
-      let eventKey = 'SHOT_TAKEN';
-      if (power <= Number(cfg.shotWeakPower ?? 0.34)) eventKey = 'SHOT_WEAK';
-      else if (power >= Number(cfg.shotStrongPower ?? 0.84)) eventKey = 'SHOT_STRONG';
-      else if (power >= Number(cfg.shotPerfectMinPower ?? 0.62) && power <= Number(cfg.shotPerfectMaxPower ?? 0.78)) eventKey = 'SHOT_PERFECT';
+      const { eventKey, aside } = this.classifyShot(power, payload.playerKey || this.localPlayerName);
       this.announceEvent(eventKey, { ...payload, playerName: this.localPlayerName, source: 'offline-shot' });
+      if (aside) this.announceEvent(aside, { ...payload, playerName: this.localPlayerName, source: 'offline-power' });
     }
 
     onOfflineEvent(eventKey, payload = {}) {
       if (!this.matchActive || this.session?.getStatus?.().online) return;
-      this.announceEvent(eventKey, { ...payload, playerName: payload.playerName || this.localPlayerName, source: payload.source || 'offline' });
+      const result = this.announceEvent(eventKey, { ...payload, playerName: payload.playerName || this.localPlayerName, source: payload.source || 'offline' });
+      if (eventKey === 'PORTAL_ENTER') this.schedulePortalExit({ ...payload, playerName: payload.playerName || this.localPlayerName });
+      return result;
     }
 
     handleNetworkCue(cue) {
       if (!cue || this.session?.role !== 'host') return;
       let eventKey = cue.eventKey;
+      let aside = '';
       if (eventKey === 'SHOT_TAKEN' && Number.isFinite(Number(cue.power))) {
-        const power = clamp(Number(cue.power), 0, 1);
-        const cfg = this.runtimeConfig.gameplay || {};
-        if (power <= Number(cfg.shotWeakPower ?? 0.34)) eventKey = 'SHOT_WEAK';
-        else if (power >= Number(cfg.shotStrongPower ?? 0.84)) eventKey = 'SHOT_STRONG';
-        else if (power >= Number(cfg.shotPerfectMinPower ?? 0.62) && power <= Number(cfg.shotPerfectMaxPower ?? 0.78)) eventKey = 'SHOT_PERFECT';
+        const classified = this.classifyShot(clamp(Number(cue.power), 0, 1), cue.playerKey);
+        eventKey = classified.eventKey;
+        aside = classified.aside;
       }
-      this.announceEvent(eventKey, { ...cue, eventKey, source: cue.source || 'host-authority' });
+      const result = this.announceEvent(eventKey, { ...cue, eventKey, source: cue.source || 'host-authority' });
+      if (aside) this.announceEvent(aside, { ...cue, eventKey: aside, source: 'host-power' });
+      // Los portales tienen entrada propia pero nunca notificaron la salida: el
+      // contexto se quedaba con hazard='portal' hasta el siguiente evento.
+      if (eventKey === 'PORTAL_ENTER') this.schedulePortalExit(cue);
+      return result;
+    }
+
+    schedulePortalExit(payload = {}) {
+      const timer = window.setTimeout(() => {
+        this.pendingTimers.delete(timer);
+        if (this.matchActive) this.announceEvent('PORTAL_EXIT', { ...payload, eventKey: 'PORTAL_EXIT', source: 'derived-portal' });
+      }, 420);
+      this.pendingTimers.add(timer);
     }
 
     handleNetworkActivity(activity) {
@@ -410,6 +500,9 @@
     receiveNetworkBundle(packet) {
       if (!packet?.bundle || this.session?.role === 'host') return;
       const bundle = packet.bundle;
+      // `eventAt` viene del reloj del host y no es comparable con el local. Para
+      // medir cuánto esperó el bloque en ESTA máquina se sella la recepción.
+      bundle.localEventAt = Date.now();
       if (bundle.eventKey === 'MAP_PRESENTATION') {
         // Un mapa nuevo rompe explícitamente el postmatch también en clientes.
         // El host sigue siendo la única autoridad: el cliente solo refleja el
@@ -471,9 +564,13 @@
       if (this.narrativePhase === 'postmatch' && !POST_MATCH_ALLOWED_EVENTS.has(eventKey)) {
         return { accepted: false, reason: 'postmatch-gameplay-suppressed' };
       }
+      if (eventKey === 'TURN_START' && this.runtimeConfig.gameplay?.announceTurnStart === false) {
+        this.applyCueToContext(eventKey, payload);
+        return { accepted: true, reason: 'turn-start-disabled' };
+      }
 
       const playerKey = String(payload.playerKey || payload.playerName || this.localPlayerName || 'local');
-      const policy = this.composer.policy(eventKey);
+      const policy = this.effectivePolicy(eventKey);
       const guaranteed = (this.runtimeConfig.stateMachine?.guaranteedEvents || [...GUARANTEED_EVENTS]).includes(eventKey);
       const now = Date.now();
       this.markGameplayActivity(eventKey, playerKey);
@@ -514,16 +611,36 @@
         return this.deliverBundle(firstTouchBundle);
       }
 
+      this.noteLedger(eventKey, playerKey, payload, context);
+      this.updateFocus(eventKey, playerKey, payload, context);
+
       if (policy.mode === 'trace') {
         this.lastMeaningfulAt = now;
         return { accepted: true, reason: 'trace-folded' };
       }
+
+      // Lo que pasa fuera del foco no se calla, pero baja de rango. Así una bola
+      // cualquiera del battle royale no le quita el micrófono al duelo que la
+      // cabina está narrando, sin dejar de contar lo verdaderamente grave.
+      if (!guaranteed) this.applyFocusWeight(policy, playerKey);
+
       if (!guaranteed && (policy.mode === 'opportunistic' || policy.mode === 'filler') && this.director?.isBusy()) {
         return { accepted: false, reason: 'mic-busy' };
       }
+      if (!guaranteed) {
+        const gate = this.flowAllows(eventKey, policy, now);
+        if (!gate.ok) return { accepted: false, reason: gate.reason };
+      }
 
       const effective = this.socializeEvent(eventKey, context, payload);
-      const bundle = this.composer.buildBundle(effective.primary, clone(context), payload.source || 'game');
+      // Si la lectura social eleva el evento (un choque que en realidad es un
+      // ataque al líder), la política tiene que ser la del evento resultante.
+      let finalPolicy = policy;
+      if (effective.primary !== eventKey) {
+        finalPolicy = this.effectivePolicy(effective.primary);
+        if (!guaranteed) this.applyFocusWeight(finalPolicy, playerKey);
+      }
+      const bundle = this.composer.buildBundle(effective.primary, clone(context), payload.source || 'game', this.bundleShape(finalPolicy));
       if (guaranteed) {
         const holeToken = online
           ? `${Number(this.session?.courseRound) || 0}:${Number(this.game?.holeIndex) || 0}:${payload.finishOrder ?? ''}`
@@ -541,6 +658,8 @@
         bundle.conversationExpiresAt += 1800;
         bundle.expiresAt += 1800;
       }
+      this.decorateBundle(bundle, eventKey, playerKey, context, effective);
+      this.noteFlow(effective.primary, finalPolicy, bundle);
       this.lastMeaningfulAt = Date.now();
       return this.deliverBundle(bundle);
     }
@@ -603,6 +722,9 @@
       }
 
       this.refreshCompetitiveContext(ctx, playerKey, payload);
+      // El modo viaja dentro del contexto: el compositor lo usa para decidir si
+      // puede echar mano de los bancos exclusivos de battle royale.
+      ctx.mode = this.currentMode();
       ctx.streakText = ctx.goodStreak >= 2 ? `Positiva ×${Math.floor(ctx.goodStreak)}` : ctx.badStreak >= 2 ? `Negativa ×${Math.floor(ctx.badStreak)}` : 'Neutral';
       ctx.score = payload.scoreText || `${Math.round(ctx.shots)} golpes${payload.points != null ? ` · ${Math.round(payload.points)} pts` : ''}`;
       ctx.lastEventKey = eventKey;
@@ -637,26 +759,194 @@
       let primary = eventKey;
       let extra = '';
       let extraSpeaker = 'commentator';
-      const mode = payload.mode || this.session?.settings?.mode || 'offline';
+      let rivalry = null;
+      const mode = this.currentMode();
+      const now = Date.now();
+      const cfg = this.runtimeConfig.derivedEvents || {};
+      const leaderKey = this.leaderKey();
+      const attackerKey = String(payload.attackerKey || payload.playerKey || '');
+      const victimKey = String(payload.victimKey || payload.opponentKey || '');
+
       if (mode === 'battle' && eventKey === 'PLAYER_COLLISION' && ctx.opponent) {
         const a = String(payload.playerKey || ctx.player);
         const b = String(payload.opponentKey || ctx.opponent);
         const pair = [a, b].sort().join('|');
-        const state = this.rivalries.get(pair) || { hits: 0, lastAttacker: '' };
+        const state = this.rivalries.get(pair) || { hits: 0, lastAttacker: '', bornAnnounced: false, lastLineAt: 0, byAttacker: new Map() };
         state.hits += 1;
-        const attacker = String(payload.attackerKey || payload.playerKey || '');
-        const reversed = state.lastAttacker && attacker && state.lastAttacker !== attacker;
-        state.lastAttacker = attacker || state.lastAttacker;
+        const reversed = state.lastAttacker && attackerKey && state.lastAttacker !== attackerKey;
+        state.lastAttacker = attackerKey || state.lastAttacker;
+        if (attackerKey) state.byAttacker.set(attackerKey, (state.byAttacker.get(attackerKey) || 0) + 1);
         this.rivalries.set(pair, state);
         ctx.rivalryLevel = state.hits;
+
+        // CHAIN_COLLISION existía en el banco desde el principio sin emisor: es
+        // simplemente más de un choque dentro de la misma ventana de caos.
+        this.derived.collisions.push(now);
+        const chainWindow = Math.max(400, Number(cfg.chainCollisionWindowMs || 1700));
+        this.derived.collisions = this.derived.collisions.filter((at) => now - at <= chainWindow);
+        const rafaFav = String(this.favorite.commentator || '');
+        const alexFav = String(this.favorite.informant || '');
+        const favoritesInvolved = rafaFav && alexFav && rafaFav !== alexFav
+          && [a, b].includes(rafaFav) && [a, b].includes(alexFav);
+
+        if (favoritesInvolved) primary = 'FAVORITES_COLLIDE';
+        else if (leaderKey && victimKey && victimKey === leaderKey && attackerKey !== leaderKey) primary = 'LEADER_ATTACKED';
+        else if (this.derived.collisions.length >= 2) primary = 'CHAIN_COLLISION';
+
         if (state.hits >= Number(this.runtimeConfig.gameplay?.revengeHits || 3) && reversed) extra = 'REVENGE_HIT';
         else if (state.hits === Number(this.runtimeConfig.gameplay?.rivalryHeatHits || 2)) extra = 'RIVALRY_HEATS_UP';
         else if (chance(this.runtimeConfig.gameplay?.tauntChance ?? 0.26)) extra = 'PLAYER_TAUNT';
+
+        rivalry = this.playerRivalryLine(pair, state, ctx, payload, leaderKey);
+
+        // Se anota la posición de la víctima para decidir después si el choque la
+        // hundió (sabotaje) o, sin querer, la acercó al hoyo (RIVAL_SAVE).
+        if (victimKey && attackerKey) {
+          this.derived.pendingSaves = this.derived.pendingSaves || [];
+          this.derived.pendingSaves.push({ victimKey, attackerKey, at: now, progress: this.progressFor(victimKey), resolved: false });
+          this.derived.contacts = this.derived.contacts || new Map();
+          this.derived.contacts.set(attackerKey, { at: now, victimKey });
+          this.noteAlliance(attackerKey, victimKey, now);
+        }
+      }
+
+      // SABOTAGE_BACKFIRE: el que acaba de empujar a otro se penaliza a sí mismo
+      // acto seguido. El banco lo tenía escrito y jamás llegó a sonar.
+      if (SELF_PENALTY_EVENTS.has(eventKey)) {
+        const contact = this.derived.contacts?.get(String(payload.playerKey || ''));
+        const backfireWindow = Math.max(500, Number(cfg.sabotageBackfireWindowMs || 2600));
+        if (contact && now - contact.at <= backfireWindow) {
+          primary = 'SABOTAGE_BACKFIRE';
+          ctx.victim = this.playerNameForKey(contact.victimKey) || ctx.victim;
+          this.derived.contacts.delete(String(payload.playerKey || ''));
+        }
+      }
+
+      // SABOTAGE_ATTEMPT: hubo contacto con intención y el rival salió ileso.
+      if (eventKey === 'PLAYER_COLLISION' && primary === eventKey && attackerKey && victimKey) {
+        const attemptWindow = Math.max(600, Number(cfg.sabotageAttemptWindowMs || 2200));
+        const timer = window.setTimeout(() => {
+          this.pendingTimers.delete(timer);
+          const contact = this.derived.contacts?.get(attackerKey);
+          if (!contact || contact.victimKey !== victimKey || contact.punished) return;
+          this.derived.contacts.delete(attackerKey);
+          this.announceEvent('SABOTAGE_ATTEMPT', {
+            playerKey: attackerKey, playerName: this.playerNameForKey(attackerKey) || ctx.attacker,
+            opponentKey: victimKey, opponentName: this.playerNameForKey(victimKey) || ctx.victim,
+            attackerKey, victimKey, source: 'derived-sabotage',
+          });
+        }, attemptWindow);
+        this.pendingTimers.add(timer);
+      }
+
+      if (eventKey === 'SABOTAGE_SUCCESS' && attackerKey) {
+        const contact = this.derived.contacts?.get(attackerKey);
+        if (contact) contact.punished = true;
+        const feud = this.derived.sabotage.get(attackerKey) || new Map();
+        if (victimKey) feud.set(victimKey, (feud.get(victimKey) || 0) + 1);
+        this.derived.sabotage.set(attackerKey, feud);
+        const count = victimKey ? (feud.get(victimKey) || 1) : 1;
+        if (leaderKey && victimKey === leaderKey && attackerKey !== leaderKey) primary = 'LEADER_ATTACKED';
+        if (count >= 2 && !rivalry) {
+          rivalry = this.rivalryItem('playerRivalry.sabotageFeud', { ...this.rivalryTokens(ctx, payload), count });
+        }
+      }
+
+      // UNDERDOG_STRIKE: un jugador de la mitad baja de la tabla firma algo grande.
+      if (!extra && UNDERDOG_TRIGGERS.has(eventKey) && this.isUnderdog(payload.playerKey)) extra = 'UNDERDOG_STRIKE';
+
+      // Rachas. El contexto ya las contaba desde el principio; lo que faltaba era
+      // convertirlas en evento cuando cruzan el umbral.
+      if (!extra) {
+        const goodAt = Number(cfg.streakGoodAt || 3);
+        const badAt = Number(cfg.streakBadAt || 3);
+        const key = String(payload.playerKey || ctx.player || '');
+        const lastStreak = this.derived.streakAt?.get(key) || 0;
+        if (now - lastStreak >= 12000) {
+          if (Math.floor(ctx.goodStreak || 0) >= goodAt) extra = 'STREAK_GOOD';
+          else if (Math.floor(ctx.badStreak || 0) >= badAt) extra = 'STREAK_BAD';
+          if (extra) {
+            this.derived.streakAt = this.derived.streakAt || new Map();
+            this.derived.streakAt.set(key, now);
+          }
+        }
+      }
+
+      // Alianzas y traiciones especulativas: siguen apagadas por defecto, pero la
+      // detección ya existe para que el interruptor de socialNarrative sirva.
+      if (!extra) {
+        const social = this.runtimeConfig.socialNarrative || {};
+        const ally = this.allianceFor(String(payload.playerKey || ''), now);
+        if (ally?.betrayal && social.allowSpeculativeBetrayal === true) extra = 'BETRAYAL';
+        else if (ally?.formed && social.allowSpeculativeAlliance === true) extra = 'TEMP_ALLIANCE';
       }
 
       const favoriteExtra = this.updateFavorites(eventKey, payload, ctx);
       if (favoriteExtra) { extra = favoriteExtra.eventKey; extraSpeaker = favoriteExtra.speaker; }
-      return { primary, extra, extraSpeaker };
+      return { primary, extra, extraSpeaker, rivalry };
+    }
+
+    /**
+     * Detección de alianza especulativa: dos atacantes distintos golpean a la
+     * misma víctima dentro de una ventana corta. Si esos dos aliados chocan
+     * después entre ellos, eso es la traición. Ambas lecturas siguen siendo
+     * interpretación, no hecho de juego: por eso viven detrás de socialNarrative.
+     */
+    noteAlliance(attackerKey, victimKey, now) {
+      const cfg = this.runtimeConfig.derivedEvents || {};
+      this.derived.allyTargets = this.derived.allyTargets || new Map();
+      this.derived.allies = this.derived.allies || new Map();
+      const windowMs = Math.max(800, Number(cfg.allianceWindowMs || 4200));
+      const memoryMs = Math.max(windowMs, Number(cfg.allianceMemoryMs || 45000));
+
+      const pairKey = [attackerKey, victimKey].sort().join('|');
+      const existing = this.derived.allies.get(pairKey);
+      if (existing && now - existing.at <= memoryMs) {
+        existing.betrayedAt = now;
+        this.derived.allies.set(pairKey, existing);
+      }
+
+      const history = (this.derived.allyTargets.get(victimKey) || []).filter((item) => now - item.at <= windowMs);
+      const partner = history.find((item) => item.key !== attackerKey);
+      history.push({ key: attackerKey, at: now });
+      this.derived.allyTargets.set(victimKey, history);
+      if (partner) {
+        const allyPair = [attackerKey, partner.key].sort().join('|');
+        if (!this.derived.allies.has(allyPair)) this.derived.allies.set(allyPair, { at: now, target: victimKey, betrayedAt: 0 });
+      }
+    }
+
+    allianceFor(playerKey, now) {
+      if (!playerKey || !this.derived.allies?.size) return null;
+      const memoryMs = Math.max(1000, Number(this.runtimeConfig.derivedEvents?.allianceMemoryMs || 45000));
+      for (const [pair, state] of this.derived.allies.entries()) {
+        if (!pair.split('|').includes(playerKey)) continue;
+        if (now - state.at > memoryMs) { this.derived.allies.delete(pair); continue; }
+        if (state.betrayedAt && !state.betrayalAnnounced) {
+          state.betrayalAnnounced = true;
+          return { betrayal: true, pair };
+        }
+        if (!state.formedAnnounced) {
+          state.formedAnnounced = true;
+          return { formed: true, pair };
+        }
+      }
+      return null;
+    }
+
+    /** Clave del líder real (con ventaja efectiva), o cadena vacía. */
+    leaderKey() {
+      const standings = this.mapStandings();
+      const { leader, meaningful } = this.mapLeaderSnapshot(standings);
+      return meaningful ? String(leader.playerKey || '') : '';
+    }
+
+    isUnderdog(playerKey) {
+      const standings = this.mapStandings();
+      if (standings.length < 3) return false;
+      const index = standings.findIndex((entry) => String(entry.playerKey) === String(playerKey || ''));
+      if (index < 0) return false;
+      return index >= Math.ceil(standings.length / 2);
     }
 
     updateFavorites(eventKey, payload, ctx) {
@@ -679,8 +969,15 @@
         const cooldown = Number(this.runtimeConfig.gameplay?.favoriteSwitchCooldownMs || 6500);
         const margin = Number(this.runtimeConfig.gameplay?.favoriteSwitchMargin || 1.25);
         if (candidate !== current && score >= currentScore + margin && now - this.lastFavoriteSwitchAt[speaker] >= cooldown) {
+          const displaced = current;
           this.favorite[speaker] = candidate;
           this.lastFavoriteSwitchAt[speaker] = now;
+          // Un favorito nuevo implica que otro acaba de caer. FAVORITE_FALL tenía
+          // banco propio y ningún emisor; este es su momento natural.
+          if (displaced) {
+            ctx.favorite = this.playerNameForKey(displaced) || ctx.favorite;
+            changed = { eventKey: 'FAVORITE_FALL', speaker };
+          }
           ctx.favorite = this.playerNameForKey(candidate) || (candidate === key ? ctx.player : candidate);
           // En red se conserva el nombre canónico dentro del bundle. Cada
           // cliente lo personaliza al reproducir según SU configuración local.
@@ -1057,6 +1354,751 @@
       }, delay);
       this.pendingTimers.add(timer);
       return { accepted: true, reason: 'scheduled' };
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Perfil de modo. Una partida por turnos y un battle royale de ocho bolas no
+    // son el mismo trabajo de locución: en turnos hay huecos naturales y cabe el
+    // análisis; en battle hay caos simultáneo y lo que hace falta es elegir bien.
+    // ══════════════════════════════════════════════════════════════════════════
+
+    currentMode() {
+      if (!this.session?.getStatus?.().online) return 'offline';
+      return (this.session?.settings?.mode || 'turn') === 'battle' ? 'battle' : 'turn';
+    }
+
+    modeProfile() {
+      return this.runtimeConfig.modeProfiles?.[this.currentMode()] || {};
+    }
+
+    flowConfig() {
+      const flow = this.runtimeConfig.flow || {};
+      const profile = this.modeProfile();
+      return {
+        ...flow,
+        burstWindowMs: profile.burstWindowMs ?? flow.burstWindowMs ?? 220,
+        maxLinesPerWindow: profile.maxLinesPerWindow ?? flow.maxLinesPerWindow ?? 6,
+        semanticCooldownMs: profile.semanticCooldownMs ?? flow.semanticCooldownMs ?? 2600,
+        speechBudget: profile.speechBudget ?? flow.speechBudget ?? 0.62,
+      };
+    }
+
+    effectivePolicy(eventKey) {
+      const base = this.composer.policy(eventKey);
+      const override = this.modeProfile().eventOverrides?.[eventKey];
+      return override ? { ...base, ...override } : base;
+    }
+
+    bundleShape(policy) {
+      const profile = this.modeProfile();
+      return {
+        policy,
+        dialogueScale: Number(profile.dialogueScale ?? 1),
+        maxItems: Number(profile.maxItems ?? 3),
+        maxWordsScale: Number(profile.maxWordsScale ?? 1),
+      };
+    }
+
+    semanticOf(eventKey) {
+      return String(this.personas?.commentator?.events?.[eventKey]?.semanticClass || 'general');
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Control de caudal. El dedupe original era por jugador+evento: ocho bolas
+    // cayendo al agua a la vez producían ocho bloques y ninguno filtraba a otro.
+    // ══════════════════════════════════════════════════════════════════════════
+
+    flowAllows(eventKey, policy, now) {
+      const flow = this.flowConfig();
+      if (flow.enabled === false) return { ok: true };
+      if (policy.class === 'supercritical' || policy.guaranteed === true) return { ok: true };
+      const critical = policy.class === 'critical';
+      const scale = critical ? 0.45 : 1;
+
+      const gap = Math.max(0, Number(flow.globalMinGapMs || 0)) * scale;
+      if (gap && now - this.flow.lastBundleAt < gap) return { ok: false, reason: 'flow-min-gap' };
+
+      const windowMs = Math.max(1000, Number(flow.rateWindowMs || 10000));
+      this.flow.recent = this.flow.recent.filter((entry) => now - entry.at <= windowMs);
+      const cap = Math.max(1, Number(flow.maxLinesPerWindow || 6)) * (critical ? 1.5 : 1);
+      if (this.flow.recent.length >= cap) return { ok: false, reason: 'flow-rate-cap' };
+
+      // Tope real: el tiempo. Contar líneas no basta porque una línea tarda entre
+      // 2 y 5 segundos en decirse; sin presupuesto de habla la cabina componía
+      // tres veces más locución de la que cabe en el reloj, y todo ese exceso
+      // acababa descartado o cediendo micrófono a media conversación.
+      const budget = clamp(Number(flow.speechBudget ?? 0.62), 0.1, 1) * (critical ? 1.25 : 1);
+      const spoken = this.flow.recent.reduce((sum, entry) => sum + Number(entry.ms || 0), 0);
+      if (spoken + this.estimatePolicyMs(policy) > windowMs * budget) return { ok: false, reason: 'flow-speech-budget' };
+
+      const cooldown = Math.max(0, Number(flow.semanticCooldownMs || 0)) * scale;
+      const semantic = this.semanticOf(eventKey);
+      if (cooldown && now - (this.flow.semanticAt.get(semantic) || 0) < cooldown) {
+        return { ok: false, reason: 'flow-semantic-cooldown' };
+      }
+      return { ok: true };
+    }
+
+    /** Coste de habla estimado de un evento antes de componerlo, en ms. */
+    estimatePolicyMs(policy) {
+      const words = Math.max(6, Number(policy?.maxWords || 24));
+      const rate = Math.max(0.45, Number(this.getSpeakerSettings('commentator').rate) || 1);
+      return (words / (2.55 * rate)) * 1000 + 280;
+    }
+
+    noteFlow(eventKey, policy, bundle) {
+      const now = Date.now();
+      this.flow.lastBundleAt = now;
+      for (const item of bundle?.items || []) {
+        this.flow.recent.push({ at: now, ms: this.director?.estimateSpeechMs?.(item.text, item.speaker) ?? this.estimatePolicyMs(policy) });
+      }
+      if (!bundle?.items?.length) this.flow.recent.push({ at: now, ms: this.estimatePolicyMs(policy) });
+      this.flow.semanticAt.set(this.semanticOf(eventKey), now);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Foco narrativo: a quién está mirando la cabina. Sin esto, en battle royale
+    // todos los jugadores compiten por el micrófono con el mismo peso y el relato
+    // salta de bola en bola sin construir nada.
+    // ══════════════════════════════════════════════════════════════════════════
+
+    focusEnabled() {
+      if (this.runtimeConfig.focus?.enabled === false) return false;
+      return this.modeProfile().focus !== false;
+    }
+
+    updateFocus(eventKey, playerKey, payload, ctx) {
+      if (!this.focusEnabled()) { this.focus.playerKey = ''; return; }
+      const mode = this.modeProfile().focusMode || 'relevance';
+      const now = Date.now();
+      let next = '';
+      let reason = mode;
+
+      if (mode === 'local') next = String(playerKey || '');
+      else if (mode === 'turn') {
+        const turnEntry = this.mapStandings().find((entry) => entry.turn);
+        next = String(turnEntry?.playerKey || playerKey || '');
+        reason = 'turn';
+      } else {
+        const importance = Number(this.personas.commentator.events?.[eventKey]?.importance || 0);
+        const held = now - Number(this.focus.since || 0) < Math.max(0, Number(this.runtimeConfig.focus?.minHoldMs || 3200));
+        // Un rebote no mueve la cámara. Solo un suceso grande interrumpe el plano
+        // actual, y la rotación normal exige al menos un hecho con entidad: si no,
+        // el foco perseguiría a la última bola que tocó una pared.
+        if (!this.focus.playerKey || importance >= 4 || (!held && importance >= 3)) {
+          next = String(playerKey || '');
+          reason = importance >= 4 ? 'action' : 'rotation';
+        } else next = this.focus.playerKey;
+      }
+
+      if (!next || next === this.focus.playerKey) return;
+      const previous = { key: this.focus.playerKey, name: this.focus.name };
+      this.focus = {
+        playerKey: next,
+        name: this.playerNameForKey(next) || String(payload?.playerName || ctx?.player || ''),
+        since: now, reason, announcedAt: this.focus.announcedAt,
+      };
+      this.maybeAnnounceFocusSwitch(previous, reason, ctx, payload);
+    }
+
+    applyFocusWeight(policy, playerKey) {
+      if (!this.focusEnabled() || !this.focus.playerKey) return;
+      if (String(playerKey) === this.focus.playerKey) return;
+      const cfg = this.runtimeConfig.focus || {};
+      policy.priority = Math.round(Number(policy.priority || 0) * clamp(cfg.offFocusPriorityScale ?? 0.55, 0.1, 1));
+      if (cfg.offFocusDemote === false) return;
+      if (policy.class === 'important') policy.class = 'progressive';
+      else if (policy.class === 'critical') policy.class = 'important';
+    }
+
+    maybeAnnounceFocusSwitch(previous, reason, ctx, payload) {
+      const cfg = this.runtimeConfig.focus || {};
+      const now = Date.now();
+      if (!previous?.key) return;
+      // En modo por turnos el cambio de foco YA lo cuenta TURN_START. Anunciarlo
+      // otra vez convierte cada relevo en dos frases que dicen lo mismo.
+      if ((this.modeProfile().focusMode || 'relevance') === 'turn') return;
+      if (this.mapStandings().length < 2) return;
+      if (this.director?.isBusy()) return;
+      if (now - Number(this.focus.announcedAt || 0) < Math.max(0, Number(cfg.switchCooldownMs || 7000))) return;
+      if (!chance(cfg.switchAnnounceChance ?? 0.45)) return;
+
+      const standings = this.mapStandings();
+      const index = standings.findIndex((entry) => String(entry.playerKey) === this.focus.playerKey);
+      const leaderKey = this.leaderKey();
+      let path = 'focusSwitch.general';
+      if (leaderKey && this.focus.playerKey === leaderKey) path = 'focusSwitch.toLeader';
+      else if (index === 1) path = 'focusSwitch.toChaser';
+      else if (index >= 0 && index === standings.length - 1 && standings.length >= 3) path = 'focusSwitch.toStruggler';
+      else if (reason === 'action' && ctx?.opponent) path = 'focusSwitch.toRival';
+
+      const tokens = {
+        ...this.rivalryTokens(ctx, payload),
+        player: this.focus.name || ctx?.player || 'el jugador',
+        previous_focus: previous.name || 'el anterior',
+      };
+      const policy = { class: 'progressive', priority: 42, ttlMs: 1600, mode: 'opportunistic', maxWords: 24 };
+      // El aviso de cambio de plano es cosmético: si no cabe en el presupuesto de
+      // habla, cede sin discutir. Nunca debe robarle tiempo a un hecho de juego.
+      if (!this.flowAllows('FOCUS_SWITCH', policy, now).ok) return;
+      const item = this.rivalryItem(path, tokens, 'commentator', 'Cabina · cambio de foco');
+      if (!item) return;
+      this.focus.announcedAt = now;
+      const bundle = this.runtimeBundle('FOCUS_SWITCH', [item], policy, 'focus-switch');
+      const result = this.deliverBundle(bundle);
+      if (result?.accepted) this.noteFlow('FOCUS_SWITCH', policy, bundle);
+      return result;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Banco de rivalidad (announcer/data/rivalry.json)
+    // ══════════════════════════════════════════════════════════════════════════
+
+    rivalryPool(path) {
+      let node = this.rivalryData;
+      for (const part of String(path || '').split('.')) {
+        if (!node || typeof node !== 'object') return null;
+        node = node[part];
+      }
+      return Array.isArray(node) ? node : null;
+    }
+
+    rivalryTokens(ctx = {}, payload = {}) {
+      const standings = this.mapStandings();
+      const { leader, second, meaningful, gap } = this.mapLeaderSnapshot(standings);
+      return {
+        player: ctx.player || payload.playerName || this.localPlayerName || 'el jugador',
+        opponent: ctx.opponent || payload.opponentName || 'su rival',
+        attacker: ctx.attacker || payload.attackerName || ctx.player || 'el atacante',
+        victim: ctx.victim || payload.victimName || ctx.opponent || 'el rival',
+        leader: meaningful ? leader.username : (ctx.leader || 'nadie todavía'),
+        chaser: second?.username || 'el perseguidor',
+        gap: meaningful ? Math.round(gap) : 0,
+        favorite: ctx.favorite || this.playerNameForKey(this.favorite.commentator) || 'el favorito de la cabina',
+        rafa_favorite: this.playerNameForKey(this.favorite.commentator) || 'todavía sin favorito',
+        alex_favorite: this.playerNameForKey(this.favorite.informant) || 'todavía sin favorito',
+        survivor_count: Number(ctx.survivorCount || standings.filter((entry) => !entry.finished).length || 0),
+        score: ctx.score || 'sin cambios',
+        count: Number(payload.count || 0),
+        previous_focus: '',
+      };
+    }
+
+    rivalryItem(path, tokens, speaker = 'commentator', label = 'Cabina') {
+      const pool = this.rivalryPool(path);
+      const phrase = this.pickMapPhrase(`rivalry.${path}`, pool);
+      if (!phrase) return null;
+      const text = this.fillMapTemplate(phrase, tokens);
+      if (!text) return null;
+      return {
+        speaker: speaker === 'informant' ? 'informant' : 'commentator',
+        text, eventLabel: label, tone: speaker === 'informant' ? 'informative' : 'sarcastic',
+      };
+    }
+
+    playerRivalryLine(pair, state, ctx, payload, leaderKey) {
+      const cfg = this.runtimeConfig.playerRivalry || {};
+      if (cfg.enabled === false) return null;
+      const now = Date.now();
+      if (now - Number(state.lastLineAt || 0) < Math.max(0, Number(cfg.lineCooldownMs || 15000))) return null;
+      const tokens = { ...this.rivalryTokens(ctx, payload), count: state.hits };
+      const [a, b] = String(pair).split('|');
+      const involvesLeader = leaderKey && (a === leaderKey || b === leaderKey);
+      const attackerHits = [...state.byAttacker.values()];
+      const oneSided = attackerHits.length === 1 && state.hits >= 3;
+      const escalateEvery = Math.max(1, Number(cfg.escalateEvery || 2));
+
+      let path = '';
+      if (!state.bornAnnounced && state.hits >= Number(cfg.bornAtHits || 1)) {
+        path = 'playerRivalry.born';
+        state.bornAnnounced = true;
+      } else if (involvesLeader && chance(0.6)) path = 'playerRivalry.leaderVsChaser';
+      else if (oneSided) path = 'playerRivalry.oneSided';
+      else if (state.hits % escalateEvery === 0) path = 'playerRivalry.escalate';
+      if (!path) return null;
+      state.lastLineAt = now;
+      return this.rivalryItem(path, tokens, 'commentator', 'Rivalidad entre jugadores');
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Cabina viva: apuestas con cobro posterior, desacuerdos y pullas de favoritos
+    // ══════════════════════════════════════════════════════════════════════════
+
+    decorateBundle(bundle, eventKey, playerKey, ctx, effective) {
+      if (!bundle?.items?.length) return;
+      const extras = [];
+      const settled = this.resolveBet(eventKey, playerKey, ctx);
+      if (settled) extras.push(settled);
+      else {
+        const opened = this.maybeOpenBet(eventKey, playerKey, ctx);
+        if (opened) extras.push(...opened);
+      }
+      if (effective?.rivalry) extras.push(effective.rivalry);
+      const gag = this.maybeGag(eventKey, playerKey, ctx);
+      if (gag) extras.push(gag);
+      if (!extras.length) {
+        const disagreement = this.maybeDisagreement(eventKey);
+        if (disagreement) extras.push(...disagreement);
+        else {
+          const banter = this.maybeFavoriteBanter(ctx);
+          if (banter) extras.push(banter);
+        }
+      }
+      if (!extras.length) return;
+
+      const cap = Math.max(2, Number(this.modeProfile().maxItems ?? 3) + 1);
+      let added = 0;
+      for (const item of extras) {
+        if (bundle.items.length >= cap) break;
+        // Tres frases seguidas de la misma voz dejan de sonar a cabina y empiezan
+        // a sonar a monólogo. La tercera se descarta antes que romper el diálogo.
+        const tail = bundle.items.slice(-2);
+        if (tail.length === 2 && tail.every((previous) => previous.speaker === item.speaker)) continue;
+        bundle.items.push({ ...item, eventKey: bundle.eventKey });
+        added += 1;
+      }
+      if (!added) return;
+      const room = added * 1600;
+      if (Number.isFinite(bundle.expiresAt) && bundle.expiresAt < 1e15) bundle.expiresAt += room;
+      if (Number.isFinite(bundle.conversationExpiresAt) && bundle.conversationExpiresAt < 1e15) bundle.conversationExpiresAt += room;
+    }
+
+    maybeOpenBet(eventKey, playerKey, ctx) {
+      const cfg = this.runtimeConfig.booth || {};
+      if (cfg.enabled === false || !BET_OPENERS.has(eventKey)) return null;
+      if (this.booth.pendingBet) return null;
+      if (Number(this.modeProfile().maxItems ?? 3) < 2) return null;
+      const now = Date.now();
+      if (now - Number(this.booth.lastBetAt || 0) < Math.max(0, Number(cfg.betCooldownMs || 34000))) return null;
+      if (!chance(cfg.betChance ?? 0.3)) return null;
+      const pool = this.rivalryPool('booth.bets.open');
+      if (!pool?.length) return null;
+      const entry = pool[Math.floor(Math.random() * pool.length)];
+      const tokens = this.rivalryTokens(ctx, {});
+      const first = this.fillMapTemplate(entry?.commentator, tokens);
+      const second = this.fillMapTemplate(entry?.informant, tokens);
+      if (!first || !second) return null;
+      this.booth.pendingBet = { playerKey: String(playerKey || ''), openedAt: now };
+      this.booth.lastBetAt = now;
+      return [
+        { speaker: 'commentator', text: first, eventLabel: 'Cabina · apuesta', tone: 'excited' },
+        { speaker: 'informant', text: second, eventLabel: 'Cabina · apuesta aceptada', tone: 'informative' },
+      ];
+    }
+
+    resolveBet(eventKey, playerKey, ctx) {
+      const bet = this.booth.pendingBet;
+      if (!bet) return null;
+      const now = Date.now();
+      const windowMs = Math.max(2000, Number(this.runtimeConfig.booth?.betWindowMs || 16000));
+      if (now - bet.openedAt > windowMs) {
+        this.booth.pendingBet = null;
+        return this.rivalryItem('booth.bets.noResolution', this.rivalryTokens(ctx, {}), 'commentator', 'Cabina · apuesta sin resolver');
+      }
+      if (String(playerKey || '') !== bet.playerKey) return null;
+      let path = '';
+      let speaker = 'commentator';
+      if (BET_WINS.has(eventKey)) path = 'booth.bets.commentatorWins';
+      else if (BET_LOSSES.has(eventKey)) { path = 'booth.bets.informantWins'; speaker = 'informant'; }
+      if (!path) return null;
+      this.booth.pendingBet = null;
+      return this.rivalryItem(path, this.rivalryTokens(ctx, {}), speaker, 'Cabina · apuesta resuelta');
+    }
+
+    maybeDisagreement(eventKey) {
+      const cfg = this.runtimeConfig.booth || {};
+      if (cfg.enabled === false) return null;
+      // El desacuerdo necesita las dos mitades para entenderse: la lectura de Rafa
+      // y la corrección de Álex. En battle no hay sitio para dos líneas extra.
+      if (Number(this.modeProfile().maxItems ?? 3) < 3) return null;
+      const now = Date.now();
+      if (now - Number(this.booth.lastDisagreementAt || 0) < Math.max(0, Number(cfg.disagreementCooldownMs || 26000))) return null;
+      if (Number(this.personas.commentator.events?.[eventKey]?.importance || 0) < 4) return null;
+      if (!chance(cfg.disagreementChance ?? 0.22)) return null;
+      const pool = this.rivalryPool('booth.disagreement');
+      if (!pool?.length) return null;
+      const entry = pool[Math.floor(Math.random() * pool.length)];
+      if (!entry?.commentator || !entry?.informant) return null;
+      this.booth.lastDisagreementAt = now;
+      return [
+        { speaker: 'commentator', text: entry.commentator, eventLabel: 'Cabina · desacuerdo', tone: 'excited' },
+        { speaker: 'informant', text: entry.informant, eventLabel: 'Cabina · réplica', tone: 'sarcastic' },
+      ];
+    }
+
+    maybeFavoriteBanter(ctx) {
+      const cfg = this.runtimeConfig.booth || {};
+      if (cfg.enabled === false) return null;
+      const rafa = String(this.favorite.commentator || '');
+      const alex = String(this.favorite.informant || '');
+      if (!rafa && !alex) return null;
+      const now = Date.now();
+      if (now - Number(this.booth.lastFavoriteBanterAt || 0) < Math.max(0, Number(cfg.favoriteBanterCooldownMs || 30000))) return null;
+      if (!chance(cfg.favoriteBanterChance ?? 0.28)) return null;
+      const tokens = this.rivalryTokens(ctx, {});
+      const split = rafa && alex && rafa !== alex;
+      let path = '';
+      let speaker = 'commentator';
+      if (split && chance(0.55)) {
+        speaker = chance(0.5) ? 'commentator' : 'informant';
+        path = `booth.favoriteMockery.${speaker}`;
+      } else {
+        speaker = rafa ? 'commentator' : 'informant';
+        path = `booth.favoriteDefense.${speaker}`;
+        tokens.favorite = this.playerNameForKey(speaker === 'commentator' ? rafa : alex) || tokens.favorite;
+      }
+      const item = this.rivalryItem(path, tokens, speaker, 'Cabina · favoritos');
+      if (item) this.booth.lastFavoriteBanterAt = now;
+      return item;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Memoria de partida: lo que convierte frases sueltas en chistes recurrentes
+    // ══════════════════════════════════════════════════════════════════════════
+
+    ledgerFor(playerKey) {
+      const key = String(playerKey || 'local');
+      let entry = this.ledger.get(key);
+      if (!entry) {
+        entry = { water: 0, outOfBounds: 0, reset: 0, sand: 0, nearMiss: 0, sabotageDone: 0, sabotageSuffered: 0, holes: 0, bestGoodStreak: 0 };
+        this.ledger.set(key, entry);
+      }
+      return entry;
+    }
+
+    noteLedger(eventKey, playerKey, payload, ctx) {
+      if (this.runtimeConfig.memory?.enabled === false) return;
+      const entry = this.ledgerFor(playerKey);
+      const bucket = LEDGER_EVENTS[eventKey];
+      if (bucket) entry[bucket] += 1;
+      if (eventKey === 'HOLE' || eventKey === 'HOLE_IN_ONE') entry.holes += 1;
+      if (eventKey === 'SABOTAGE_SUCCESS') {
+        entry.sabotageDone += 1;
+        const victimKey = String(payload.victimKey || payload.opponentKey || '');
+        if (victimKey) this.ledgerFor(victimKey).sabotageSuffered += 1;
+      }
+      entry.bestGoodStreak = Math.max(entry.bestGoodStreak, Math.floor(Number(ctx?.goodStreak || 0)));
+    }
+
+    maybeGag(eventKey, playerKey, ctx) {
+      const cfg = this.runtimeConfig.memory || {};
+      if (cfg.enabled === false) return null;
+      const now = Date.now();
+      if (now - Number(this.lastGagAt || 0) < Math.max(0, Number(cfg.gagCooldownMs || 12000))) return null;
+
+      const candidates = [];
+      const bucket = LEDGER_EVENTS[eventKey];
+      if (bucket) candidates.push({ key: String(playerKey || ''), bucket });
+      if (eventKey === 'SABOTAGE_SUCCESS') {
+        candidates.push({ key: String(playerKey || ''), bucket: 'sabotageDone' });
+        const victimKey = String(ctx?.victim ? this.victimKeyFrom(ctx) : '');
+        if (victimKey) candidates.push({ key: victimKey, bucket: 'sabotageSuffered' });
+      }
+      if (eventKey === 'STREAK_GOOD') candidates.push({ key: String(playerKey || ''), bucket: 'goodStreak' });
+
+      for (const candidate of candidates) {
+        const entry = this.ledgerFor(candidate.key);
+        const count = candidate.bucket === 'goodStreak' ? Math.floor(Number(ctx?.goodStreak || 0)) : Number(entry[candidate.bucket] || 0);
+        const threshold = Number(cfg.thresholds?.[candidate.bucket] ?? 3);
+        const repeat = Math.max(1, Number(cfg.repeatEvery || 2));
+        if (count < threshold || (count - threshold) % repeat !== 0) continue;
+        const gagKey = `${candidate.key}:${candidate.bucket}:${count}`;
+        if (this.gagAt.has(gagKey)) continue;
+        const tokens = { ...this.rivalryTokens(ctx, {}), count };
+        if (candidate.key !== String(playerKey || '')) tokens.player = this.playerNameForKey(candidate.key) || tokens.player;
+        const item = this.rivalryItem(`runningGags.${candidate.bucket}`, tokens, 'commentator', 'Memoria de partida');
+        if (!item) continue;
+        this.gagAt.set(gagKey, now);
+        this.lastGagAt = now;
+        return item;
+      }
+      return null;
+    }
+
+    victimKeyFrom(ctx) {
+      if (!ctx?.victim || !this.session?.players) return '';
+      for (const [key, player] of this.session.players.entries()) {
+        if (player?.username === ctx.victim) return key;
+      }
+      return '';
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Frescura: el texto se compone al ocurrir el hecho, pero suena al haber
+    // micrófono. Si esperó demasiado se narra como recuerdo, no como directo.
+    // ══════════════════════════════════════════════════════════════════════════
+
+    decorateStaleBundle(bundle, waitedMs) {
+      const flow = this.flowConfig();
+      if (flow.enabled === false || !bundle?.items?.length) return true;
+      const persistent = bundle.policy?.guaranteed === true || bundle.policy?.class === 'supercritical' || bundle.policy?.mustSpeak === true;
+      if (!persistent && waitedMs > Math.max(1000, Number(flow.staleDropMs || 9000))) return false;
+      if (bundle.staleDecorated) return true;
+      const shortMs = Math.max(400, Number(flow.staleShortMs || 1800));
+      if (waitedMs < shortMs) return true;
+      const longMs = Math.max(shortMs, Number(flow.staleLongMs || 4500));
+      const pool = waitedMs >= longMs ? 'retrospective.long' : 'retrospective.short';
+      const prefix = this.pickMapPhrase(`rivalry.${pool}`, this.rivalryPool(pool));
+      if (!prefix) return true;
+      bundle.items[0].text = `${prefix} ${bundle.items[0].text}`;
+      bundle.staleDecorated = true;
+      return 'decorated';
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Tick narrativo. Aquí nacen los eventos que el juego ya conocía pero nadie
+    // traducía a locución: cambios de liderato, remontadas, empates, vuelo de la
+    // bola, eliminaciones, turnos eternos y salvadas al borde del hoyo.
+    // Todo se deriva desde el manager: multiplayerSession.js no se toca.
+    // ══════════════════════════════════════════════════════════════════════════
+
+    narrativeAuthority() {
+      if (!this.ready || !this.enabled || !this.matchActive) return false;
+      if (this.narrativePhase !== 'gameplay') return false;
+      if (this.runtimeConfig.derivedEvents?.enabled === false) return false;
+      if (this.mapIntroState.firstTouchArmed) return false;
+      const online = !!this.session?.getStatus?.().online;
+      if (online && this.session?.role !== 'host') return false;
+      return true;
+    }
+
+    narrativeTick() {
+      if (!this.narrativeAuthority() || this.derived.depth) return;
+      this.derived.depth += 1;
+      try {
+        const now = Date.now();
+        this.deriveBallEvents(now);
+        this.deriveStandingsEvents(now);
+        this.deriveTurnEvents(now);
+        this.derived.pendingSaves = (this.derived.pendingSaves || []).filter((entry) => now - entry.at <= 2600);
+      } catch (error) {
+        console.error('[Announcer narrativeTick]', error);
+      } finally {
+        this.derived.depth -= 1;
+      }
+    }
+
+    narrativeBalls() {
+      const out = [];
+      if (this.session?.getStatus?.().online) {
+        for (const player of this.session.players?.values?.() || []) {
+          if (player?.role !== 'player' || !player.ball || player.finished) continue;
+          out.push({ key: String(player.playerKey), name: player.username, ball: player.ball });
+        }
+      } else if (this.game?.ball) {
+        out.push({ key: 'offline', name: this.localPlayerName, ball: this.game.ball });
+      }
+      return out;
+    }
+
+    deriveBallEvents(now) {
+      const hole = this.game?.hole;
+      if (!hole) return;
+      const cfg = this.runtimeConfig.derivedEvents || {};
+      const mpp = Number(window.NoiseGolf?.CONFIG?.course?.metersPerPixel) || (1 / 18);
+      const toKmh = (value) => Math.abs(Number(value) || 0) * mpp * 3.6;
+      const cooldown = Math.max(1200, Number(cfg.ballCueCooldownMs || 5200));
+
+      for (const { key, name, ball } of this.narrativeBalls()) {
+        let track = this.derived.balls.get(key);
+        if (!track) {
+          track = { moving: false, airborne: false, rising: false, falling: false, fast: false, void: false, cues: new Map(), x: ball.x, y: ball.y };
+          this.derived.balls.set(key, track);
+        }
+        const speedKmh = toKmh(Math.hypot(Number(ball.vx) || 0, Number(ball.vy) || 0));
+        const riseKmh = toKmh(Math.min(0, Number(ball.vy) || 0));
+        const fallKmh = toKmh(Math.max(0, Number(ball.vy) || 0));
+        const airborne = !!ball.moving && ball.onSurface === false;
+        const payload = { playerKey: key, playerName: name, speedKmh, source: 'derived-flight' };
+        const fire = (eventKey, extra = {}) => {
+          const last = track.cues.get(eventKey) || 0;
+          if (now - last < cooldown) return;
+          track.cues.set(eventKey, now);
+          this.announceEvent(eventKey, { ...payload, ...extra });
+        };
+
+        // Vuelo. BALL_AIR/BALL_HIGH/FALL_START son eventos de traza: alimentan el
+        // contexto de la jugada aunque casi nunca lleguen a hablar por sí solos.
+        if (airborne && !track.airborne) fire('BALL_AIR');
+        if (airborne && riseKmh >= Number(cfg.highRiseSpeed || 190) && !track.rising) {
+          fire('BALL_HIGH', { heightMeters: Math.max(0, (hole.bounds.maxY - ball.y) * mpp) });
+        }
+        if (airborne && fallKmh >= Number(cfg.fallSpeed || 200) && track.rising && !track.falling) fire('FALL_START');
+        if (speedKmh >= Number(cfg.fastSpeed || 250) && !track.fast) fire('BALL_FAST');
+
+        // VOID_FALL: caer por debajo del mundo no es lo mismo que salirse por un
+        // lateral, y el banco tenía frases distintas para cada cosa.
+        const belowWorld = Number(ball.y) > Number(hole.bounds?.maxY || Infinity);
+        if (belowWorld && !track.void && ball.moving) fire('VOID_FALL', { source: 'derived-void' });
+
+        // EDGE_SAVE: la bola se detiene con agua al lado y no se cae dentro.
+        if (track.moving && !ball.moving && !ball.holed && !ball.inWater) {
+          const reach = Math.max(0.4, Number(cfg.edgeSaveMeters || 1.7)) / mpp;
+          const util = window.NoiseGolf?.TerrainUtil;
+          const surfaceId = ball.lastSurfaceId;
+          const nearWater = util?.waterAt && (util.waterAt(hole, surfaceId, ball.x - reach) || util.waterAt(hole, surfaceId, ball.x + reach));
+          if (nearWater) fire('EDGE_SAVE', { source: 'derived-edge' });
+        }
+
+        // RIVAL_SAVE: un choque que, sin querer, acerca a la víctima al hoyo.
+        for (const entry of this.derived.pendingSaves || []) {
+          if (entry.victimKey !== key || entry.resolved || now - entry.at < 900) continue;
+          entry.resolved = true;
+          const progress = this.progressFor(key);
+          if (progress != null && entry.progress != null && progress - entry.progress >= Number(cfg.rivalSaveProgressGain || 0.07)) {
+            this.announceEvent('RIVAL_SAVE', {
+              playerKey: entry.attackerKey, playerName: this.playerNameForKey(entry.attackerKey) || 'el rival',
+              opponentKey: key, opponentName: name, victimKey: key, victimName: name, source: 'derived-rival-save',
+            });
+          }
+        }
+
+        track.moving = !!ball.moving;
+        track.airborne = airborne;
+        track.rising = airborne && riseKmh >= Number(cfg.highRiseSpeed || 190) * 0.5;
+        track.falling = airborne && fallKmh >= Number(cfg.fallSpeed || 200);
+        track.fast = speedKmh >= Number(cfg.fastSpeed || 250);
+        track.void = belowWorld;
+        track.x = ball.x;
+        track.y = ball.y;
+      }
+    }
+
+    progressFor(playerKey) {
+      const entry = this.mapStandings().find((row) => String(row.playerKey) === String(playerKey));
+      const value = Number(entry?.progress);
+      return Number.isFinite(value) ? value : null;
+    }
+
+    deriveStandingsEvents(now) {
+      const standings = this.mapStandings();
+      if (standings.length < 2) return;
+      const cfg = this.runtimeConfig.derivedEvents || {};
+      const cooldown = Math.max(1500, Number(cfg.scoreEventCooldownMs || 9000));
+      const canSpeak = now - Number(this.derived.lastScoreEventAt || 0) >= cooldown;
+      const leader = standings[0];
+      const second = standings[1];
+      const leaderKey = String(leader?.playerKey || '');
+      const gap = Number(leader?.points || 0) - Number(second?.points || 0);
+
+      // Eliminaciones: terminar sin puntos (tiempo agotado o límite de turnos) es
+      // lo que en battle royale significa quedar fuera.
+      for (const entry of standings) {
+        const key = String(entry.playerKey);
+        if (!entry.finished || Number(entry.finishOrder || 0) > 0) continue;
+        if (this.derived.eliminations.some((item) => item.key === key)) continue;
+        this.derived.eliminations.push({ key, at: now, name: entry.username });
+      }
+      const window = Math.max(600, Number(cfg.eliminationPairWindowMs || 2600));
+      const fresh = this.derived.eliminations.filter((item) => !item.announced && now - item.at <= window * 2);
+      if (fresh.length >= 2) {
+        for (const item of fresh) item.announced = true;
+        this.announceEvent('DOUBLE_ELIMINATION', {
+          playerKey: fresh[0].key, playerName: fresh[0].name,
+          opponentKey: fresh[1].key, opponentName: fresh[1].name,
+          eliminatedPlayer: `${fresh[0].name} y ${fresh[1].name}`, source: 'derived-elimination',
+        });
+      } else if (fresh.length === 1 && now - fresh[0].at >= window * 0.4) {
+        fresh[0].announced = true;
+        this.announceEvent('PLAYER_ELIMINATED', {
+          playerKey: fresh[0].key, playerName: fresh[0].name, eliminatedPlayer: fresh[0].name,
+          survivorCount: standings.filter((entry) => !entry.finished).length, source: 'derived-elimination',
+        });
+      }
+
+      if (canSpeak && this.derived.leaderKey && leaderKey && leaderKey !== this.derived.leaderKey
+        && gap >= Number(cfg.leadChangeMinGap || 1)) {
+        this.derived.lastScoreEventAt = now;
+        this.announceEvent('LEAD_CHANGE', {
+          playerKey: leaderKey, playerName: leader.username, points: leader.points, source: 'derived-standings',
+        });
+      }
+      if (leaderKey) this.derived.leaderKey = leaderKey;
+
+      const tied = gap === 0 && Number(leader?.points || 0) > 0;
+      if (tied && !this.derived.tieActive && now - Number(this.derived.lastScoreEventAt || 0) >= cooldown) {
+        this.derived.lastScoreEventAt = now;
+        this.announceEvent('TIE', {
+          playerKey: leaderKey, playerName: leader.username, opponentKey: String(second.playerKey),
+          opponentName: second.username, points: leader.points, source: 'derived-standings',
+        });
+      }
+      this.derived.tieActive = tied;
+
+      const gainNeeded = Math.max(1, Number(cfg.comebackRankGain || 2));
+      for (const entry of standings) {
+        const key = String(entry.playerKey);
+        const previous = this.derived.ranks.get(key);
+        if (previous != null && previous - Number(entry.rank) >= gainNeeded
+          && now - Number(this.derived.lastScoreEventAt || 0) >= cooldown) {
+          this.derived.lastScoreEventAt = now;
+          this.announceEvent('COMEBACK', {
+            playerKey: key, playerName: entry.username, points: entry.points, source: 'derived-standings',
+          });
+          break;
+        }
+      }
+      for (const entry of standings) this.derived.ranks.set(String(entry.playerKey), Number(entry.rank));
+
+      // SCORE_UPDATE es ambiente puro: solo con micrófono libre y muy de tarde en
+      // tarde. No es un relleno de inactividad, es un repaso de marcador.
+      if (!this.director?.isBusy()
+        && now - Number(this.derived.lastScoreUpdateAt || 0) >= Math.max(8000, Number(cfg.scoreUpdateCooldownMs || 24000))) {
+        this.derived.lastScoreUpdateAt = now;
+        this.announceEvent('SCORE_UPDATE', {
+          playerKey: leaderKey, playerName: leader.username, points: leader.points,
+          scoreText: `${leader.username} manda con ${Math.round(Number(leader.points) || 0)} puntos`, source: 'derived-score',
+        });
+      }
+    }
+
+    deriveTurnEvents(now) {
+      if (this.currentMode() !== 'turn') return;
+      const cfg = this.runtimeConfig.derivedEvents || {};
+      const standings = this.mapStandings();
+      const turnEntry = standings.find((entry) => entry.turn);
+      const key = String(turnEntry?.playerKey || '');
+      if (key !== this.derived.turnKey) {
+        this.derived.turnKey = key;
+        this.derived.turnSince = now;
+        this.derived.lastTurnCue = 0;
+        return;
+      }
+      if (!key || !turnEntry) return;
+
+      // FINAL_TURN: al jugador le queda el último turno de este mundo.
+      const limit = Number(this.session?.settings?.maxTurnsPerWorld);
+      if (Number.isFinite(limit) && limit > 0) {
+        const left = limit - Number(turnEntry.turnsUsed || 0);
+        if (left > 0 && left <= Math.max(1, Number(cfg.finalTurnMargin || 1)) && !this.derived.finalTurnDone.has(key)) {
+          this.derived.finalTurnDone.add(key);
+          this.announceEvent('FINAL_TURN', {
+            playerKey: key, playerName: turnEntry.username, turn: turnEntry.turnsUsed, source: 'derived-turn',
+          });
+          return;
+        }
+      }
+
+      // Turno eterno. No es relleno de silencio: es un jugador bloqueando la
+      // partida de los demás, que en modo por turnos sí es un hecho de juego.
+      if (cfg.afkEnabled === false) return;
+      if (this.session?.anyBallRolling?.()) return;
+      const waited = now - Number(this.derived.turnSince || now);
+      const slow = Math.max(4000, Number(cfg.slowPlayerMs || 24000));
+      const afk = Math.max(3000, Number(cfg.afkWaitMs || 14000));
+      if (waited >= slow && this.derived.lastTurnCue < 2) {
+        this.derived.lastTurnCue = 2;
+        const policy = { class: 'ambient', priority: 18, ttlMs: 2200, mode: 'filler', maxWords: 24 };
+        if (!this.flowAllows('TURN_SLOW', policy, now).ok) return;
+        const item = this.rivalryItem('turnMode.slowPlayer', { player: turnEntry.username }, 'commentator', 'Turnos · demora');
+        if (item) {
+          const bundle = this.runtimeBundle('TURN_SLOW', [item], policy, 'derived-turn');
+          if (this.deliverBundle(bundle)?.accepted) this.noteFlow('TURN_SLOW', policy, bundle);
+        }
+      } else if (waited >= afk && this.derived.lastTurnCue < 1) {
+        this.derived.lastTurnCue = 1;
+        this.announceEvent('AFK_WAIT', { playerKey: key, playerName: turnEntry.username, source: 'derived-turn' });
+      }
     }
 
     maybeRunPostMatchSummary() {

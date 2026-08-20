@@ -1,7 +1,7 @@
 {
   "meta": {
     "schema": "emotional-machine-persona-v1",
-    "version": "3.1.0-variedad30-runtime",
+    "version": "3.2.0-lexicon-mixto",
     "language": "es",
     "role": "informant",
     "displayName": "Álex Prisma (Versión Sin Filtro)",
@@ -48,29 +48,43 @@
       "{core}. {tail}",
       "{lead} {core}. {tail}",
       "{core}. Diagnóstico: {reaction}.",
-      "{lead} {core}. Lectura final: {reaction}."
+      "{lead} {core}. Lectura final: {reaction}.",
+      "{core}. Registro: {measurement}. {tail}",
+      "{lead} {core}. Lectura: {confidence}.",
+      "{core}. La telemetría {analysis_verb}.",
+      "{core}. {bridge}. Lectura: {confidence}.",
+      "{lead} {core}. {connector}. {tail}"
     ],
     "answerPatterns": [
       "{answerStarter} {core}",
       "{answerStarter} {core}. {tail}",
-      "{core}. {tail}"
+      "{core}. {tail}",
+      "{answerStarter} {core}. Lectura: {confidence}.",
+      "{answerStarter} {core}. Registro: {measurement}."
     ],
     "compactPatterns": [
       "{core}",
       "{lead} {core}",
-      "{core}. {tail}"
+      "{core}. {tail}",
+      "{core}. Lectura: {confidence}.",
+      "{core}. La telemetría {analysis_verb}."
     ],
     "coherenceAttempts": 30,
-    "semanticBias": 0.86
+    "semanticBias": 0.86,
+    "semanticBiasByKind": {
+      "leads": 0.5,
+      "tails": 0.42,
+      "reactions": 0.38
+    }
   },
   "personalityProfiles": {
     "prisma": {
       "label": "Prisma · Troll Científico",
       "description": "Informativo, absurdamente preciso y con un sarcasmo tan seco que causa deshidratación.",
       "toneBias": {
-        "informative": 2.0,
+        "informative": 2,
         "sarcastic": 2.5,
-        "mocking": 2.0,
+        "mocking": 2,
         "neutral": 0.5,
         "praising": 0.5
       }
@@ -82,14 +96,14 @@
         "informative": 2.8,
         "sarcastic": 1.2,
         "pessimistic": 1.5,
-        "mocking": 1.0
+        "mocking": 1
       }
     },
     "dry": {
       "label": "Hostilidad Pasiva",
       "description": "Datos matemáticos diseñados para destruir la autoestima del jugador con educación.",
       "toneBias": {
-        "sarcastic": 3.0,
+        "sarcastic": 3,
         "mocking": 2.5,
         "informative": 1.2
       }
@@ -99,8 +113,8 @@
       "description": "Te explica cómo mejorar mientras suspira profundamente en el micrófono.",
       "toneBias": {
         "motivating": 1.2,
-        "informative": 2.0,
-        "disappointed": 2.0,
+        "informative": 2,
+        "disappointed": 2,
         "pessimistic": 1.5
       }
     },
@@ -108,7 +122,7 @@
       "label": "Profeta del Apocalipsis Físico",
       "description": "Calcula la velocidad exacta a la que todo se irá al colapso absoluto.",
       "toneBias": {
-        "pessimistic": 3.0,
+        "pessimistic": 3,
         "informative": 1.5,
         "sarcastic": 1.8
       }
@@ -120,7 +134,7 @@
         "excited": 2.2,
         "praising": 1.8,
         "informative": 1.5,
-        "sarcastic": 1.0
+        "sarcastic": 1
       }
     }
   },
