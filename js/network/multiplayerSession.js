@@ -861,16 +861,34 @@
 
     serializeWorldState() {
       const consumedPortalPairs = new Set();
+      // El multiplicador lo recoge el primero que pase: es una pieza del mundo,
+      // no una copia por jugador. El cliente nunca puede deducirlo solo porque su
+      // física corre en modo especulativo y `resolveMultipliers` la ignora ahí,
+      // así que sin esto seguiría viendo un x2 que ya no existe.
+      const collectedMultipliers = [];
+      let multiplierIndex = 0;
       for (const hazard of this.game.hole?.hazards || []) {
         if (hazard.type === 'portal' && hazard.consumed && hazard.pairId) consumedPortalPairs.add(hazard.pairId);
+        if (hazard.type === 'multiplier') {
+          if (hazard.collected) collectedMultipliers.push(multiplierIndex);
+          multiplierIndex += 1;
+        }
       }
-      return { consumedPortalPairs: [...consumedPortalPairs] };
+      return { consumedPortalPairs: [...consumedPortalPairs], collectedMultipliers };
     }
 
     applyWorldState(state) {
       const consumed = new Set(Array.isArray(state?.consumedPortalPairs) ? state.consumedPortalPairs : []);
+      // El índice es estable: host y cliente generan el mismo mundo desde la misma
+      // semilla y `placeScoreMultiplier` deja los hazards ordenados.
+      const collected = new Set(Array.isArray(state?.collectedMultipliers) ? state.collectedMultipliers : []);
+      let multiplierIndex = 0;
       for (const hazard of this.game.hole?.hazards || []) {
         if (hazard.type === 'portal') hazard.consumed = consumed.has(hazard.pairId);
+        if (hazard.type === 'multiplier') {
+          hazard.collected = collected.has(multiplierIndex);
+          multiplierIndex += 1;
+        }
       }
     }
 

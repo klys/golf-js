@@ -922,6 +922,64 @@
         ctx.restore();
       }
 
+      // Cañón de retroceso. Dispara hacia ATRÁS y más fuerte que el normal, así
+      // que tiene que leerse distinto de un vistazo: rojo en vez de acero, base
+      // anclada al suelo en vez de cuerpo giratorio, y la punta marcada con
+      // galones que apuntan al revés que el avance. Solo gira el tubo.
+      for (const cannon of hole.hazards) {
+        if (cannon.type !== 'reverse-cannon') continue;
+        const half = (cannon.width || 104) / 2;
+        if (cannon.x + half < visible.minX || cannon.x - half > visible.maxX) continue;
+        const pulse = 0.5 + Math.sin(this.time * 3.1 + cannon.x * 0.01) * 0.5;
+        ctx.save();
+        ctx.translate(cannon.x, cannon.y);
+
+        // Tubo: lo único que sigue al ángulo de disparo.
+        ctx.save();
+        ctx.rotate(cannon.angle);
+        ctx.fillStyle = '#3a1520';
+        this.roundedRect(ctx, -14, -11, 52, 22, 9);
+        ctx.fill();
+        ctx.fillStyle = '#7d2233';
+        this.roundedRect(ctx, -10, -8, 46, 16, 7);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,196,206,.30)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        // Galones hacia dentro: el retroceso empuja en sentido contrario al
+        // que apunta cualquier otra pieza del mapa.
+        ctx.strokeStyle = `rgba(255,138,158,${0.45 + pulse * 0.45})`;
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        for (let i = 0; i < 3; i += 1) {
+          const x = 30 - i * 11;
+          ctx.beginPath();
+          ctx.moveTo(x, -6);
+          ctx.lineTo(x - 7, 0);
+          ctx.lineTo(x, 6);
+          ctx.stroke();
+        }
+        ctx.lineCap = 'butt';
+        ctx.restore();
+
+        // Base: no gira, se apoya en el terreno y ancla la pieza a la vista.
+        ctx.fillStyle = '#241019';
+        ctx.beginPath();
+        ctx.moveTo(-half * 0.46, 6);
+        ctx.lineTo(half * 0.46, 6);
+        ctx.lineTo(half * 0.30, 20);
+        ctx.lineTo(-half * 0.30, 20);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,150,168,.34)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = `rgba(226,64,92,${0.42 + pulse * 0.36})`;
+        this.roundedRect(ctx, -half * 0.34, 8, half * 0.68, 5, 2.5);
+        ctx.fill();
+        ctx.restore();
+      }
+
       for (const multiplier of hole.hazards) {
         if (multiplier.type !== 'multiplier' || multiplier.collected) continue;
         if (multiplier.hiddenReward && !hole.hazards.some((hazard) => hazard.type === 'secret-cave' && hazard.discovered)) continue;
