@@ -458,12 +458,79 @@ async function testAuthorityGuards() {
   notes.push('guardas de autoridad del tick narrativo');
 }
 
+// ── T18 · Tono, velocidad y volumen son fijos para todos ──────────────────
+async function testFixedVoiceCalibration() {
+  const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'config.json'), 'utf8')).announcerUserDefaults;
+  window.NoiseGolf.ClientEnv = { config: { announcerUserDefaults: cfg } };
+
+  // Perfil de alguien que ya había movido los deslizadores cuando existían.
+  let persisted = null;
+  const profile = {
+    getAnnouncerSettings: () => ({
+      sharedVolume: 0.15, captionsCollapsed: true,
+      commentator: { name: 'Mi Rafa', voiceURI: 'voz-propia', rate: 0.6, pitch: 0.5 },
+      informant: { name: 'Mi Álex', voiceURI: 'otra-voz', rate: 0.7, pitch: 0.6 },
+    }),
+    setAnnouncerSettings: (value) => { persisted = value; return value; },
+  };
+  const system = new NG.AnnouncerSystem(fakeGame(), profile);
+  await system.init();
+  const settings = system.getSettings();
+
+  assert(settings.commentator.rate === cfg.commentator.rate && settings.commentator.pitch === cfg.commentator.pitch,
+    'Un perfil antiguo no debe imponer su tono/velocidad al comentarista');
+  assert(settings.informant.rate === cfg.informant.rate && settings.informant.pitch === cfg.informant.pitch,
+    'Un perfil antiguo no debe imponer su tono/velocidad al informante');
+  assert(settings.sharedVolume === cfg.sharedVolume, 'Un perfil antiguo no debe imponer su volumen');
+
+  assert(settings.commentator.name === 'Mi Rafa' && settings.commentator.voiceURI === 'voz-propia',
+    'El nombre y la voz sí son del jugador y deben conservarse');
+  assert(settings.captionsCollapsed === true, 'El estado plegado de subtítulos es del jugador');
+
+  system.updateSettings({ sharedVolume: 0.01, commentator: { rate: 0.5, pitch: 0.5, name: 'Otro' } });
+  const after = system.getSettings();
+  assert(after.sharedVolume === cfg.sharedVolume, 'updateSettings no debe poder tocar el volumen');
+  assert(after.commentator.rate === cfg.commentator.rate && after.commentator.pitch === cfg.commentator.pitch,
+    'updateSettings no debe poder tocar tono ni velocidad');
+  assert(after.commentator.name === 'Otro', 'updateSettings sí debe seguir aceptando el nombre');
+
+  // Si se persistieran, un cambio futuro del config.json no llegaría a los
+  // perfiles ya creados: el ajuste dejaría de ser global sin que nadie lo note.
+  assert(persisted && persisted.sharedVolume === undefined
+    && persisted.commentator.rate === undefined && persisted.commentator.pitch === undefined,
+    `El perfil no debe guardar tono/velocidad/volumen: ${JSON.stringify(persisted)}`);
+
+  const voice = system.getSpeakerSettings('commentator');
+  notes.push(`voz fija: tono ${voice.pitch} · velocidad ${voice.rate} · volumen ${Math.round(voice.volume * 100)}% para todos`);
+}
+
+// ── T19 · El menú ya no expone los controles retirados ────────────────────
+async function testSettingsUiTrimmed() {
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const ui = fs.readFileSync(path.join(ROOT, 'announcer/ui.js'), 'utf8');
+  const css = fs.readFileSync(path.join(ROOT, 'announcer/ui.css'), 'utf8');
+  for (const id of ['announcer-commentator-pitch', 'announcer-commentator-rate',
+    'announcer-informant-pitch', 'announcer-informant-rate', 'announcerSharedVolume']) {
+    assert(!html.includes(id), `El marcado todavía expone ${id}`);
+    assert(!ui.includes(id), `announcer/ui.js todavía maneja ${id}`);
+  }
+  for (const cls of ['announcer-slider-row', 'announcer-slider-value', 'announcer-master']) {
+    assert(!css.includes(cls), `announcer/ui.css conserva la regla huérfana ${cls}`);
+  }
+  // Lo que sí debe seguir ahí.
+  for (const id of ['announcer-commentator-name', 'announcer-commentator-voice',
+    'announcer-informant-name', 'announcer-informant-voice']) {
+    assert(html.includes(id), `El marcado perdió ${id}, que sí es del jugador`);
+  }
+  notes.push('menú de locutores: solo nombre y voz, sin restos de marcado ni CSS');
+}
+
 (async () => {
   const tests = [
     testTextIntegrity, testVariety, testDeadBanksAlive, testModeProfiles, testFlowControl, testFocus,
     testDerivedStandings, testDerivedFlight, testShotClassification, testRunningGags, testBoothBets,
     testBoothDisagreement, testPlayerRivalry, testSocialEscalation, testSabotageBackfire, testStaleness,
-    testAuthorityGuards,
+    testAuthorityGuards, testFixedVoiceCalibration, testSettingsUiTrimmed,
   ];
   for (const test of tests) {
     try {

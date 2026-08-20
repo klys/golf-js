@@ -18,15 +18,30 @@ Esta carpeta contiene el sistema completo de locución integrado en el juego.
 
 ## Configuración visible al jugador
 
-La interfaz solo expone:
+La pantalla **LOCUTORES** solo expone dos cosas, y las dos por la misma razón:
 
-1. nombre de cada locutor;
-2. voz TTS de cada locutor;
-3. tono de cada locutor;
-4. velocidad de cada locutor;
-5. un volumen compartido para ambos.
+1. **nombre** de cada locutor;
+2. **voz TTS** de cada locutor.
 
-Estas preferencias se guardan dentro del perfil local `noiseGolf.profile.v1` bajo la clave `announcer` y NO se sincronizan por red: cada jugador puede elegir cómo oye a los locutores. Los valores iniciales para usuarios nuevos se configuran en el `config.json` general, dentro de `announcerUserDefaults`. Si existe una configuración antigua `noiseGolf.announcer.v1`, se migra una sola vez al perfil.
+Se guardan en el perfil local `noiseGolf.profile.v1` bajo la clave `announcer` y no se sincronizan por red. La voz tiene que ser local por fuerza: la lista depende de las voces TTS que tenga instaladas o exponga cada navegador, y no se puede imponer una que el jugador no tenga.
+
+**Tono, velocidad y volumen ya no son ajustables.** Son calibración del juego, no preferencia: viven en el `config.json` general dentro de `announcerUserDefaults` y suenan igual en todas las máquinas.
+
+```json
+"announcerUserDefaults": {
+  "sharedVolume": 0.9,
+  "commentator": { "rate": 1.75, "pitch": 1.46 },
+  "informant":   { "rate": 1.71, "pitch": 1.51 }
+}
+```
+
+Tres detalles que hacen que eso se cumpla de verdad:
+
+- `loadSettings()` lee `rate`/`pitch`/`sharedVolume` **solo** de los defaults, nunca del perfil. Un perfil creado cuando existían los deslizadores no impone sus valores viejos.
+- `saveSettings()` **no los persiste**. Si se guardaran, cada perfil tendría una copia congelada y un cambio futuro del `config.json` no llegaría nunca a quien ya tuviera perfil.
+- `updateSettings()` los ignora aunque lleguen en la llamada.
+
+Si existe una configuración antigua `noiseGolf.announcer.v1`, se migra una sola vez al perfil (y de ella también se descartan los tres valores fijos).
 
 ## Autoridad online
 

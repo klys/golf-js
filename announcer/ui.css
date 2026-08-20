@@ -19,21 +19,9 @@
   background: rgba(3, 10, 17, .72); color: #eef8ff; padding: 0 12px; outline: none;
 }
 .announcer-field input[type="text"]:focus, .announcer-field select:focus { border-color: rgba(112, 224, 255, .58); box-shadow: 0 0 0 3px rgba(83, 200, 255, .08); }
-.announcer-slider-row { display: grid; grid-template-columns: minmax(0, 1fr) 58px; gap: 10px; align-items: center; }
-.announcer-slider-row input[type="range"] { width: 100%; accent-color: #72dcff; }
-.announcer-slider-value { text-align: right; font-size: 12px; color: #dff6ff; font-variant-numeric: tabular-nums; }
-.announcer-master {
-  display: grid; grid-template-columns: minmax(160px, .6fr) minmax(220px, 1fr) 60px; gap: 14px; align-items: center;
-  border: 1px solid rgba(143, 197, 255, .14); border-radius: 16px; padding: 16px 18px; background: rgba(7, 17, 28, .82);
-}
-.announcer-master strong { font-size: 12px; letter-spacing: .08em; }
-.announcer-master small { display: block; color: #849cb0; margin-top: 3px; }
-.announcer-master input[type="range"] { width: 100%; accent-color: #72dcff; }
 .announcer-note { margin: 0; color: #839aad; font-size: 12px; line-height: 1.55; }
 @media (max-width: 760px) {
   .announcer-speakers { grid-template-columns: 1fr; }
-  .announcer-master { grid-template-columns: 1fr 52px; }
-  .announcer-master > div { grid-column: 1 / -1; }
 }
 
 /* ═══ Ventana plegable de locución en partida ═════════════════════════════ */

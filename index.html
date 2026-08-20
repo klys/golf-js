@@ -10,7 +10,7 @@
        GitHub Pages devuelve 404 porque el archivo no existe. -->
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23050f1a'/%3E%3Ccircle cx='15' cy='18' r='8' fill='%23eaf6ff'/%3E%3Ccircle cx='12.5' cy='15.5' r='1.1' fill='%23b4c9da'/%3E%3Ccircle cx='16' cy='14.5' r='1.1' fill='%23b4c9da'/%3E%3Ccircle cx='18.5' cy='17.5' r='1.1' fill='%23b4c9da'/%3E%3Ccircle cx='14' cy='19.5' r='1.1' fill='%23b4c9da'/%3E%3Cpath d='M24 4v13' stroke='%23cfe3f2' stroke-width='1.6' stroke-linecap='round'/%3E%3Cpath d='M24 5l-6 2.2 6 2.2z' fill='%2340d38a'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="./css/main.css" />
-  <link rel="stylesheet" href="./announcer/ui.css" />
+  <link rel="stylesheet" href="./announcer/ui.css?v=0012p0011" />
   <script>
     window.NoiseGolf = window.NoiseGolf || {};
     window.NoiseGolfBootError = function (file) {
@@ -590,8 +590,6 @@
                 <div class="announcer-fields">
                   <label class="announcer-field"><span>Nombre</span><input id="announcer-commentator-name" type="text" maxlength="32" autocomplete="off" /></label>
                   <label class="announcer-field"><span>Voz</span><select id="announcer-commentator-voice"></select></label>
-                  <label class="announcer-field"><span>Tono</span><span class="announcer-slider-row"><input id="announcer-commentator-pitch" type="range" min="0.5" max="1.6" step="0.01" value="1.08" /><b id="announcer-commentator-pitch-value" class="announcer-slider-value">1.08×</b></span></label>
-                  <label class="announcer-field"><span>Velocidad</span><span class="announcer-slider-row"><input id="announcer-commentator-rate" type="range" min="0.55" max="1.75" step="0.01" value="1.08" /><b id="announcer-commentator-rate-value" class="announcer-slider-value">1.08×</b></span></label>
                 </div>
               </section>
               <section class="announcer-card" aria-labelledby="announcerInformantTitle">
@@ -602,17 +600,10 @@
                 <div class="announcer-fields">
                   <label class="announcer-field"><span>Nombre</span><input id="announcer-informant-name" type="text" maxlength="32" autocomplete="off" /></label>
                   <label class="announcer-field"><span>Voz</span><select id="announcer-informant-voice"></select></label>
-                  <label class="announcer-field"><span>Tono</span><span class="announcer-slider-row"><input id="announcer-informant-pitch" type="range" min="0.5" max="1.6" step="0.01" value="0.92" /><b id="announcer-informant-pitch-value" class="announcer-slider-value">0.92×</b></span></label>
-                  <label class="announcer-field"><span>Velocidad</span><span class="announcer-slider-row"><input id="announcer-informant-rate" type="range" min="0.55" max="1.75" step="0.01" value="0.92" /><b id="announcer-informant-rate-value" class="announcer-slider-value">0.92×</b></span></label>
                 </div>
               </section>
             </div>
-            <section class="announcer-master" aria-label="Volumen compartido de locutores">
-              <div><strong>VOLUMEN DE LOCUTORES</strong><small>Un único volumen para las dos voces.</small></div>
-              <input id="announcerSharedVolume" type="range" min="0" max="100" step="1" value="90" />
-              <b id="announcerSharedVolumeValue" class="announcer-slider-value">90%</b>
-            </section>
-            <p class="announcer-note">La selección de voz depende de las voces TTS instaladas o expuestas por el navegador. Estos ajustes se guardan en tu perfil local; sus valores iniciales se leen de <code>config.json</code>. La narrativa y los bancos internos permanecen en <code>announcer/</code>.</p>
+            <p class="announcer-note">Solo el nombre y la voz son tuyos: se guardan en tu perfil local y la lista depende de las voces TTS instaladas o expuestas por tu navegador. El <strong>tono, la velocidad y el volumen</strong> son fijos para todo el mundo y se calibran en <code>config.json</code> (<code>announcerUserDefaults</code>), para que la cabina suene igual en todas las máquinas. La narrativa y los bancos internos permanecen en <code>announcer/</code>.</p>
           </div>
         </section>
 
@@ -806,8 +797,8 @@
   <script defer src="./announcer/map-intro-data.js?v=0012p0008" onerror="NoiseGolfBootError('announcer/map-intro-data.js')"></script>
   <script defer src="./announcer/rivalry-data.js?v=0012p0010" onerror="NoiseGolfBootError('announcer/rivalry-data.js')"></script>
   <script defer src="./announcer/engine.js?v=0012p0010" onerror="NoiseGolfBootError('announcer/engine.js')"></script>
-  <script defer src="./announcer/manager.js?v=0012p0010" onerror="NoiseGolfBootError('announcer/manager.js')"></script>
-  <script defer src="./announcer/ui.js" onerror="NoiseGolfBootError('announcer/ui.js')"></script>
+  <script defer src="./announcer/manager.js?v=0012p0011" onerror="NoiseGolfBootError('announcer/manager.js')"></script>
+  <script defer src="./announcer/ui.js?v=0012p0011" onerror="NoiseGolfBootError('announcer/ui.js')"></script>
   <script defer src="./js/network/clientEnv.js" onerror="NoiseGolfBootError('js/network/clientEnv.js')"></script>
   <script defer src="./js/network/netConfig.js" onerror="NoiseGolfBootError('js/network/netConfig.js')"></script>
   <script defer src="./js/network/netClock.js" onerror="NoiseGolfBootError('js/network/netClock.js')"></script>

@@ -150,8 +150,15 @@
     }
 
     loadSettings() {
-      // Los defaults editables viven en el config.json general del juego.
-      // Los cambios del jugador viven dentro de noiseGolf.profile.v1 mediante PlayerProfile.
+      // Reparto de responsabilidades sobre los ajustes de voz:
+      //
+      //   nombre y voz  -> del jugador. Viven en noiseGolf.profile.v1 (PlayerProfile).
+      //   tono, velocidad y volumen -> FIJOS, siempre desde el config.json general.
+      //
+      // Los tres fijos no se leen del perfil ni aunque un perfil antiguo los tenga
+      // guardados de cuando existían los deslizadores: la cabina tiene que sonar
+      // igual para todo el mundo, y un valor viejo en localStorage no puede
+      // sobrevivir a un cambio de calibración en el config.
       const defaults = merge(USER_DEFAULTS, NG.ClientEnv?.config?.announcerUserDefaults || {});
       let stored = this.profile?.getAnnouncerSettings?.() || {};
       let migratedLegacy = false;
@@ -163,19 +170,19 @@
         }
       }
       this.settings = {
-        sharedVolume: clamp(stored.sharedVolume ?? defaults.sharedVolume ?? 0.9, 0, 1),
+        sharedVolume: clamp(defaults.sharedVolume ?? 0.9, 0, 1),
         captionsCollapsed: Boolean(stored.captionsCollapsed ?? defaults.captionsCollapsed ?? false),
         commentator: {
           name: String(stored.commentator?.name || defaults.commentator?.name || this.personas.commentator.identity?.name || 'Rafa Voltio').slice(0, 32),
           voiceURI: String(stored.commentator?.voiceURI || defaults.commentator?.voiceURI || ''),
-          rate: clamp(stored.commentator?.rate ?? defaults.commentator?.rate ?? this.personas.commentator.voiceDefaults?.rate ?? 1, 0.5, 2),
-          pitch: clamp(stored.commentator?.pitch ?? defaults.commentator?.pitch ?? this.personas.commentator.voiceDefaults?.pitch ?? 1, 0, 2),
+          rate: clamp(defaults.commentator?.rate ?? this.personas.commentator.voiceDefaults?.rate ?? 1, 0.5, 2),
+          pitch: clamp(defaults.commentator?.pitch ?? this.personas.commentator.voiceDefaults?.pitch ?? 1, 0, 2),
         },
         informant: {
           name: String(stored.informant?.name || defaults.informant?.name || this.personas.informant.identity?.name || 'Álex Prisma').slice(0, 32),
           voiceURI: String(stored.informant?.voiceURI || defaults.informant?.voiceURI || ''),
-          rate: clamp(stored.informant?.rate ?? defaults.informant?.rate ?? this.personas.informant.voiceDefaults?.rate ?? 1, 0.5, 2),
-          pitch: clamp(stored.informant?.pitch ?? defaults.informant?.pitch ?? this.personas.informant.voiceDefaults?.pitch ?? 1, 0, 2),
+          rate: clamp(defaults.informant?.rate ?? this.personas.informant.voiceDefaults?.rate ?? 1, 0.5, 2),
+          pitch: clamp(defaults.informant?.pitch ?? this.personas.informant.voiceDefaults?.pitch ?? 1, 0, 2),
         },
       };
       this.saveSettings();
@@ -183,21 +190,29 @@
     }
 
     saveSettings() {
-      if (this.profile?.setAnnouncerSettings) this.profile.setAnnouncerSettings(this.settings);
-      else safeWriteLegacyStorage(this.settings); // compatibilidad del demo aislado del subsistema
+      // Se persiste SOLO lo que el jugador puede cambiar. Guardar también tono,
+      // velocidad y volumen dejaría copias congeladas en cada perfil, y un ajuste
+      // futuro del config.json nunca llegaría a quien ya tuviera perfil creado.
+      const persisted = {
+        captionsCollapsed: this.settings.captionsCollapsed,
+        commentator: { name: this.settings.commentator.name, voiceURI: this.settings.commentator.voiceURI },
+        informant: { name: this.settings.informant.name, voiceURI: this.settings.informant.voiceURI },
+      };
+      if (this.profile?.setAnnouncerSettings) this.profile.setAnnouncerSettings(persisted);
+      else safeWriteLegacyStorage(persisted); // compatibilidad del demo aislado del subsistema
     }
 
     updateSettings(next) {
       if (!next || typeof next !== 'object') return this.getSettings();
-      if (next.sharedVolume != null) this.settings.sharedVolume = clamp(next.sharedVolume, 0, 1);
+      // sharedVolume, rate y pitch se ignoran a propósito aunque lleguen: son
+      // calibración del juego, no preferencia del jugador. Se cambian en el
+      // config.json general (`announcerUserDefaults`) y afectan a todos por igual.
       if (next.captionsCollapsed != null) this.settings.captionsCollapsed = Boolean(next.captionsCollapsed);
       for (const key of ['commentator', 'informant']) {
         const source = next[key];
         if (!source) continue;
         if (source.name != null) this.settings[key].name = String(source.name || '').trim().slice(0, 32) || this.personas[key].identity?.name || key;
         if (source.voiceURI != null) this.settings[key].voiceURI = String(source.voiceURI || '');
-        if (source.rate != null) this.settings[key].rate = clamp(source.rate, 0.5, 2);
-        if (source.pitch != null) this.settings[key].pitch = clamp(source.pitch, 0, 2);
       }
       this.saveSettings();
       window.dispatchEvent(new CustomEvent('noisegolf:announcer-settings', { detail: this.getSettings() }));

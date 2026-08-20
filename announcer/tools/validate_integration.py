@@ -60,13 +60,13 @@ all_ids = re.findall(r'id=["\']([^"\']+)["\']', html)
 duplicates = sorted({ident for ident in all_ids if all_ids.count(ident) > 1})
 require(not duplicates, f"IDs HTML duplicados: {duplicates}")
 
+# Tono, velocidad y volumen dejaron de ser ajustables: son calibración fija del
+# config.json general para que la cabina suene igual en todas las máquinas. El
+# menú solo conserva lo que de verdad es del jugador.
 for ident in [
     "announcerSettingsBtn", "screenAnnouncers",
     "announcer-commentator-name", "announcer-commentator-voice",
-    "announcer-commentator-pitch", "announcer-commentator-rate",
     "announcer-informant-name", "announcer-informant-voice",
-    "announcer-informant-pitch", "announcer-informant-rate",
-    "announcerSharedVolume",
     "announcerLivePanel", "announcerLiveToggle", "announcerLivePreview",
     "announcerLiveEmpty", "announcerLiveLines",
 ]:
@@ -168,7 +168,7 @@ if errors:
 
 print("INTEGRATION VALIDATION OK")
 print(f" - Eventos compartidos: {len(commentator.get('events', {}))}")
-print(" - Preferencias TTS: dentro de PlayerProfile + defaults en config.json general")
+print(" - Preferencias TTS: nombre/voz en PlayerProfile; tono/velocidad/volumen fijos en config.json")
 print(" - Migración: noiseGolf.announcer.v1 -> noiseGolf.profile.v1/announcer")
 print(" - Ventana de locución: plegable + historial de líneas realmente reproducidas")
 print(" - Online: host-authority + announcer:bundle + startAtNetTime + aim state")

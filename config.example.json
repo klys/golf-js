@@ -41,7 +41,7 @@
     "playerGraceSeconds": "Reconexión: el host reserva la plaza del jugador caído este tiempo y, al agotarse, lo elimina por completo de la partida. El relay debe conservar la reserva al menos igual de tiempo (PARTICIPANT_RESUME_SECONDS).",
     "worldGraceSeconds": "Prórroga al cerrarse el mundo (se acaba el reloj del hoyo o el contador que arranca cuando alguien emboca). Las bolas que ya estaban rodando terminan su tiro y el hoyo no cambia hasta que la última se para; este valor es solo el tope, por si alguna se queda atrapada. 0 = cierre inmediato.",
     "mapVoteTimeoutSeconds": "Votación de mapa. El cambio tiene un enfriamiento fijo de 60 segundos.",
-    "announcerUserDefaults": "Valores iniciales de locución para usuarios nuevos: volumen compartido, estado plegado de la ventana de texto y nombre/voz/velocidad/tono de cada locutor. Cada navegador guarda después sus cambios dentro del perfil local del usuario."
+    "announcerUserDefaults": "Calibración de voz de la cabina. `rate`, `pitch` y `sharedVolume` son FIJOS para todos los jugadores: no se exponen en el menú ni se guardan en el perfil, así que se cambian aquí y afectan a todo el mundo. `name` y `voiceURI` son solo el valor inicial: cada jugador puede cambiarlos y se guardan en su perfil local, porque las voces TTS disponibles dependen de cada navegador."
   },
   "announcerUserDefaults": {
     "sharedVolume": 0.9,
