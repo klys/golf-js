@@ -62,8 +62,8 @@
 
       // Estado de la mezcla. Se arranca ya en reposo para que el primer frame
       // no dé un salto audible.
-      this.level = cfg.baseLevel;
-      this.cutoff = cfg.baseCutoff;
+      this.level = cfg.idleLevel;
+      this.cutoff = cfg.idleCutoff;
       this.bassDb = 0;
       this.wetMix = cfg.baseReverb;
 
@@ -202,7 +202,7 @@
 
         const muffle = ctx.createBiquadFilter();
         muffle.type = 'lowpass';
-        muffle.frequency.value = cfg.baseCutoff;
+        muffle.frequency.value = cfg.idleCutoff;
         muffle.Q.value = 0.7;
 
         const bass = ctx.createBiquadFilter();
@@ -286,8 +286,8 @@
       // Mapa nuevo, mezcla nueva: la tensión del tiro anterior no se hereda.
       this.movingSeconds = 0;
       this.impact = null;
-      this.level = cfg.baseLevel;
-      this.cutoff = cfg.baseCutoff;
+      this.level = cfg.idleLevel;
+      this.cutoff = cfg.idleCutoff;
       this.bassDb = 0;
       this.wetMix = cfg.baseReverb;
       this.apply();
@@ -386,18 +386,29 @@
     /** Adónde quiere ir la mezcla ahora mismo. Todo en fracción del techo. */
     computeTargets(scene) {
       const cfg = CONFIG.audio;
-      let level = cfg.baseLevel;
+      let level = cfg.idleLevel;
       let wet = cfg.baseReverb;
       let bass = 0;
-      let cutoff = cfg.baseCutoff;
+      let cutoff = cfg.idleCutoff;
 
       // 1 · Cerca del hoyo. Es el efecto que el jugador va a notar más, así
       // que la curva concentra casi todo cerca de la copa: entrar en el radio
       // se insinúa, los últimos metros son los que suenan a final.
+      //
+      // Y aquí es donde se DESTAPA la música. El reposo suena filtrado, como
+      // desde otra habitación; acercarse a la copa abre ese filtro. El destapado
+      // usa su propia curva, más temprana que la del volumen: primero la pista
+      // se aclara y solo al final crece. Si abrieran a la vez, llegar al hoyo
+      // sonaría a un golpe de volumen y no a que la música sale a recibirte.
       if (scene && Number.isFinite(scene.distanceToCup)) {
-        const near = Math.pow(clamp(1 - scene.distanceToCup / cfg.holeRange, 0, 1), cfg.holeCurve);
+        const approach = clamp(1 - scene.distanceToCup / cfg.holeRange, 0, 1);
+        const near = Math.pow(approach, cfg.holeCurve);
         level = lerp(level, cfg.holeLevel, near);
         wet = lerp(wet, cfg.holeReverb, near);
+        // En octavas, igual que el resto del filtrado: en lineal, los primeros
+        // metros se comerían todo el recorrido audible de golpe.
+        const open = Math.pow(approach, cfg.holeOpenCurve);
+        cutoff = Math.exp(lerp(Math.log(cutoff), Math.log(cfg.holeCutoff), open));
       }
 
       // 2 · Vuelo largo. Un tiro que sigue vivo pasados unos segundos es un

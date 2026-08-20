@@ -197,15 +197,22 @@
 
       // — Mezcla viva —
       // TODO lo que sigue se mueve dentro del volumen del jugador: su ajuste
-      // es el techo, no el nivel. Por eso el reposo está por debajo de 1, para
-      // que quede sitio donde crecer sin pasarse nunca de lo que pidió.
-      // El reparto del techo: la música vive al 60 % del volumen del jugador y
-      // el 40 % restante NO se usa nunca en juego normal — está guardado
-      // entero para la aproximación al hoyo. Ese margen es el efecto: lo que
-      // convierte acercarse a la copa en algo que se oye, no en un detalle.
-      baseLevel: 0.60,
-      baseCutoff: 20000,
+      // es el techo, no el nivel. Por eso el reposo está muy por debajo de 1,
+      // para que quede sitio donde crecer sin pasarse nunca de lo que pidió.
+      //
+      // El reposo de la música NO es sonido abierto: es sonido TAPADO, el mismo
+      // recurso que usa la ventana en segundo plano pero más suave. Durante el
+      // recorrido normal la pista acompaña desde detrás de una pared; el filtro
+      // se abre y el volumen sube según te acercas a la copa. Así el efecto no
+      // es un adorno al final, es la recompensa de todo el hoyo: la música se
+      // destapa a medida que llegas.
+      idleLevel: 0.34,
+      idleCutoff: 1150,
       baseReverb: 0.10,
+      // Filtro abierto del todo. No es un estado de la mezcla, es el valor
+      // "sin tapar": lo usa el filtro de foco al recuperar la ventana y es
+      // adonde llega el destapado al alcanzar la copa.
+      baseCutoff: 20000,
       maxReverb: 0.85,
       // Cuánto se aparta el sonido seco al mojar la mezcla. Con reverb fuerte
       // esto deja de ser cosmético: sin ceder sitio, la sala se suma entera al
@@ -234,6 +241,13 @@
       holeCurve: 1.8,
       holeLevel: 1.0,
       holeReverb: 0.72,
+      // El destapado tiene curva PROPIA y más temprana que la del volumen.
+      // Separarlas es lo que hace legible el efecto: primero la música se
+      // aclara —se entiende que algo está cambiando— y solo al final crece de
+      // verdad. Con una sola curva, abrir y subir llegan juntos y el remate se
+      // percibe como un simple golpe de volumen.
+      holeCutoff: 20000,
+      holeOpenCurve: 1.05,
 
       // Vuelo largo. Una bola que sigue viva pasados unos segundos es una bola
       // a la que está pasando algo: graves que crecen y algo más de cuerpo.
@@ -253,9 +267,11 @@
       impacts: Object.freeze({
         // Agua: se hunde. Filtro cerrado, casi sin volumen y la sala se apaga.
         water: Object.freeze({ level: 0.20, cutoff: 380, reverb: 0.05, bassDb: -3, seconds: 1.8 }),
-        // Fuera del mapa: no se hunde, se aleja. Menos filtro y más sala, como
-        // si la música se quedara atrás con el resto del mundo.
-        lost: Object.freeze({ level: 0.26, cutoff: 1100, reverb: 0.50, bassDb: 0, seconds: 1.5 }),
+        // Fuera del mapa: no se hunde, se aleja. Se cierra menos que el agua y
+        // abre mucha más sala, como si la música se quedara atrás con el resto
+        // del mundo. Su corte vive cerca del de la ventana en segundo plano
+        // (620 Hz) a propósito: es la misma sensación de "esto ya no está aquí".
+        lost: Object.freeze({ level: 0.26, cutoff: 700, reverb: 0.50, bassDb: 0, seconds: 1.5 }),
       }),
 
       // — Ventana en segundo plano —
